@@ -1,0 +1,27 @@
+name: SonarQube Ephemeral Scan
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  sonar:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Ephemeral SonarQube Scan
+        uses: mammothb/sonarqube-ce@v1
+        with:
+          generate-pr-comment: 'true'
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          reports-scopes: '["overall", "new"]'
