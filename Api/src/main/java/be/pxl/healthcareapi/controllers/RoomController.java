@@ -1,4 +1,3 @@
-
 package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.domein.Room;
