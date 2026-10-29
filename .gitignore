@@ -12,6 +12,8 @@ Frontend/dist
 dist-ssr
 *.local
 
+.env
+
 # Editor directories and files
 .vscode
 .vscode/*
@@ -23,3 +25,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.e
+
+# Coverage directories
+coverage/
+.nyc_output/
+
+dev-dist/
