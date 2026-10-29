@@ -4,6 +4,7 @@ import be.pxl.healthcareapi.DTO.WaveformChunk;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import be.pxl.healthcareapi.domein.WaveformSource;
 import be.pxl.healthcareapi.repos.VitalsRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.LongSupplier;
 
 @Service
 public class WaveformStreamService {
@@ -20,13 +22,24 @@ public class WaveformStreamService {
     private final VitalsRepository vitalsRepository;
     private final SimpMessagingTemplate messaging;
     private final List<ChannelStream> streams;
-    private final long startNanos = System.nanoTime();
+    private final LongSupplier nanoClock;
+    private final long startNanos;
 
+    @Autowired
     public WaveformStreamService(List<WaveformSource> sources,
                                  VitalsRepository vitalsRepository,
                                  SimpMessagingTemplate messaging) {
+        this(sources, vitalsRepository, messaging, System::nanoTime);
+    }
+
+    public WaveformStreamService(List<WaveformSource> sources,
+                                 VitalsRepository vitalsRepository,
+                                 SimpMessagingTemplate messaging,
+                                 LongSupplier nanoClock) {
         this.vitalsRepository = vitalsRepository;
         this.messaging = messaging;
+        this.nanoClock = nanoClock;
+        this.startNanos = nanoClock.getAsLong();
 
         Set<String> seen = new HashSet<>();
         for (WaveformSource source : sources) {
@@ -40,7 +53,7 @@ public class WaveformStreamService {
     @Scheduled(fixedRate = TICK_MS)
     public void publishTick() {
         VitalsSnapshot vitals = vitalsRepository.current();
-        double elapsedSec = (System.nanoTime() - startNanos) / 1e9;
+        double elapsedSec = (nanoClock.getAsLong() - startNanos) / 1e9;
 
         for (ChannelStream stream : streams) {
             long due = (long)(elapsedSec * stream.source.sampleRate()) - stream.nextIndex;

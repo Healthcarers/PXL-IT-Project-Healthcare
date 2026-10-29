@@ -19,9 +19,10 @@ public class VitalsService {
 
     public VitalsSnapshot update(VitalsUpdateRequest req) {
         return vitalsRepository.update(current -> new VitalsSnapshot(
-                req.heartRate() != null ? checkRange("heartRate", req.heartRate(), 20, 250) : current.heartRate(),
+                req.heartRate() != null ? checkRange("heartRate", req.heartRate(), 0, 220) : current.heartRate(),
                 req.ampScale()  != null ? checkRange("ampScale",  req.ampScale(),  0.1, 3)  : current.ampScale()
-        ));    }
+        ));
+    }
 
     private static double checkRange(String name, double value, double min, double max) {
         if (value < min || value > max) {

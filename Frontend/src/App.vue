@@ -3,7 +3,15 @@
 </script>
 
 <template>
-  <main>
     <RouterView />
-  </main>
 </template>
+
+<style>
+html,
+body,
+#app {
+  margin: 0;
+  height: 100%;
+  background: #050506;
+}
+</style>
