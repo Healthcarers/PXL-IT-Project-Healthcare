@@ -1,10 +1,13 @@
 name: SonarQube Ephemeral Scan
 
 on:
-  push:
-    branches: [ main, dev ]
+  workflow_dispatch:
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sonar:
@@ -19,9 +22,25 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'maven'
+          cache-dependency-path: 'Api/pom.xml'
+
+      - name: Compile Java Backend
+        working-directory: ./Api
+        run: mvn test-compile -B -DskipTests
+
       - name: Run Ephemeral SonarQube Scan
         uses: mammothb/sonarqube-ce@v1
         with:
           generate-pr-comment: 'true'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           reports-scopes: '["overall", "new"]'
+          sonar-options: >-
+            -Dsonar.sources=Api/src/main,Frontend/src
+            -Dsonar.java.binaries=Api/target/classes
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/target/**,**/*.min.js
