@@ -20,7 +20,7 @@ public record RegisterRequest(
         String email,
 
         @NotBlank(message = "Wachtwoord is verplicht")
-        @Size(min = 8, max = 100, message = "Wachtwoord moet minimaal 8 tekens lang zijn")
+        @Size(min = 8, message = "Wachtwoord moet minimaal 8 tekens lang zijn")
         String password,
 
         @NotBlank(message = "Herhaal wachtwoord is verplicht")
