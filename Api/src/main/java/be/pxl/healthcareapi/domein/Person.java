@@ -1,13 +1,12 @@
 package be.pxl.healthcareapi.domein;
 
 import be.pxl.healthcareapi.domein.enums.Role;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.validator.constraints.UniqueElements;
 
 import java.util.UUID;
 
@@ -24,6 +23,8 @@ public class Person {
 
     private String lastname;
 
+    @Column(unique = true)
+    @Email
     private String email;
 
     private String password;

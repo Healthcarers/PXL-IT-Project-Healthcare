@@ -15,7 +15,7 @@ import tools.jackson.databind.ObjectMapper;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(AuthController.class)
@@ -54,22 +54,26 @@ public class AuthControllerTests {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.firstname").value("must not be blank"));
+                .andExpect(content().string("Voornaam is verplicht"));
     }
 
     @Test
     void registerUser_ShouldReturnBadRequestWhenPasswordsDoNotMatch() throws Exception {
-        // Arrange
-        RegisterRequest request = new RegisterRequest("test", "user", "test@email.com", "testpass", "wrong");
-
-        when(authService.registerUser(any(RegisterRequest.class)))
-                .thenThrow(new IllegalArgumentException("Passwords do not match"));
+        String jsonBody = """
+        {
+            "firstname": "test",
+            "lastname": "user",
+            "email": "test@email.com",
+            "password": "testpass",
+            "passwordRepeated": "wrong"
+        }
+        """;
 
         // Act & Assert
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
+                        .content(jsonBody))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Passwords do not match"));
+                .andExpect(content().string("De ingevoerde wachtwoorden komen niet overeen"));
     }
 }

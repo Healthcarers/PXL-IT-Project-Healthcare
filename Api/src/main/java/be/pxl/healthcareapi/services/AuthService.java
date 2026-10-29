@@ -23,10 +23,6 @@ public class AuthService {
     public RegisterResponse registerUser(RegisterRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
 
-        if (!request.password().equals(request.passwordRepeated())){
-            throw new IllegalArgumentException("Passwords do not match");
-        }
-
         Person user = new Person(request.firstname(), request.lastname(), request.email(), hashedPassword);
 
         userRepo.save(user);

@@ -66,14 +66,4 @@ public class AuthServiceTests {
         //Assert
         assertEquals("Account for test user has been registered.", response.message());
     }
-
-    @Test
-    public void registerUser_ShouldThrowIlligalArgExcWithNonMatchingPasswords(){
-        //Arrange
-        RegisterRequest registerRequest = new RegisterRequest("test", "user", "test@email.com", "testpass", "wrong");
-
-        //Act + Assert
-        assertThrows(IllegalArgumentException.class, () -> authService.registerUser(registerRequest));
-
-    }
 }
