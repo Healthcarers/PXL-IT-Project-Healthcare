@@ -2,7 +2,7 @@ package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.DTO.RegisterRequest;
 import be.pxl.healthcareapi.config.SecurityConfig;
-import be.pxl.healthcareapi.services.AuthService;
+import be.pxl.healthcareapi.services.Authentication.AuthService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -13,7 +13,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;

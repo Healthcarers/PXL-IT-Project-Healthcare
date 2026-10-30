@@ -4,6 +4,7 @@ import be.pxl.healthcareapi.DTO.RegisterRequest;
 import be.pxl.healthcareapi.DTO.RegisterResponse;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.repos.PersonRepo;
+import be.pxl.healthcareapi.services.Authentication.AuthService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
