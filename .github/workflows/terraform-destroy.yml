@@ -1,0 +1,54 @@
+name: "Terraform - Destroy Database (Thu & Fri)"
+
+on:
+  schedule:
+    # Elke donderdag en vrijdag om 17:00 UTC (18:00 CET wintertijd / 19:00 CEST zomertijd).
+    - cron: '0 17 * * 4,5'
+  workflow_dispatch: # Hiermee kun je de database handmatig afbreken met 1 klik in GitHub
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  destroy:
+    name: "Destroy Azure PostgreSQL"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    env:
+      ARM_CLIENT_ID: ${{ secrets.ARM_CLIENT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.ARM_SUBSCRIPTION_ID }}
+      ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
+      ARM_USE_OIDC: "true"
+      TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.6
+
+      - name: Terraform Init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${{ secrets.TF_STATE_RESOURCE_GROUP || 'rg-healthcare-dev' }}" \
+            -backend-config="storage_account_name=${{ secrets.TF_STATE_STORAGE_ACCOUNT }}" \
+            -backend-config="container_name=${{ secrets.TF_STATE_CONTAINER || 'tfstate' }}" \
+            -backend-config="key=healthcare.database.tfstate" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true"
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve -input=false
+
+      - name: Publish Teardown Summary
+        if: success()
+        run: |
+          echo "### 🛑 Azure Database Successfully Destroyed!" >> $GITHUB_STEP_SUMMARY
+          echo "All resources have been deleted. Ongoing Azure cost: **\$0.00/hour**." >> $GITHUB_STEP_SUMMARY
