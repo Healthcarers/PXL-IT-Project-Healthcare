@@ -1,9 +1,10 @@
 name: SonarQube Ephemeral Scan
 
 on:
-  workflow_dispatch:
   pull_request:
+    branches: [ main, dev ]
     types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
 
 concurrency:
   group: sonar-${{ github.ref }}
@@ -11,6 +12,7 @@ concurrency:
 
 jobs:
   sonar:
+    name: SonarQube Quality & Coverage Scan
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,7 +24,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up JDK
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -30,17 +32,41 @@ jobs:
           cache: 'maven'
           cache-dependency-path: 'Api/pom.xml'
 
-      - name: Compile Java Backend
+      - name: Run Backend Tests & Generate JaCoCo Report
         working-directory: ./Api
-        run: mvn test-compile -B -DskipTests
+        run: |
+          if [ -f "./mvnw" ]; then
+            chmod +x ./mvnw
+            ./mvnw clean test -B
+          else
+            mvn clean test -B
+          fi
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'Frontend/package-lock.json'
+
+      - name: Install Frontend Dependencies & Generate Vitest Coverage
+        working-directory: ./Frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
+        run: |
+          npm ci
+          npx vitest run --coverage.enabled=true --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
 
       - name: Run Ephemeral SonarQube Scan
         uses: mammothb/sonarqube-ce@v1
         with:
-          generate-pr-comment: 'true'
+          generate-pr-comment: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           reports-scopes: '["overall", "new"]'
           sonar-options: >-
-            -Dsonar.sources=Api/src/main,Frontend/src
+            -Dsonar.sources=Api/src/main/java,Frontend/src
+            -Dsonar.tests=Api/src/test/java
             -Dsonar.java.binaries=Api/target/classes
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/target/**,**/*.min.js
+            -Dsonar.coverage.jacoco.xmlReportPaths=Api/target/site/jacoco/jacoco.xml
+            -Dsonar.javascript.lcov.reportPaths=Frontend/coverage/lcov.info
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/target/**,**/coverage/**,**/*.min.js
