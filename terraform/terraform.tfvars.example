@@ -1,0 +1,14 @@
+# ==============================================================================
+# Terraform Variables Example (safe to commit to git)
+# ==============================================================================
+# Copy this file to `terraform.tfvars` or set through environment variables:
+#   TF_VAR_db_password="YourPasswordHere"
+#
+# DO NOT commit real secrets or the final `terraform.tfvars` to git!
+# ==============================================================================
+
+db_user      = "pgadmin"
+db_password  = "CHANGE_ME_SecretPassword2026!"
+db_name      = "PXL_Healthcare_DB"
+location     = "switzerlandnorth"
+project_name = "cheap-pg"
