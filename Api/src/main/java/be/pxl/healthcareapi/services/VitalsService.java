@@ -20,6 +20,7 @@ public class VitalsService {
     public VitalsSnapshot update(VitalsUpdateRequest req) {
         return vitalsRepository.update(current -> new VitalsSnapshot(
                 req.heartRate() != null ? checkRange("heartRate", req.heartRate(), 0, 220) : current.heartRate(),
+                req.spo2() != null ? checkRange("spo2", req.spo2(), 50, 100) : current.spo2(),
                 req.ampScale()  != null ? checkRange("ampScale",  req.ampScale(),  0.1, 3)  : current.ampScale()
         ));
     }

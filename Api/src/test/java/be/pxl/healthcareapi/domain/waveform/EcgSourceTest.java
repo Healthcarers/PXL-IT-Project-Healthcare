@@ -1,6 +1,6 @@
 package be.pxl.healthcareapi.domain.waveform;
 
-import be.pxl.healthcareapi.domein.EcgSource;
+import be.pxl.healthcareapi.domein.waveforms.EcgSource;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

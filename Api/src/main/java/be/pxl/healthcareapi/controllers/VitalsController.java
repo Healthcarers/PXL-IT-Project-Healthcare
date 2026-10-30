@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/vitals")
+@CrossOrigin("*")
 public class VitalsController {
     private final VitalsService vitalsService;
 

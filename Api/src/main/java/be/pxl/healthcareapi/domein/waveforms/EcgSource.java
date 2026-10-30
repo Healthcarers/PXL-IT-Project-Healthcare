@@ -1,5 +1,6 @@
-package be.pxl.healthcareapi.domein;
+package be.pxl.healthcareapi.domein.waveforms;
 
+import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import org.springframework.stereotype.Component;
 
 @Component

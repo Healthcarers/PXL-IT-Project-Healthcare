@@ -2,7 +2,7 @@ package be.pxl.healthcareapi.service;
 
 import be.pxl.healthcareapi.DTO.WaveformChunk;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
-import be.pxl.healthcareapi.domein.WaveformSource;
+import be.pxl.healthcareapi.domein.waveforms.WaveformSource;
 import be.pxl.healthcareapi.repos.VitalsRepository;
 import be.pxl.healthcareapi.services.WaveformStreamService;
 import org.junit.jupiter.api.BeforeEach;

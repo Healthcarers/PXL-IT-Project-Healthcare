@@ -3,9 +3,11 @@ import { connected } from "../services/stompClient.ts";
 import { defineComponent } from "vue";
 import EcgPanel from "../components/charts/EcgPanel.vue";
 import HeartRateCard from "../components/charts/HeartRateCard.vue";
+import SpO2Panel from "../components/charts/SpO2Panel.vue";
+import SpO2Card from "../components/charts/SpO2Card.vue";
 
 export default defineComponent({
-  components: { HeartRateCard, EcgPanel },
+  components: {Spo2Card: SpO2Card, SpO2Panel, HeartRateCard, EcgPanel },
   computed: {
     connected() {
       return connected;
@@ -39,10 +41,12 @@ export default defineComponent({
     >
       <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1 [&>*:first-child]:flex-[1.25]">
         <EcgPanel />
+        <SpO2Panel />
       </section>
 
       <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1">
         <HeartRateCard />
+        <Spo2Card />
       </section>
     </main>
   </div>
