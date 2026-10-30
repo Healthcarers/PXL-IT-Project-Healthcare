@@ -1,104 +1,49 @@
 <script>
-import {connected} from "../services/stompClient.ts";
-import {defineComponent} from "vue";
+import { connected } from "../services/stompClient.ts";
+import { defineComponent } from "vue";
 import EcgPanel from "../components/charts/EcgPanel.vue";
 import HeartRateCard from "../components/charts/HeartRateCard.vue";
 
 export default defineComponent({
-  components: {HeartRateCard, EcgPanel},
+  components: { HeartRateCard, EcgPanel },
   computed: {
     connected() {
-      return connected
-    }
-  }
-})
-
+      return connected;
+    },
+  },
+});
 </script>
 
 <template>
-  <div class="dashboard">
-    <header class="topbar">
-      <span class="brand">PXL</span>
+  <div
+      class="flex h-screen flex-col box-border bg-[#050506] text-white"
+  >
+    <header
+        class="flex h-13 shrink-0 items-center gap-4 border-b border-[#1a1a1d] px-5"
+    >
+      <img
+          src="../assets/pxl_logo.png"
+          alt="PXL Logo"
+          class="h-8 w-auto object-contain"
+      />
+
       <span
-          class="status"
-          :class="{ online: connected }"
+          class="ml-auto size-2.5 rounded-full"
+          :class="connected ? 'bg-green-500' : 'bg-[#555]'"
           :title="connected ? 'Connected' : 'Disconnected'"
       />
     </header>
 
-    <main class="grid">
-      <section class="column waves">
+    <main
+        class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-5 p-5 box-border"
+    >
+      <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1 [&>*:first-child]:flex-[1.25]">
         <EcgPanel />
       </section>
-      <section class="column vitals">
+
+      <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1">
         <HeartRateCard />
       </section>
     </main>
   </div>
 </template>
-
-<style scoped>
-.dashboard {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-  background: #050506;
-  color: #fff;
-  box-sizing: border-box;
-}
-
-.topbar {
-  flex-shrink: 0;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 20px;
-  border-bottom: 1px solid #1a1a1d;
-}
-
-.brand {
-  font-weight: 800;
-  letter-spacing: 0.04em;
-}
-
-.status {
-  margin-left: auto;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #555;
-}
-
-.status.online {
-  background: #22c55e;
-}
-
-.grid {
-  flex: 1;
-  min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 20px;
-  padding: 20px;
-  box-sizing: border-box;
-}
-
-.column {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  min-height: 0;
-}
-
-.waves > * {
-  flex: 1;
-}
-.waves > :first-child {
-  flex: 1.25;
-}
-
-.vitals > * {
-  flex: 1;
-}
-</style>

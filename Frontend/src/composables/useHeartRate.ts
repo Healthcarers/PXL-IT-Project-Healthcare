@@ -1,6 +1,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
+import axios from "axios";
 
-const VITALS_URL = 'http://localhost:8090/api/vitals';
+const VITALS_URL = "http://localhost:8090/api/vitals";
 
 export function useHeartRate(intervalMs = 1000) {
     const bpm = ref<number | null>(null);
@@ -8,13 +9,8 @@ export function useHeartRate(intervalMs = 1000) {
 
     async function refresh() {
         try {
-            const res = await fetch(VITALS_URL)
-            if (!res.ok) {
-                bpm.value = null;
-                return;
-            }
-            const data: { heartRate: number } = await res.json();
-            bpm.value = Math.round(data.heartRate);
+            const res = await axios.get<{ heartRate: number }>(VITALS_URL);
+            bpm.value = Math.round(res.data.heartRate);
         } catch {
             bpm.value = null;
         }
@@ -26,7 +22,9 @@ export function useHeartRate(intervalMs = 1000) {
     });
 
     onUnmounted(() => {
-        clearInterval(timer);
+        if (timer !== undefined) {
+            window.clearInterval(timer);
+        }
     });
 
     return { bpm };

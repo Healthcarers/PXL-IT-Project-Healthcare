@@ -2,16 +2,19 @@
 import {useSweepWaveform} from "../../composables/useSweepWaveform.ts";
 import SweepChart from "./SweepChart.vue";
 import MonitorCard from "./MonitorCard.vue";
+import {useChannelActive} from "../../composables/useChannelActive.ts";
 
 const WINDOW_MS = 4000;
 const SAMPLE_RATE = 250;
 
 const { points, cursorX } = useSweepWaveform('ecg', WINDOW_MS, SAMPLE_RATE);
+const { active } = useChannelActive('ecg');
 </script>
 
 <template>
-  <MonitorCard label="ECG II" color="#22c55e">
+  <MonitorCard label="ECG II" color="#22c55e" tone="green">
       <SweepChart
+          v-model:active="active"
           :points="points"
           :cursor-x="cursorX"
           :window-ms="WINDOW_MS"
@@ -22,18 +25,3 @@ const { points, cursorX } = useSweepWaveform('ecg', WINDOW_MS, SAMPLE_RATE);
       />
   </MonitorCard>
 </template>
-
-<style scoped>
-.panel {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  height: 100%;
-}
-
-.chart {
-  flex: 1;
-  min-width: 0;
-  height: 100%;
-}
-</style>

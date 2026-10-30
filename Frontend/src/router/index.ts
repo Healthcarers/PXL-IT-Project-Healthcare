@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import RegistrationView from "../views/registration/RegistrationView.vue";
 import LoginView from "../views/LoginView.vue";
+import CursistDashboard from "../views/CursistDashboard.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -16,11 +17,11 @@ const router = createRouter({
       name: "login",
       component: LoginView,
     },
-  {
-      path: '/cursist',
-      name: 'cursist-dashboard',
-      component: () => import('../views/CursistDashboard.vue'),
-  },
+    {
+        path: '/cursist',
+        name: 'cursist-dashboard',
+        component: CursistDashboard,
+    },
   ],
 });
 

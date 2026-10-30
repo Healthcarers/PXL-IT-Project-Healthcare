@@ -5,7 +5,6 @@ import { Chart as ChartJS, LineElement, PointElement, LinearScale } from 'chart.
 import type { ChartData, ChartOptions } from 'chart.js'
 import type { SweepPoint } from '../../composables/useSweepWaveform'
 
-
 ChartJS.register(LineElement, PointElement, LinearScale);
 
 const props = withDefaults(defineProps<{
@@ -95,67 +94,30 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
 
 <template>
   <div
-    class="sweep-chart"
-    role="button"
-    :aria-pressed="active"
-    :aria-label="active ? 'Stop display' : 'Start display'"
-    @click="toggleActive"
+      class="relative h-full w-full cursor-pointer outline-none focus-visible:rounded-md focus-visible:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)]"
+      role="button"
+      tabindex="0"
+      :aria-pressed="active"
+      :aria-label="active ? 'Stop display' : 'Start display'"
+      @click="toggleActive"
+      @keydown.enter.prevent="toggleActive"
+      @keydown.space.prevent="toggleActive"
   >
     <Line
-      v-if="active"
-      :data="chartData"
-      :options="chartOptions"
+        v-if="active"
+        :data="chartData"
+        :options="chartOptions"
     />
-    <div v-else class="placeholder">
-      <span class="hint">Tap to start</span>
+
+    <div
+        v-else
+        class="relative flex h-full w-full items-center justify-center before:absolute before:left-0 before:right-0 before:top-1/2 before:h-px before:bg-[#2a2a2f] before:content-['']"
+    >
+      <span
+          class="relative rounded-full bg-[#111113] px-2.5 py-1 text-xs text-[#6b6b73] transition-colors hover:text-[#a0a0a8]"
+      >
+        Tap to start
+      </span>
     </div>
   </div>
 </template>
-
-<style scoped>
-.sweep-chart {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-  outline: none;
-}
-
-.sweep-chart:focus-visible {
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.3);
-  border-radius: 6px;
-}
-
-.placeholder {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Flat baseline so an inactive lead still reads as a trace slot */
-.placeholder::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: 50%;
-  height: 1px;
-  background: #2a2a2f;
-}
-
-.hint {
-  position: relative;
-  padding: 4px 10px;
-  font-size: 12px;
-  color: #6b6b73;
-  background: #111113;
-  border-radius: 999px;
-}
-
-.sweep-chart:hover .hint {
-  color: #a0a0a8;
-}
-</style>

@@ -11,7 +11,7 @@ import {
 import type { ChartData, ChartOptions } from 'chart.js'
 import type { Point } from '../../types/waveform'
 
-ChartJS.register(LineElement, PointElement, LinearScale, Filler);
+ChartJS.register(LineElement, PointElement, LinearScale, Filler)
 
 const props = withDefaults(defineProps<{
   points: Point[]
@@ -30,7 +30,7 @@ const props = withDefaults(defineProps<{
   gridColor: 'transparent',
   gridStepX: 200,
   gridStepY: 0.5
-});
+})
 
 const chartData = computed<ChartData<'line', Point[]>>(() => ({
   datasets: [
@@ -42,10 +42,10 @@ const chartData = computed<ChartData<'line', Point[]>>(() => ({
       tension: 0
     }
   ]
-}));
+}))
 
 const chartOptions = computed<ChartOptions<'line'>>(() => {
-  const latest = props.points.at(-1)?.x ?? 0;
+  const latest = props.points.at(-1)?.x ?? 0
 
   return {
     responsive: true,
@@ -73,20 +73,12 @@ const chartOptions = computed<ChartOptions<'line'>>(() => {
         border: { display: false }
       }
     }
-  };
-});
+  }
+})
 </script>
 
 <template>
-  <div class="waveform-chart">
+  <div class="relative h-full w-full">
     <Line :data="chartData" :options="chartOptions" />
   </div>
 </template>
-
-<style scoped>
-.waveform-chart {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-</style>

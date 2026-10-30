@@ -7,40 +7,19 @@ defineProps<{
 </script>
 
 <template>
-  <div class="readout">
-    <span class="label">{{ label }}</span>
-    <span class="value">{{ value ?? '--' }}</span>
-    <span class="unit">{{ unit }}</span>
+  <div
+      class="flex w-40 shrink-0 flex-col items-end justify-center border-l border-[rgba(255,60,60,0.18)] px-3 font-mono text-[#22c55e]"
+  >
+    <span class="text-[1.1rem] opacity-80">
+      {{ label }}
+    </span>
+
+    <span class="text-[4rem] leading-none font-bold">
+      {{ value ?? '--' }}
+    </span>
+
+    <span class="text-base opacity-80">
+      {{ unit }}
+    </span>
   </div>
 </template>
-
-<style scoped>
-.readout {
-  width: 160px;
-  flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-end;
-  padding: 0 12px;
-  color: #22c55e;
-  font-family: monospace;
-  border-left: 1px solid rgba(255, 60, 60, 0.18);
-}
-
-.label {
-  font-size: 1.1rem;
-  opacity: 0.8;
-}
-
-.value {
-  font-size: 4rem;
-  line-height: 1;
-  font-weight: bold;
-}
-
-.unit {
-  font-size: 1rem;
-  opacity: 0.8;
-}
-</style>
