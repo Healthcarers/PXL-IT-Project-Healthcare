@@ -68,4 +68,6 @@ jobs:
 
       - name: Run Frontend Vitest Tests
         working-directory: ./Frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
         run: npx vitest run
