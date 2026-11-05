@@ -1,4 +1,4 @@
-# Spins up the cheapest Azure PostgreSQL database and shows connection info for the team
+# Spins up Azure Cloud infrastructure and API for the team
 $ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -7,8 +7,13 @@ Set-Location $scriptDir
 $envPath = Join-Path $scriptDir ".env"
 if (-not (Test-Path $envPath)) {
     Write-Host "[WARNING] No .env file found in $scriptDir." -ForegroundColor Yellow
-    Write-Host "Creating .env from .env.example..." -ForegroundColor Cyan
-    Copy-Item (Join-Path $scriptDir ".env.example") $envPath
+    $examplePath = Join-Path $scriptDir ".env.example"
+    if (Test-Path $examplePath) {
+        Write-Host "Creating .env from .env.example..." -ForegroundColor Cyan
+        Copy-Item $examplePath $envPath
+    } else {
+        Set-Content -Path $envPath -Value "DB_PASSWORD=CHANGE_ME_SecretPassword2026!"
+    }
     Write-Host "Please edit $envPath to set your DB_PASSWORD before running this script again." -ForegroundColor Yellow
     exit 1
 }
@@ -41,34 +46,31 @@ if (-not (Test-Path ".terraform")) {
     }
 }
 
-Write-Host "`nSpinning up cheapest Azure PostgreSQL server (~$0.017/hour)..." -ForegroundColor Cyan
+Write-Host "`nSpinning up Azure Infrastructure and API..." -ForegroundColor Cyan
 terraform apply -auto-approve
 if ($LASTEXITCODE -ne 0) {
     Write-Host "`n[ERROR] Terraform apply failed. Check the error message above." -ForegroundColor Red
     exit $LASTEXITCODE
 }
 
+$hostName = terraform output -raw host 2>$null
+$db       = terraform output -raw database 2>$null
+$user     = terraform output -raw user 2>$null
+$pw       = $env:TF_VAR_db_password
+$apiUrl   = terraform output -raw api_url 2>$null
+$kvName   = terraform output -raw key_vault_name 2>$null
+$aiName   = terraform output -raw application_insights_name 2>$null
+
 Write-Host "`n==========================================================" -ForegroundColor Green
-Write-Host "  DATABASE READY! Share these details with the team:      " -ForegroundColor Green
+Write-Host "  INFRASTRUCTURE & API READY! Share these details:        " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 
-$hostName = terraform output -raw host
-$db       = terraform output -raw database
-$user     = terraform output -raw user
-$pw       = $env:TF_VAR_db_password
-
-Write-Host "Host:     $hostName" -ForegroundColor Yellow
-Write-Host "Port:     5432" -ForegroundColor Yellow
-Write-Host "Database: $db" -ForegroundColor Yellow
-Write-Host "User:     $user" -ForegroundColor Yellow
-Write-Host "Password: $pw" -ForegroundColor Yellow
-
-Write-Host "`nJava / Spring Boot (application.properties):" -ForegroundColor White
-Write-Host "spring.datasource.url=jdbc:postgresql://${hostName}:5432/${db}?sslmode=require" -ForegroundColor Cyan
-Write-Host "spring.datasource.username=${user}" -ForegroundColor Cyan
-Write-Host "spring.datasource.password=${pw}" -ForegroundColor Cyan
-
-Write-Host "`nStandard Connection URL:" -ForegroundColor White
-Write-Host "postgresql://${user}:${pw}@${hostName}:5432/${db}?sslmode=require" -ForegroundColor Cyan
+Write-Host "API URL:       $apiUrl" -ForegroundColor Cyan
+Write-Host "Database Host: $hostName" -ForegroundColor Yellow
+Write-Host "Database Port: 5432" -ForegroundColor Yellow
+Write-Host "Database Name: $db" -ForegroundColor Yellow
+Write-Host "DB User:       $user" -ForegroundColor Yellow
+Write-Host "Key Vault:     $kvName" -ForegroundColor Yellow
+Write-Host "App Insights:  $aiName" -ForegroundColor Yellow
 
 Write-Host "`nRun .\down.ps1 when you are finished to stop all Azure charges ($0.00).`n" -ForegroundColor DarkGray

@@ -1,19 +1,20 @@
-name: "Terraform - Deploy Database (Thu & Fri)"
+name: "Terraform - Deploy Healthcare Cloud & API (Thu & Fri)"
 
 on:
   schedule:
     # Elke donderdag en vrijdag om 07:00 UTC (08:00 CET / 09:00 CEST).
-    # Hierdoor is de database ruim voor 08:30 klaar voor gebruik.
+    # Hierdoor is de database & API ruim voor 08:30 klaar voor gebruik.
     - cron: '0 7 * * 4,5'
-  workflow_dispatch: # Hiermee kun je de database handmatig starten met 1 klik in GitHub
+  workflow_dispatch: # Hiermee kun je de deployment handmatig starten met 1 klik in GitHub
 
 permissions:
   contents: read
   id-token: write
+  packages: write
 
 jobs:
   deploy:
-    name: "Deploy Azure PostgreSQL"
+    name: "Deploy Azure Infrastructure & API"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,6 +30,25 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push API Docker Image
+        working-directory: .
+        run: |
+          # Zorg dat de image tag altijd lowercase is (vereiste voor GHCR)
+          IMAGE_NAME="ghcr.io/${{ github.repository }}/healthcare-api:latest"
+          IMAGE_NAME=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
+          echo "API_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
+          
+          echo "Building and pushing container image: $IMAGE_NAME"
+          docker build -t "$IMAGE_NAME" ./Api
+          docker push "$IMAGE_NAME"
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -49,26 +69,35 @@ jobs:
         run: terraform validate
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+        run: |
+          terraform apply -auto-approve -input=false \
+            -var="api_image=${{ env.API_IMAGE }}" \
+            -var="registry_server=ghcr.io" \
+            -var="registry_username=${{ github.actor }}" \
+            -var="registry_password_secret=${{ secrets.GITHUB_TOKEN }}"
 
-      - name: Publish Connection Summary
+      - name: Publish Deployment Summary
         if: success()
         run: |
           DB_HOST=$(terraform output -raw host)
           DB_NAME=$(terraform output -raw database)
           DB_USER=$(terraform output -raw user)
-          JDBC_URL=$(terraform output -raw jdbc_url)
+          API_URL=$(terraform output -raw api_url)
+          KV_NAME=$(terraform output -raw key_vault_name)
+          AI_NAME=$(terraform output -raw application_insights_name)
 
-          echo "### 🚀 Azure Database Ready!" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 Azure Healthcare Cloud & API Ready!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🌐 Container App API:" >> $GITHUB_STEP_SUMMARY
+          echo "- **API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Container Image:** \`${{ env.API_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🗄️ Azure PostgreSQL Database:" >> $GITHUB_STEP_SUMMARY
           echo "- **Host:** \`$DB_HOST\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Port:** \`5432\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Database:** \`$DB_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- **User:** \`$DB_USER\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### Spring Boot Configuration (\`application.properties\`):" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`properties" >> $GITHUB_STEP_SUMMARY
-          echo "spring.datasource.url=$JDBC_URL" >> $GITHUB_STEP_SUMMARY
-          echo "spring.datasource.username=$DB_USER" >> $GITHUB_STEP_SUMMARY
-          echo "spring.datasource.password=\${DB_PASSWORD}" >> $GITHUB_STEP_SUMMARY
-          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🔒 Security & Monitoring:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Key Vault:** \`$KV_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Application Insights:** \`$AI_NAME\`" >> $GITHUB_STEP_SUMMARY

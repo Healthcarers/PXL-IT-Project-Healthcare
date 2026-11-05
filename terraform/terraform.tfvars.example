@@ -7,8 +7,27 @@
 # DO NOT commit real secrets or the final `terraform.tfvars` to git!
 # ==============================================================================
 
-db_user      = "pgadmin"
-db_password  = "CHANGE_ME_SecretPassword2026!"
-db_name      = "PXL_Healthcare_DB"
-location     = "switzerlandnorth"
+# Core & Location
 project_name = "cheap-pg"
+location     = "switzerlandnorth"
+
+# Database Configuration
+db_user     = "pgadmin"
+db_password = "CHANGE_ME_SecretPassword2026!"
+db_name     = "PXL_Healthcare_DB"
+
+# Developer Whitelist IP Addresses (Optional)
+# allowed_ip_addresses = {
+#   "developer-home" = "203.0.113.10"
+# }
+
+# Monitoring & Alerting
+alert_email = "student@pxl.be"
+
+# Container App API
+api_image = "mcr.microsoft.com/kured:1.13.1"
+
+# Container Registry Authentication (Optional for private registries like ghcr.io)
+# registry_server          = "ghcr.io"
+# registry_username        = "your-github-username"
+# registry_password_secret = "ghp_yourPersonalAccessToken"

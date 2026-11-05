@@ -1,3 +1,7 @@
+# ==============================================================================
+# Database Outputs
+# ==============================================================================
+
 output "host" {
   description = "Fully qualified domain name (FQDN) of the PostgreSQL Flexible Server"
   value       = azurerm_postgresql_flexible_server.db.fqdn
@@ -31,4 +35,37 @@ output "connection_url" {
 output "psql_command" {
   description = "PSQL CLI command to connect to the database"
   value       = "psql -h ${azurerm_postgresql_flexible_server.db.fqdn} -p 5432 -U ${azurerm_postgresql_flexible_server.db.administrator_login} -d ${azurerm_postgresql_flexible_server_database.appdb.name} sslmode=require"
+}
+
+# ==============================================================================
+# Security & Monitoring Outputs
+# ==============================================================================
+
+output "key_vault_name" {
+  description = "Name of the Azure Key Vault"
+  value       = azurerm_key_vault.kv.name
+}
+
+output "application_insights_name" {
+  description = "Name of the Application Insights instance"
+  value       = azurerm_application_insights.appinsights.name
+}
+
+output "log_analytics_workspace_name" {
+  description = "Name of the Log Analytics Workspace"
+  value       = azurerm_log_analytics_workspace.logs.name
+}
+
+# ==============================================================================
+# API Hosting Outputs
+# ==============================================================================
+
+output "api_url" {
+  description = "Public HTTPS URL of the Container App API"
+  value       = "https://${azurerm_container_app.api.ingress[0].fqdn}"
+}
+
+output "container_app_fqdn" {
+  description = "Fully qualified domain name of the Container App API"
+  value       = azurerm_container_app.api.ingress[0].fqdn
 }
