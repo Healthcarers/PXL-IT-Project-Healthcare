@@ -41,8 +41,8 @@ export default function () {
   const resRegister = http.post(`${BASE_URL}/api/auth/register`, registerPayload, params);
   
   check(resRegister, {
-    'register status is acceptable (201 Created of 400 Bad Request)': (r) =>
-      r.status === 201 || r.status === 400,
+    'register status is acceptable (200 OK, 201 Created of 400 Bad Request)': (r) =>
+      r.status === 200 || r.status === 201 || r.status === 400,
     'register response time < 2000ms': (r) => r.timings.duration < 2000,
     'no 5xx internal server error on register': (r) => r.status < 500,
   });

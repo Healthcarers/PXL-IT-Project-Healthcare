@@ -13,7 +13,7 @@ terraform {
 
   # Remote backend for state management in CI/CD (GitHub Actions)
   # Parameters are passed during `terraform init -backend-config=...`
-  backend "azurerm" {}
+  # backend "azurerm" {}
 }
 
 provider "azurerm" {
@@ -234,6 +234,10 @@ resource "azurerm_postgresql_flexible_server" "db" {
   storage_mb        = 32768
   auto_grow_enabled = false
 
+  lifecycle {
+    ignore_changes = [zone]
+  }
+
   # Minimum backup retention (included free)
   backup_retention_days        = 7
   geo_redundant_backup_enabled = false
@@ -280,6 +284,7 @@ resource "azurerm_container_app_environment" "env" {
   location                   = azurerm_resource_group.rg.location
   resource_group_name        = azurerm_resource_group.rg.name
   log_analytics_workspace_id = azurerm_log_analytics_workspace.logs.id
+  logs_destination           = "log-analytics"
 
   tags = {
     Project   = var.project_name
@@ -299,9 +304,8 @@ resource "azurerm_container_app" "api" {
   }
 
   secret {
-    name                = "db-password"
-    key_vault_secret_id = azurerm_key_vault_secret.db_password.versionless_id
-    identity            = azurerm_user_assigned_identity.api_identity.id
+    name  = "db-password"
+    value = azurerm_key_vault_secret.db_password.value
   }
 
   dynamic "secret" {
@@ -359,6 +363,11 @@ resource "azurerm_container_app" "api" {
       }
 
       env {
+        name  = "HTTP_PORT"
+        value = "8090"
+      }
+
+      env {
         name  = "SPRING_DATASOURCE_URL"
         value = "jdbc:postgresql://${azurerm_postgresql_flexible_server.db.fqdn}:5432/${var.db_name}?sslmode=require"
       }
@@ -381,13 +390,13 @@ resource "azurerm_container_app" "api" {
       startup_probe {
         port          = 8090
         transport     = "TCP"
-        initial_delay = 25
+        initial_delay = 10
       }
 
       liveness_probe {
         port          = 8090
         transport     = "TCP"
-        initial_delay = 25
+        initial_delay = 10
       }
     }
   }
