@@ -5,6 +5,8 @@ import be.pxl.healthcareapi.DTO.RegisterResponse;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.repos.PersonRepo;
 import be.pxl.healthcareapi.services.Authentication.AuthService;
+import be.pxl.healthcareapi.services.Authentication.JwtService;
+import be.pxl.healthcareapi.services.Authentication.RefreshTokenService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -25,6 +27,12 @@ public class AuthServiceTests {
 
     @Mock
     private PasswordEncoder encoder;
+
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private AuthService authService;

@@ -1,12 +1,11 @@
 package be.pxl.healthcareapi.controllers;
 
-import be.pxl.healthcareapi.DTO.LoginRequest;
-import be.pxl.healthcareapi.DTO.LoginResponse;
-import be.pxl.healthcareapi.DTO.RegisterRequest;
-import be.pxl.healthcareapi.DTO.RegisterResponse;
+import be.pxl.healthcareapi.DTO.*;
+import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.TokenPair;
 import be.pxl.healthcareapi.services.Authentication.AuthCookieService;
 import be.pxl.healthcareapi.services.Authentication.AuthService;
+import be.pxl.healthcareapi.services.PersonService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -19,10 +18,12 @@ public class AuthController {
 
     private final AuthService authService;
     private final AuthCookieService authCookieService;
+    private final PersonService personService;
 
-    public AuthController(AuthService authService, AuthCookieService authCookieService){
+    public AuthController(AuthService authService, AuthCookieService authCookieService, PersonService personService){
         this.authService = authService;
         this.authCookieService = authCookieService;
+        this.personService = personService;
     }
 
     @PostMapping("/register")
@@ -46,6 +47,11 @@ public class AuthController {
         TokenPair tokens = authService.refresh(refreshToken);
 
         return createTokenResponse(tokens);
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<AuthResponse> authorize(@CookieValue(name = "access_token") String accesToken){
+        return ResponseEntity.status(HttpStatus.OK).body(personService.getPersonFromUUID(accesToken));
     }
 
     private ResponseEntity<Void> createTokenResponse(TokenPair tokens) {

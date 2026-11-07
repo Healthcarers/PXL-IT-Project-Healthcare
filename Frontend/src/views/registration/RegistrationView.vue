@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from "../../stores/Authstore";
 import router from "../../router";
+import SplashScreenComponent from "../../components/SplashScreenComponent.vue";
 
 const store = useAuthStore();
 const fieldLabels: Record<string, string> = {
@@ -26,7 +27,7 @@ function redirectToLogin() {
 }
 
 function checkPersonFields(): boolean {
-  const person = store.person;
+  const person = store.personRegistration;
   for (const [key, value] of Object.entries(person)) {
     if (value === "") {
       const emptyField = fieldLabels[key] || key;
@@ -42,30 +43,7 @@ function checkPersonFields(): boolean {
 
 <template>
   <div class="flex min-h-screen w-full">
-    <div class="hidden shrink-0 justify-center bg-black px-10 lg:flex lg:w-1/2">
-      <div class="flex w-full max-w-xl flex-col justify-between py-8 xl:py-10">
-        <div>
-          <img src="../../assets/pxl_logo.png" alt="PXL" />
-          <div class="mt-6 h-1 w-14 bg-[#c2a86b]"></div>
-          <span class="text-[#c2a86b]">HEALTHCARE - TLSC</span>
-        </div>
-
-        <div class="flex flex-col gap-5 py-8">
-          <h1 class="text-4xl font-bold text-white xl:text-5xl">
-            Virtuele Monitor-defibrillator
-          </h1>
-          <span class="text-xl text-gray-200"
-            >Oefen reanimatiescenario's op een realistische patiëntmonitor,
-            zonder dure hardware</span
-          >
-          <img
-            src="../../assets/tlsc.png"
-            alt="Virtuele patiëntmonitor"
-            class="h-32 w-full max-w-[340px] rounded-2xl object-cover"
-          />
-        </div>
-      </div>
-    </div>
+    <SplashScreenComponent />
 
     <div
       class="registration-panel flex min-h-screen flex-1 items-center justify-center bg-white px-4 py-6 sm:px-6"
@@ -109,7 +87,7 @@ function checkPersonFields(): boolean {
               </label>
               <input
                 id="firstname"
-                v-model="store.person.firstname"
+                v-model="store.personRegistration.firstname"
                 type="text"
                 placeholder="Je voornaam"
                 autocomplete="given-name"
@@ -126,7 +104,7 @@ function checkPersonFields(): boolean {
               </label>
               <input
                 id="lastname"
-                v-model="store.person.lastname"
+                v-model="store.personRegistration.lastname"
                 type="text"
                 placeholder="Je achternaam"
                 autocomplete="family-name"
@@ -143,7 +121,7 @@ function checkPersonFields(): boolean {
               </label>
               <input
                 id="email"
-                v-model="store.person.email"
+                v-model="store.personRegistration.email"
                 type="text"
                 placeholder="naam@voorbeeld.be"
                 autocomplete="email"
@@ -160,7 +138,7 @@ function checkPersonFields(): boolean {
               </label>
               <input
                 id="password"
-                v-model="store.person.password"
+                v-model="store.personRegistration.password"
                 type="password"
                 placeholder="Kies een wachtwoord"
                 autocomplete="new-password"
@@ -177,7 +155,7 @@ function checkPersonFields(): boolean {
               </label>
               <input
                 id="passwordRepeated"
-                v-model="store.person.passwordRepeated"
+                v-model="store.personRegistration.passwordRepeated"
                 type="password"
                 placeholder="Typ je wachtwoord opnieuw"
                 autocomplete="new-password"
