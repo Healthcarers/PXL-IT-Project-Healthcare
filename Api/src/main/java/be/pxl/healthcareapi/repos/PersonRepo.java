@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface PersonRepo extends JpaRepository<Person, UUID> {
     Optional<Person> getPersonByEmail(String email);
+
+    Optional<Person> getPersonById(UUID id);
 }

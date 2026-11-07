@@ -6,6 +6,7 @@ import be.pxl.healthcareapi.DTO.RegisterResponse;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.RefreshToken;
 import be.pxl.healthcareapi.domein.TokenPair;
+import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.exception.BadRequestException;
 import be.pxl.healthcareapi.repos.PersonRepo;
 import jakarta.transaction.Transactional;
@@ -35,6 +36,7 @@ public class AuthService {
         String hashedPassword = passwordEncoder.encode(request.password());
 
         Person user = new Person(request.firstname(), request.lastname(), request.email(), hashedPassword);
+        user.setRole(Role.Cursist);
 
         personRepo.save(user);
 
@@ -44,7 +46,7 @@ public class AuthService {
     public TokenPair login(LoginRequest loginRequest) {
         Optional<Person> personOptional = personRepo.getPersonByEmail(loginRequest.email());
         if (personOptional.isEmpty()) {
-            throw new BadRequestException("Ongeldig email adres");
+            throw new BadRequestException("Login gegevens zijn niet correct");
         }
 
         Person person = personOptional.get();
