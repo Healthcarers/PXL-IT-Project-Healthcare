@@ -27,24 +27,4 @@ public class AuthCookieService {
                 .maxAge(Duration.ofDays(30))
                 .build();
     }
-
-    public ResponseCookie deleteAccessCookie() {
-        return ResponseCookie.from("access_token", "")
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
-                .path("/")
-                .maxAge(Duration.ZERO)
-                .build();
-    }
-
-    public ResponseCookie deleteRefreshCookie() {
-        return ResponseCookie.from("refresh_token", "")
-                .httpOnly(true)
-                .secure(false)
-                .sameSite("Lax")
-                .path("/api/auth")
-                .maxAge(Duration.ZERO)
-                .build();
-    }
 }

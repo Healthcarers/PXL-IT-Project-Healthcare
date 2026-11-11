@@ -1,4 +1,4 @@
-package be.pxl.healthcareapi.DTO;
+package be.pxl.healthcareapi.dto;
 
 import lombok.Getter;
 import lombok.Setter;

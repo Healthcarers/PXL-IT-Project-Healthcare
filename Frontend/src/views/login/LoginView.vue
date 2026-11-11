@@ -14,17 +14,10 @@ async function login() {
     return;
   }
   await store.login();
-  if (!store.error) {
-    redirectToMonitor();
-  }
 }
 
 function redirectToRegistration() {
   router.push("/registration");
-}
-
-function redirectToMonitor() {
-  router.push("/monitor");
 }
 
 function checkPersonFields(): boolean {
@@ -72,7 +65,6 @@ function checkPersonFields(): boolean {
             {{ store.error }}
           </div>
 
-          <!-- Form -->
           <form
             v-if="!store.loading"
             class="login-form grid grid-cols-1 gap-4 sm:grid-cols-2"

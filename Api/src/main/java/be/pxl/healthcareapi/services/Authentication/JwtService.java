@@ -36,15 +36,6 @@ public class JwtService {
         ).getTokenValue();
     }
 
-    public boolean isTokenValid(String token) {
-        try {
-            jwtDecoder.decode(token);
-            return true;
-        } catch (JwtException e) {
-            return false;
-        }
-    }
-
     public UUID extractUserId(String token) {
         Jwt jwt = jwtDecoder.decode(token);
         return UUID.fromString(jwt.getSubject());

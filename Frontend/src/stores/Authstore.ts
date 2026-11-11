@@ -6,13 +6,13 @@ import type { PersonRegistration } from "../models/PersonRegistration";
 import type { PersonLogin } from "../models/PersonLogin";
 import type { Person } from "../models/Person";
 import api from "../services/refreshService";
+import router from "../router";
 
 export const useAuthStore = defineStore("auth", () => {
   const loading = ref(false);
   const error = ref<string | null>(null);
   const person = ref<Person | null>(null);
 
-  //Registratie
   let personRegistration = ref<PersonRegistration>({
     firstname: "",
     lastname: "",
@@ -56,7 +56,6 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  //login
   let personLogin = ref<PersonLogin>({
     email: "",
     password: "",
@@ -70,6 +69,16 @@ export const useAuthStore = defineStore("auth", () => {
       const res = await axios.post(url, personLogin.value, {
         withCredentials: true,
       });
+
+      if (!error.value) {
+        const person: Person = res.data;
+
+        if (person.role === "CURSIST") {
+          router.push("/monitor");
+        } else if (person.role === "LECTOR") {
+          router.push("/dashboard");
+        }
+      }
 
       return res.data;
     } catch (err: unknown) {
@@ -97,14 +106,13 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  //Check auth
   async function isAuthenticated() {
     loading.value = true;
     error.value = null;
     try {
       const res = await api.get("/auth/me");
-
-      person.value = res.data;
+      const person: Person = res.data;
+      return person;
     } catch (err) {
       throw new Error("Not authenticated");
     } finally {

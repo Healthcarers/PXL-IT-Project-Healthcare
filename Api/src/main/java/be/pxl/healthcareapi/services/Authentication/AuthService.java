@@ -1,8 +1,9 @@
 package be.pxl.healthcareapi.services.Authentication;
 
-import be.pxl.healthcareapi.DTO.LoginRequest;
-import be.pxl.healthcareapi.DTO.RegisterRequest;
-import be.pxl.healthcareapi.DTO.RegisterResponse;
+import be.pxl.healthcareapi.dto.AuthResponse;
+import be.pxl.healthcareapi.dto.LoginRequest;
+import be.pxl.healthcareapi.dto.RegisterRequest;
+import be.pxl.healthcareapi.dto.RegisterResponse;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.RefreshToken;
 import be.pxl.healthcareapi.domein.TokenPair;
@@ -14,6 +15,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -36,7 +38,7 @@ public class AuthService {
         String hashedPassword = passwordEncoder.encode(request.password());
 
         Person user = new Person(request.firstname(), request.lastname(), request.email(), hashedPassword);
-        user.setRole(Role.Cursist);
+        user.setRole(Role.CURSIST);
 
         personRepo.save(user);
 
@@ -77,5 +79,14 @@ public class AuthService {
                 refreshTokenService.createRefreshToken(person);
 
         return new TokenPair(newAccessToken, newRefreshToken);
+    }
+
+    public AuthResponse getPersonFromUUID(String token){
+        UUID uuid = jwtService.extractUserId(token);
+        Optional<Person> personOptional = personRepo.getPersonById(uuid);
+        if (personOptional.isEmpty()){
+            throw new BadRequestException("Deze persoon bestaat niet");
+        }
+        return new AuthResponse(personOptional.get().getFirstname(), personOptional.get().getLastname(), personOptional.get().getRole());
     }
 }

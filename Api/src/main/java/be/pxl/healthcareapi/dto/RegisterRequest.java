@@ -1,8 +1,7 @@
-package be.pxl.healthcareapi.DTO;
+package be.pxl.healthcareapi.dto;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import org.hibernate.validator.constraints.Length;
 
 public record RegisterRequest(
         @NotBlank(message = "Voornaam is verplicht")
