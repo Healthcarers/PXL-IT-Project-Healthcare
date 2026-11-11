@@ -39,7 +39,7 @@ export default defineComponent({
     <main
         class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-5 p-5 box-border"
     >
-      <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1 [&>*:first-child]:flex-[1.25]">
+      <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1">
         <EcgPanel />
         <SpO2Panel />
       </section>

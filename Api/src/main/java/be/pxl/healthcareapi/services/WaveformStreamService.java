@@ -67,7 +67,7 @@ public class WaveformStreamService {
                 samples[i] = stream.nextSample(vitals);
             }
 
-            messaging.convertAndSend(
+             messaging.convertAndSend(
                     "/topic/waveform/" + stream.source.channel(),
                     new WaveformChunk(stream.source.channel(), start, stream.source.sampleRate(), samples)
             );

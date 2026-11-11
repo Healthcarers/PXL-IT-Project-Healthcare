@@ -9,7 +9,7 @@ const { active, toggle } = useChannelActive('spo2');
 </script>
 
 <template>
-  <MonitorCard label="SpO2" tone="blue" unit="a.u.">
+  <MonitorCard label="SpO2" tone="blue" unit="%">
     <div
       role="button"
       class="flex h-full cursor-pointer items-center rounded-md outline-none transition-opacity focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-white/30"

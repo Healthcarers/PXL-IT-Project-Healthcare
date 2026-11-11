@@ -40,7 +40,7 @@ public class Spo2Source implements WaveformSource {
         double diastolic = DIC_AMP * gaussian(wrap(p - DIC_CENTER), DIC_SIGMA);
 
         double value = BASELINE + GAIN * v.ampScale() * (systolic + diastolic);
-        return Math.min(yMax(), Math.max(yMin(), value));
+        return Math.clamp(value, yMin(), yMax());
     }
 
     private static double gaussian(double d, double sigma) {
