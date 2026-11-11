@@ -45,7 +45,7 @@ api.interceptors.response.use(
       // Browser stuurt automatisch de nieuwe cookie mee
       return api(originalRequest);
     } catch (refreshError) {
-      // Hier je centrale logout-flow uitvoeren
+      // TODO: Voeg hier de centrale logout-flow toe.
       return Promise.reject(refreshError);
     }
   },

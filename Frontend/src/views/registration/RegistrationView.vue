@@ -72,7 +72,6 @@ function checkPersonFields(): boolean {
             {{ store.error }}
           </div>
 
-          <!-- Form -->
           <form
             v-if="!store.loading"
             class="registration-form grid grid-cols-1 gap-4 sm:grid-cols-2"
