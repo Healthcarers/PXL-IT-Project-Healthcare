@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers("/ws", "/ws/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/vitals", "/api/channels").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/vitals").permitAll()
                         .anyRequest().authenticated()
                 );
 

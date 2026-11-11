@@ -1,9 +1,8 @@
-package be.pxl.healthcareapi.service;
+package be.pxl.healthcareapi.services;
 
 import be.pxl.healthcareapi.DTO.VitalsUpdateRequest;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import be.pxl.healthcareapi.repos.VitalsRepository;
-import be.pxl.healthcareapi.services.VitalsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -64,5 +63,12 @@ public class VitalsServiceTest {
 
         assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(999.0, null)))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void heartRateZeroIsAcceptedForFlatline() {
+        applyUpdatesTo(current);
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, null));
+        assertThat(result.heartRate()).isEqualTo(0);
     }
 }

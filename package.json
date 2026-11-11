@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "web-audio-api": "^1.6.0"
+  }
+}

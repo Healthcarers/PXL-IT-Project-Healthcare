@@ -1,6 +1,11 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import axios from "axios";
 
+interface VitalsResponse {
+    heartRate: number;
+    ampScale: number;
+}
+
 const VITALS_URL = "http://localhost:8090/api/vitals";
 
 export function useHeartRate(intervalMs = 1000) {
@@ -9,7 +14,7 @@ export function useHeartRate(intervalMs = 1000) {
 
     async function refresh() {
         try {
-            const res = await axios.get<{ heartRate: number }>(VITALS_URL);
+            const res = await axios.get<VitalsResponse>(VITALS_URL);
             bpm.value = Math.round(res.data.heartRate);
         } catch {
             bpm.value = null;

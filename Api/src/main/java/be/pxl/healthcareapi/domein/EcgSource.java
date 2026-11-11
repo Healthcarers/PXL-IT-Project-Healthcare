@@ -28,11 +28,12 @@ public class EcgSource implements WaveformSource {
 
     @Override
     public double periodMs(VitalsSnapshot v) {
-        return 60000.0 / v.heartRate();
+        return v.heartRate() > 0 ? 60000.0 / v.heartRate() : 1000;
     }
 
     @Override
     public double valueAt(double cycleMs, VitalsSnapshot v) {
+        if (v.heartRate() <= 0) return 0;
         double period = periodMs(v);
 
         // k is 1.0 at 60 bpm and shrinks as the period shrinks.
