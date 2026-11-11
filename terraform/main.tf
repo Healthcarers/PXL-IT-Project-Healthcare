@@ -166,48 +166,88 @@ resource "azurerm_monitor_action_group" "email_alerts" {
   }
 }
 
-resource "azurerm_monitor_metric_alert" "db_cpu_alert" {
-  name                = "${var.project_name}-db-cpu-high"
-  resource_group_name = azurerm_resource_group.rg.name
-  scopes              = [azurerm_postgresql_flexible_server.db.id]
-  description         = "Triggers when average PostgreSQL CPU percent exceeds 80%"
-  severity            = 2
-  frequency           = "PT1M"
-  window_size         = "PT5M"
-
-  criteria {
-    metric_namespace = "Microsoft.DBforPostgreSQL/flexibleServers"
-    metric_name      = "cpu_percent"
-    aggregation      = "Average"
-    operator         = "GreaterThan"
-    threshold        = 80
-  }
-
-  action {
-    action_group_id = azurerm_monitor_action_group.email_alerts.id
-  }
-
-  tags = {
-    Project   = var.project_name
-    ManagedBy = "Terraform"
+locals {
+  metric_alerts = {
+    "db-cpu-high" = {
+      scope            = azurerm_postgresql_flexible_server.db.id
+      description      = "Triggers when average PostgreSQL CPU percent exceeds 80%"
+      severity         = 2
+      frequency        = "PT1M"
+      window_size      = "PT5M"
+      metric_namespace = "Microsoft.DBforPostgreSQL/flexibleServers"
+      metric_name      = "cpu_percent"
+      aggregation      = "Average"
+      operator         = "GreaterThan"
+      threshold        = 80
+    }
+    "db-storage-high" = {
+      scope            = azurerm_postgresql_flexible_server.db.id
+      description      = "Triggers when average PostgreSQL allocated storage exceeds 80%"
+      severity         = 2
+      frequency        = "PT5M"
+      window_size      = "PT15M"
+      metric_namespace = "Microsoft.DBforPostgreSQL/flexibleServers"
+      metric_name      = "storage_percent"
+      aggregation      = "Average"
+      operator         = "GreaterThan"
+      threshold        = 80
+    }
+    "db-connections-high" = {
+      scope            = azurerm_postgresql_flexible_server.db.id
+      description      = "Triggers when PostgreSQL active connections exceed 35"
+      severity         = 2
+      frequency        = "PT1M"
+      window_size      = "PT5M"
+      metric_namespace = "Microsoft.DBforPostgreSQL/flexibleServers"
+      metric_name      = "active_connections"
+      aggregation      = "Maximum"
+      operator         = "GreaterThan"
+      threshold        = 35
+    }
+    "api-high-requests" = {
+      scope            = azurerm_container_app.api.id
+      description      = "Triggers when Container App request volume exceeds threshold"
+      severity         = 2
+      frequency        = "PT1M"
+      window_size      = "PT5M"
+      metric_namespace = "Microsoft.App/containerApps"
+      metric_name      = "Requests"
+      aggregation      = "Total"
+      operator         = "GreaterThan"
+      threshold        = 100
+    }
+    "api-auto-scaled" = {
+      scope            = azurerm_container_app.api.id
+      description      = "Triggers when Container App auto-scales above 1 replica"
+      severity         = 3
+      frequency        = "PT1M"
+      window_size      = "PT5M"
+      metric_namespace = "Microsoft.App/containerApps"
+      metric_name      = "Replicas"
+      aggregation      = "Maximum"
+      operator         = "GreaterThan"
+      threshold        = 1
+    }
   }
 }
 
-resource "azurerm_monitor_metric_alert" "api_requests_alert" {
-  name                = "${var.project_name}-api-high-requests"
+resource "azurerm_monitor_metric_alert" "alerts" {
+  for_each = local.metric_alerts
+
+  name                = "${var.project_name}-${each.key}"
   resource_group_name = azurerm_resource_group.rg.name
-  scopes              = [azurerm_container_app.api.id]
-  description         = "Triggers when Container App request volume exceeds threshold"
-  severity            = 2
-  frequency           = "PT1M"
-  window_size         = "PT5M"
+  scopes              = [each.value.scope]
+  description         = each.value.description
+  severity            = each.value.severity
+  frequency           = each.value.frequency
+  window_size         = each.value.window_size
 
   criteria {
-    metric_namespace = "Microsoft.App/containerApps"
-    metric_name      = "Requests"
-    aggregation      = "Total"
-    operator         = "GreaterThan"
-    threshold        = 100
+    metric_namespace = each.value.metric_namespace
+    metric_name      = each.value.metric_name
+    aggregation      = each.value.aggregation
+    operator         = each.value.operator
+    threshold        = each.value.threshold
   }
 
   action {
@@ -350,9 +390,10 @@ resource "azurerm_container_app" "api" {
     min_replicas = 1
     max_replicas = 5
 
+    # Low threshold so live load-tests reliably demonstrate multi-replica scaling (1 -> 5)
     http_scale_rule {
       name                = "http-concurrency-rule"
-      concurrent_requests = "20"
+      concurrent_requests = "2"
     }
 
     container {
@@ -414,4 +455,202 @@ resource "azurerm_container_app" "api" {
     azurerm_role_assignment.api_secrets_user,
     azurerm_key_vault_secret.db_password
   ]
+}
+
+# ------------------------------------------------------------------------------
+# Availability Ping Test & Azure Portal Monitoring Dashboard
+# ------------------------------------------------------------------------------
+resource "azurerm_application_insights_standard_web_test" "api_availability" {
+  name                    = "${var.project_name}-api-availability"
+  resource_group_name     = azurerm_resource_group.rg.name
+  location                = azurerm_application_insights.appinsights.location
+  application_insights_id = azurerm_application_insights.appinsights.id
+  frequency               = 300
+  timeout                 = 30
+  enabled                 = true
+  retry_enabled           = true
+  geo_locations           = ["emea-nl-ams-azr", "emea-gb-db3-azr", "us-tx-sn1-azr"]
+
+  request {
+    url       = "https://${azurerm_container_app.api.ingress[0].fqdn}/"
+    http_verb = "GET"
+  }
+
+  validation_rules {
+    expected_status_code        = 200
+    ignore_status_code          = false
+    ssl_check_enabled           = true
+    ssl_cert_remaining_lifetime = 7
+  }
+
+  tags = {
+    "hidden-link:${azurerm_application_insights.appinsights.id}" = "Resource"
+    Project                                                      = var.project_name
+    ManagedBy                                                    = "Terraform"
+  }
+
+  lifecycle {
+    ignore_changes = [tags]
+  }
+}
+
+locals {
+  dashboard_charts = [
+    {
+      x               = 0
+      y               = 0
+      title           = "Container App - Replica Count (Max)"
+      resource_id     = azurerm_container_app.api.id
+      namespace       = "Microsoft.App/containerApps"
+      metric_name     = "Replicas"
+      display_name    = "Active Replicas (Max)"
+      aggregationType = 3 # Maximum
+    },
+    {
+      x               = 6
+      y               = 0
+      title           = "Container App - HTTP Requests (Sum)"
+      resource_id     = azurerm_container_app.api.id
+      namespace       = "Microsoft.App/containerApps"
+      metric_name     = "Requests"
+      display_name    = "HTTP Requests (Total)"
+      aggregationType = 1 # Total / Sum
+    },
+    {
+      x               = 0
+      y               = 4
+      title           = "Container App - CPU Usage (Avg)"
+      resource_id     = azurerm_container_app.api.id
+      namespace       = "Microsoft.App/containerApps"
+      metric_name     = "UsageNanoCores"
+      display_name    = "CPU Usage (Nanocores)"
+      aggregationType = 4 # Average
+    },
+    {
+      x               = 6
+      y               = 4
+      title           = "Container App - Memory Working Set (Avg)"
+      resource_id     = azurerm_container_app.api.id
+      namespace       = "Microsoft.App/containerApps"
+      metric_name     = "WorkingSetBytes"
+      display_name    = "Memory Working Set (Bytes)"
+      aggregationType = 4 # Average
+    },
+    {
+      x               = 0
+      y               = 8
+      title           = "PostgreSQL - CPU Percent (Avg)"
+      resource_id     = azurerm_postgresql_flexible_server.db.id
+      namespace       = "Microsoft.DBforPostgreSQL/flexibleServers"
+      metric_name     = "cpu_percent"
+      display_name    = "CPU Percent"
+      aggregationType = 4 # Average
+    },
+    {
+      x               = 6
+      y               = 8
+      title           = "PostgreSQL - Active Connections (Max)"
+      resource_id     = azurerm_postgresql_flexible_server.db.id
+      namespace       = "Microsoft.DBforPostgreSQL/flexibleServers"
+      metric_name     = "active_connections"
+      display_name    = "Active Connections"
+      aggregationType = 3 # Maximum
+    }
+  ]
+}
+
+resource "azurerm_portal_dashboard" "monitoring" {
+  name                = "pxl-healthcare-monitoring-dashboard"
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+
+  dashboard_properties = jsonencode({
+    lenses = {
+      "0" = {
+        order = 0
+        parts = {
+          for idx, tile in local.dashboard_charts : tostring(idx) => {
+            position = {
+              x       = tile.x
+              y       = tile.y
+              colSpan = 6
+              rowSpan = 4
+            }
+            metadata = {
+              inputs = [
+                {
+                  name       = "options"
+                  isOptional = true
+                },
+                {
+                  name       = "sharedTimeRange"
+                  isOptional = true
+                }
+              ]
+              type = "Extension/HubsExtension/PartType/MonitorChartPart"
+              settings = {
+                content = {
+                  options = {
+                    chart = {
+                      title = tile.title
+                      metrics = [
+                        {
+                          resourceMetadata = {
+                            id = tile.resource_id
+                          }
+                          name            = tile.metric_name
+                          aggregationType = tile.aggregationType
+                          namespace       = tile.namespace
+                          metricVisualization = {
+                            displayName = tile.display_name
+                          }
+                        }
+                      ]
+                      visualization = {
+                        chartType = 2
+                        legendVisualization = {
+                          isVisible    = true
+                          position     = 2
+                          hideSubtitle = false
+                        }
+                        axisVisualization = {
+                          x = {
+                            isVisible = true
+                            axisType  = 2
+                          }
+                          y = {
+                            isVisible = true
+                            axisType  = 1
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+    metadata = {
+      model = {
+        timeRange = {
+          value = {
+            relative = {
+              duration = 1
+              timeUnit = 1
+            }
+          }
+          type = "MsPortalFx.Composition.Configuration.ValueTypes.TimeRange"
+        }
+      }
+    }
+  })
+
+  tags = {
+    "hidden-title" = "PXL Healthcare - Live Scaling & Monitoring"
+    Project        = var.project_name
+    ManagedBy      = "Terraform"
+  }
 }

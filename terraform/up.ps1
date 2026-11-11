@@ -57,15 +57,17 @@ $hostName = terraform output -raw host 2>$null
 $db       = terraform output -raw database 2>$null
 $user     = terraform output -raw user 2>$null
 $pw       = $env:TF_VAR_db_password
-$apiUrl   = terraform output -raw api_url 2>$null
-$kvName   = terraform output -raw key_vault_name 2>$null
-$aiName   = terraform output -raw application_insights_name 2>$null
+$apiUrl       = terraform output -raw api_url 2>$null
+$kvName       = terraform output -raw key_vault_name 2>$null
+$aiName       = terraform output -raw application_insights_name 2>$null
+$dashboardUrl = terraform output -raw dashboard_url 2>$null
 
 Write-Host "`n==========================================================" -ForegroundColor Green
 Write-Host "  INFRASTRUCTURE & API READY! Share these details:        " -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
 
 Write-Host "API URL:       $apiUrl" -ForegroundColor Cyan
+Write-Host "Dashboard URL: $dashboardUrl" -ForegroundColor Cyan
 Write-Host "Database Host: $hostName" -ForegroundColor Yellow
 Write-Host "Database Port: 5432" -ForegroundColor Yellow
 Write-Host "Database Name: $db" -ForegroundColor Yellow

@@ -25,7 +25,7 @@ db_name     = "PXL_Healthcare_DB"
 alert_email = "student@pxl.be"
 
 # Container App API
-api_image = "mcr.microsoft.com/kured:1.13.1"
+api_image = "mendhak/http-https-echo:31"
 
 # Container Registry Authentication (Optional for private registries like ghcr.io)
 # registry_server          = "ghcr.io"

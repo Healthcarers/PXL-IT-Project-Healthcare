@@ -85,12 +85,14 @@ jobs:
           API_URL=$(terraform output -raw api_url)
           KV_NAME=$(terraform output -raw key_vault_name)
           AI_NAME=$(terraform output -raw application_insights_name)
+          DASHBOARD_URL=$(terraform output -raw dashboard_url)
 
           echo "### 🚀 Azure Healthcare Cloud & API Ready!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### 🌐 Container App API:" >> $GITHUB_STEP_SUMMARY
           echo "- **API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **Container Image:** \`${{ env.API_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Azure Dashboard:** $DASHBOARD_URL" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### 🗄️ Azure PostgreSQL Database:" >> $GITHUB_STEP_SUMMARY
           echo "- **Host:** \`$DB_HOST\`" >> $GITHUB_STEP_SUMMARY

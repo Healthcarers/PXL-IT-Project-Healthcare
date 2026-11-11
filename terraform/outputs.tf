@@ -69,3 +69,22 @@ output "container_app_fqdn" {
   description = "Fully qualified domain name of the Container App API"
   value       = azurerm_container_app.api.ingress[0].fqdn
 }
+
+# ==============================================================================
+# Visual Monitoring & Availability Outputs
+# ==============================================================================
+
+output "dashboard_name" {
+  description = "Name of the Azure Portal Monitoring Dashboard"
+  value       = azurerm_portal_dashboard.monitoring.name
+}
+
+output "dashboard_url" {
+  description = "Direct Azure Portal URL for the live monitoring & scaling dashboard"
+  value       = "https://portal.azure.com/#@${data.azurerm_client_config.current.tenant_id}/dashboard/arm${azurerm_portal_dashboard.monitoring.id}"
+}
+
+output "availability_test_name" {
+  description = "Name of the Application Insights Availability Ping Test"
+  value       = azurerm_application_insights_standard_web_test.api_availability.name
+}

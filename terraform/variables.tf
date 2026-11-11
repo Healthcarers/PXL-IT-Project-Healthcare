@@ -47,7 +47,7 @@ variable "alert_email" {
 variable "api_image" {
   description = "Container image for the Healthcare API Container App"
   type        = string
-  default     = "mcr.microsoft.com/kured:1.13.1"
+  default     = "mendhak/http-https-echo:31"
 }
 
 variable "registry_server" {
