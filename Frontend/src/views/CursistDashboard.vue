@@ -8,7 +8,7 @@ export default defineComponent({
   components: { HeartRateCard, EcgPanel },
   computed: {
     connected() {
-      return connected;
+      return connected.value;
     },
   },
 });

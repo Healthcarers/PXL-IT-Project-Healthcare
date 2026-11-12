@@ -1,39 +1,56 @@
-import { onMounted, onUnmounted, ref } from "vue";
-import axios from "axios";
+import { onUnmounted, ref } from "vue";
+import api from "../services/refreshService";
 
 interface VitalsResponse {
     heartRate: number;
     ampScale: number;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8090";
-const VITALS_URL = `${API_BASE_URL}/vitals`;
+const VITALS_URL = "/vitals";
+const POLL_INTERVAL_MS = 1000;
 
-export function useHeartRate(intervalMs = 1000) {
-    const bpm = ref<number | null>(null);
-    let timer: number | undefined;
+const bpm = ref<number | null>(null);
 
-    async function refresh() {
+let timer: number | undefined;
+let subscribers = 0;
+let inFlight: Promise<void> | null = null;
+
+async function refresh(): Promise<void> {
+    if (inFlight) return inFlight;
+
+    inFlight = (async () => {
         try {
-            const res = await axios.get<VitalsResponse>(VITALS_URL, {
-                withCredentials: true
-            });
+            const res = await api.get<VitalsResponse>(VITALS_URL);
             bpm.value = Math.round(res.data.heartRate);
         } catch {
             bpm.value = null;
+        } finally {
+            inFlight = null;
         }
+    })();
+
+    return inFlight;
+}
+
+function acquire() {
+    subscribers++;
+    if (subscribers === 1) {
+        void refresh();
+        timer = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
     }
+}
 
-    onMounted(() => {
-        refresh();
-        timer = window.setInterval(refresh, intervalMs);
-    });
+function release() {
+    subscribers--;
+    if (subscribers === 0 && timer !== undefined) {
+        window.clearInterval(timer);
+        timer = undefined;
+    }
+}
 
-    onUnmounted(() => {
-        if (timer !== undefined) {
-            window.clearInterval(timer);
-        }
-    });
+export function useHeartRate() {
+    acquire();
+    onUnmounted(release);
 
     return { bpm };
 }
