@@ -51,11 +51,8 @@ const recentUsers = ref<AdminUser[]>([
   },
 ]);
 
-const highlightedUserId = ref<string | null>("acc-1");
-const notification = ref<AdminNotification | null>({
-  type: "success",
-  message: "Rol van Inge Maes gewijzigd naar lector.",
-});
+const highlightedUserId = ref<string | null>(null);
+const notification = ref<AdminNotification | null>(null);
 
 const statCards = computed<AdminStatCard[]>(() => {
   const formatStatValue = (value: number): number | string => {

@@ -39,9 +39,7 @@ describe("AdminDashboardView.vue", () => {
 
     expect(wrapper.get("h1").text()).toBe("Dashboard");
     expect(wrapper.text()).toContain("Overzicht van accounts en beheertaken.");
-    expect(wrapper.get("[role='status']").text()).toContain(
-      "Rol van Inge Maes gewijzigd naar lector.",
-    );
+    expect(wrapper.find("[role='status']").exists()).toBe(false);
 
     const statCards = wrapper.findAll(
       "section[aria-label='Systeemstatistieken'] article",
