@@ -10,7 +10,7 @@ export default defineComponent({
   components: {Spo2Card: SpO2Card, SpO2Panel, HeartRateCard, EcgPanel },
   computed: {
     connected() {
-      return connected;
+      return connected.value;
     },
   },
 });
