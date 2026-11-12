@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import AdminAccountsTable from "../components/admin/AdminAccountsTable.vue";
 import AdminNotificationBanner from "../components/admin/AdminNotificationBanner.vue";
 import AdminStatsGrid from "../components/admin/AdminStatsGrid.vue";
 import AdminTopbar from "../components/admin/AdminTopbar.vue";
+import api from "../services/refreshService";
 import type {
   AdminNotification,
   AdminStatCard,
+  AdminStats,
   AdminUser,
   Role,
 } from "../types/admin";
+
+const liveStats = ref<AdminStats>({
+  totalAccounts: 0,
+  lectoren: 0,
+  cursisten: 0,
+});
+const statsLoading = ref(true);
+const statsError = ref<string | null>(null);
 
 const recentUsers = ref<AdminUser[]>([
   {
@@ -41,13 +51,6 @@ const recentUsers = ref<AdminUser[]>([
   },
 ]);
 
-// Bestaande aantallen buiten de drie getoonde recente accounts zodat totalen live mee-updaten
-const archivedCounts = {
-  total: 45,
-  lectoren: 6,
-  cursisten: 39,
-};
-
 const highlightedUserId = ref<string | null>("acc-1");
 const notification = ref<AdminNotification | null>({
   type: "success",
@@ -55,30 +58,52 @@ const notification = ref<AdminNotification | null>({
 });
 
 const statCards = computed<AdminStatCard[]>(() => {
-  const recentLectoren = recentUsers.value.filter(
-    (user) => user.role === "Lector",
-  ).length;
-  const recentCursisten = recentUsers.value.filter(
-    (user) => user.role === "Cursist",
-  ).length;
+  const formatStatValue = (value: number): number | string => {
+    if (statsLoading.value) {
+      return "...";
+    }
+    if (statsError.value) {
+      return "-";
+    }
+    return value;
+  };
 
   return [
     {
       id: "accounts-total",
       title: "Accounts totaal",
-      value: archivedCounts.total + recentUsers.value.length,
+      value: formatStatValue(liveStats.value.totalAccounts),
     },
     {
       id: "lectoren",
       title: "Lectoren",
-      value: archivedCounts.lectoren + recentLectoren,
+      value: formatStatValue(liveStats.value.lectoren),
     },
     {
       id: "cursisten",
       title: "Cursisten",
-      value: archivedCounts.cursisten + recentCursisten,
+      value: formatStatValue(liveStats.value.cursisten),
     },
   ];
+});
+
+async function fetchLiveStats() {
+  statsLoading.value = true;
+  statsError.value = null;
+
+  try {
+    const res = await api.get<AdminStats>("/admin/stats");
+    liveStats.value = res.data;
+  } catch {
+    statsError.value =
+      "Kon de live accountstatistieken niet ophalen van de backend.";
+  } finally {
+    statsLoading.value = false;
+  }
+}
+
+onMounted(() => {
+  void fetchLiveStats();
 });
 
 function handleChangeRole(userId: string, newRole: Role) {
@@ -137,6 +162,21 @@ function handleLogoutNotice() {
         :notification="notification"
         @dismiss="notification = null"
       />
+
+      <div
+        v-if="statsError"
+        role="alert"
+        class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-pxl-black/20 bg-pxl-white px-4 py-3 text-sm text-pxl-black"
+      >
+        <span>{{ statsError }}</span>
+        <button
+          type="button"
+          class="font-body cursor-pointer rounded-full border border-pxl-black bg-pxl-white px-3.5 py-1 text-xs font-semibold text-pxl-black transition hover:bg-pxl-black hover:text-pxl-white focus:outline-none focus:ring-2 focus:ring-pxl-gold"
+          @click="fetchLiveStats"
+        >
+          Opnieuw proberen
+        </button>
+      </div>
 
       <AdminStatsGrid :cards="statCards" />
 

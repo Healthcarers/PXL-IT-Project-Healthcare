@@ -12,6 +12,12 @@ export interface AdminUser {
   createdAt: string;
 }
 
+export interface AdminStats {
+  totalAccounts: number;
+  lectoren: number;
+  cursisten: number;
+}
+
 export interface AdminStatCard {
   id: string;
   title: string;
