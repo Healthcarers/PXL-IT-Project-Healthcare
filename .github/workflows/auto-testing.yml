@@ -44,7 +44,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: junit-test-reports
-          path: Api/target/surefire-reports/
+          path: Api/target/surefire-reports/TEST-*.xml
           if-no-files-found: ignore
 
   frontend-tests:
@@ -70,4 +70,96 @@ jobs:
         working-directory: ./Frontend
         env:
           VITE_API_BASE_URL: http://localhost:8080
-        run: npx vitest run
+        run: npx vitest run --reporter=default --reporter=junit --outputFile=junit.xml
+
+      - name: Upload Frontend Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-test-reports
+          path: Frontend/junit.xml
+          if-no-files-found: ignore
+
+  report-to-xray:
+    name: Report Results to Jira Xray
+    runs-on: ubuntu-latest
+    needs: [ backend-tests, frontend-tests ]
+    if: always()
+
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download Backend Test Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: junit-test-reports
+          path: backend-reports
+        continue-on-error: true
+
+      - name: Download Frontend Test Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: vitest-test-reports
+          path: frontend-reports
+        continue-on-error: true
+
+      - name: Merge Test Reports
+        run: |
+          mkdir -p all-reports
+          [ -d backend-reports ] && cp backend-reports/*.xml all-reports/ 2>/dev/null || true
+          [ -d frontend-reports ] && cp frontend-reports/*.xml all-reports/ 2>/dev/null || true
+          
+          if ls all-reports/*.xml 1> /dev/null 2>&1; then
+            npx junit-report-merger merged-test-results.xml "all-reports/*.xml"
+            echo "Samengevoegd rapport aangemaakt:"
+            ls -lh merged-test-results.xml
+          else
+            echo "Geen testrapporten gevonden om te rapporteren."
+            exit 1
+          fi
+
+      - name: Send Results to Jira Xray
+        if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+        env:
+          JIRA_XRAY_TOKEN: ${{ secrets.JIRA_XRAY_TOKEN }}
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          DATUM=$(TZ=Europe/Brussels date +'%d/%m/%Y %H:%M')
+
+          cat > info.json <<EOF
+          {
+            "fields": {
+              "project": { "key": "IT2627T01" },
+              "summary": "CI-run ${GITHUB_REF_NAME} - ${DATUM} - ${SHORT_SHA}",
+              "description": "Automatische run #${GITHUB_RUN_NUMBER}: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+              "issuetype": { "name": "Test Execution" }
+            },
+            "xrayFields": {
+              "testPlanKey": "IT2627T01-90",
+              "environments": ["CI"]
+            }
+          }
+          EOF
+
+          echo "Versturen naar Jira Xray op jiradigi.pxl.be..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $JIRA_XRAY_TOKEN" \
+            -F "file=@merged-test-results.xml" \
+            -F "info=@info.json;type=application/json" \
+            "https://jiradigi.pxl.be/rest/raven/1.0/import/execution/junit/multipart")
+
+          HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n 1)
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response: $HTTP_BODY"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "Succesvol geïmporteerd in Jira Xray!"
+          else
+            echo "Fout bij importeren in Jira Xray!"
+            exit 1
+          fi
