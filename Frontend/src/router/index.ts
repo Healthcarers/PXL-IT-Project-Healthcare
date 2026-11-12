@@ -1,12 +1,12 @@
 import { createRouter, createWebHistory } from "vue-router";
 import RegistrationView from "../views/registration/RegistrationView.vue";
 import LoginView from "../views/login/LoginView.vue";
-import MonitorView from "../views/MonitorView.vue";
 import { useAuthStore } from "../stores/Authstore.ts";
 import DashboardView from "../views/DashboardView.vue";
 import AdminDashboardView from "../views/AdminDashboardView.vue";
 import type { Person } from "../models/Person.ts";
 import UnauthorizedView from "../views/UnauthorizedView.vue";
+import CursistDashboard from "../views/CursistDashboard.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,7 +27,7 @@ const router = createRouter({
     {
       path: "/monitor",
       name: "monitor",
-      component: MonitorView,
+      component: CursistDashboard,
       meta: { requiresAuth: true, role: "CURSIST" },
     },
     {
