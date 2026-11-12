@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import RegistrationView from "../views/registration/RegistrationView.vue";
 import LoginView from "../views/login/LoginView.vue";
-import MonitorView from "../views/MonitorView.vue";
 import { useAuthStore } from "../stores/Authstore.ts";
 import DashboardView from "../views/DashboardView.vue";
 import type { Person } from "../models/Person.ts";
@@ -27,7 +26,7 @@ const router = createRouter({
     {
       path: "/monitor",
       name: "monitor",
-      component: MonitorView,
+      component: CursistDashboard,
       meta: { requiresAuth: true, role: "CURSIST" },
     },
     {
@@ -41,11 +40,6 @@ const router = createRouter({
       name: "unauthorized",
       component: UnauthorizedView,
       meta: { requiresAuth: false },
-    },
-    {
-        path: '/cursist',
-        name: 'cursist-dashboard',
-        component: CursistDashboard,
     },
   ],
 });

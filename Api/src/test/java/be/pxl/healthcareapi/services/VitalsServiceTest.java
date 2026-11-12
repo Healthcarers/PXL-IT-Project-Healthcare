@@ -1,7 +1,7 @@
 package be.pxl.healthcareapi.services;
 
-import be.pxl.healthcareapi.DTO.VitalsUpdateRequest;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
+import be.pxl.healthcareapi.dto.VitalsUpdateRequest;
 import be.pxl.healthcareapi.repos.VitalsRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

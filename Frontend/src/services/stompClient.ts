@@ -1,7 +1,7 @@
 import { Client, type StompSubscription } from "@stomp/stompjs";
 import { ref } from "vue";
 
-const BROKER_URL = "ws://localhost:8090/ws";
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8090/ws";
 
 export const connected = ref(false);
 
@@ -22,7 +22,7 @@ function subscribeIfNeeded(topic: string) {
 function ensureClient() {
     if (client) return;
     client = new Client({
-        brokerURL: BROKER_URL,
+        brokerURL: WS_BASE_URL,
         reconnectDelay: 3000,
         onConnect: () => {
             connected.value = true;

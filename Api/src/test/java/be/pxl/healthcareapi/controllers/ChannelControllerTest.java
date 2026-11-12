@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import be.pxl.healthcareapi.DTO.ChannelResponse;
 import be.pxl.healthcareapi.domein.WaveformSource;
+import be.pxl.healthcareapi.dto.ChannelResponse;
 import be.pxl.healthcareapi.services.WaveformStreamService;
 import java.util.List;
 import org.junit.jupiter.api.Test;

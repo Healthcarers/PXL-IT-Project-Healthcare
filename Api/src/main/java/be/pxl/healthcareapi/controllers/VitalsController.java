@@ -1,7 +1,7 @@
 package be.pxl.healthcareapi.controllers;
 
-import be.pxl.healthcareapi.DTO.VitalsResponse;
-import be.pxl.healthcareapi.DTO.VitalsUpdateRequest;
+import be.pxl.healthcareapi.dto.VitalsResponse;
+import be.pxl.healthcareapi.dto.VitalsUpdateRequest;
 import be.pxl.healthcareapi.services.VitalsService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

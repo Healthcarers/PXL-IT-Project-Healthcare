@@ -46,8 +46,9 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/refresh"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/vitals", "/api/channels").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/vitals").permitAll()
+                        //TODO: replace permitAll() with the commented methods. Kept like this so bruno/postman still works
+                        .requestMatchers(HttpMethod.GET, "/api/vitals", "/api/channels").permitAll()//.hasAnyRole("CURSIST", "LECTOR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/vitals").permitAll()//.hasRole("LECTOR")
                         .anyRequest().authenticated()
                 )
 

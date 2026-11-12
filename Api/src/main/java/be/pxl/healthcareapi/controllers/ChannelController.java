@@ -1,6 +1,6 @@
 package be.pxl.healthcareapi.controllers;
 
-import be.pxl.healthcareapi.DTO.ChannelResponse;
+import be.pxl.healthcareapi.dto.ChannelResponse;
 import be.pxl.healthcareapi.services.WaveformStreamService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

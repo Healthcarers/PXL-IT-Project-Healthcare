@@ -6,7 +6,8 @@ interface VitalsResponse {
     ampScale: number;
 }
 
-const VITALS_URL = "http://localhost:8090/api/vitals";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8090";
+const VITALS_URL = `${API_BASE_URL}/vitals`;
 
 export function useHeartRate(intervalMs = 1000) {
     const bpm = ref<number | null>(null);
@@ -14,7 +15,9 @@ export function useHeartRate(intervalMs = 1000) {
 
     async function refresh() {
         try {
-            const res = await axios.get<VitalsResponse>(VITALS_URL);
+            const res = await axios.get<VitalsResponse>(VITALS_URL, {
+                withCredentials: true
+            });
             bpm.value = Math.round(res.data.heartRate);
         } catch {
             bpm.value = null;
