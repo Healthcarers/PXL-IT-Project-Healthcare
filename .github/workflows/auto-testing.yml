@@ -148,7 +148,7 @@ jobs:
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Authorization: Bearer $JIRA_XRAY_TOKEN" \
             -F "file=@merged-test-results.xml" \
-            -F "info=@info.json" \
+            -F "info=@info.json;type=application/json" \
             "https://jiradigi.pxl.be/rest/raven/1.0/import/execution/junit/multipart")
 
           HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
