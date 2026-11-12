@@ -3,8 +3,8 @@ import { subscribeTopic } from "../services/stompClient.ts";
 import type { WaveformChunk } from "../types/waveform.ts";
 
 export interface SweepPoint {
-    x: number
-    y: number | null
+    x: number;
+    y: number | null;
 }
 
 export function useSweepWaveform(
