@@ -127,9 +127,8 @@ jobs:
         run: |
           echo "Versturen naar Jira Xray op jiradigi.pxl.be..."
           RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
-            -H "Content-Type: application/xml" \
             -H "Authorization: Bearer $JIRA_XRAY_TOKEN" \
-            --data @merged-test-results.xml \
+            -F "file=@merged-test-results.xml" \
             "https://jiradigi.pxl.be/rest/raven/1.0/import/execution/junit?projectKey=IT2627T01")
 
           HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
