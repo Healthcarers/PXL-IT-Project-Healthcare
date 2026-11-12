@@ -1,4 +1,4 @@
-package be.pxl.healthcareapi.services.Authentication;
+package be.pxl.healthcareapi.services.authentication;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;

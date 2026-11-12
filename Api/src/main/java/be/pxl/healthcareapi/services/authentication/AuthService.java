@@ -1,4 +1,4 @@
-package be.pxl.healthcareapi.services.Authentication;
+package be.pxl.healthcareapi.services.authentication;
 
 import be.pxl.healthcareapi.dto.AuthResponse;
 import be.pxl.healthcareapi.dto.LoginRequest;

@@ -2,8 +2,8 @@ package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.dto.*;
 import be.pxl.healthcareapi.domein.TokenPair;
-import be.pxl.healthcareapi.services.Authentication.AuthCookieService;
-import be.pxl.healthcareapi.services.Authentication.AuthService;
+import be.pxl.healthcareapi.services.authentication.AuthCookieService;
+import be.pxl.healthcareapi.services.authentication.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
