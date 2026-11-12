@@ -34,6 +34,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/rooms").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/start").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/join").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
                         .requestMatchers(HttpMethod.PATCH, "/api/rooms/*/close").permitAll()
                         .anyRequest().authenticated()
                 );

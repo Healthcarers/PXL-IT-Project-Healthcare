@@ -1,4 +1,5 @@
-export type RoomStatus = 'OPEN' | 'CLOSED'
+
+export type RoomStatus = 'OPEN' | 'STARTED' | 'CLOSED'
 
 export interface Room {
   id: string
@@ -7,6 +8,14 @@ export interface Room {
   description: string | null
   createdAt: string
   status: RoomStatus
+  ownerId: string
+  participantCount: number
+}
+
+export interface RoomParticipant {
+  id: string
+  userId: string
+  joinedAt: string
 }
 
 export interface CreateRoomRequest {

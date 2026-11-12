@@ -1,7 +1,9 @@
+
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import CreateRoomView from '../views/CreateRoomView.vue'
 import RoomView from '../views/RoomView.vue'
+import HostDashboardView from '../views/HostDashboardView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -20,6 +22,12 @@ const router = createRouter({
       path: '/rooms/:code',
       name: 'room',
       component: RoomView,
+      props: true,
+    },
+    {
+      path: '/host/rooms/:code',
+      name: 'host-dashboard',
+      component: HostDashboardView,
       props: true,
     },
   ],

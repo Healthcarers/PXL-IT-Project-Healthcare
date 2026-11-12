@@ -1,12 +1,18 @@
 package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.domein.Room;
+import be.pxl.healthcareapi.domein.RoomParticipant;
+import be.pxl.healthcareapi.dto.RoomParticipantResponse;
+import be.pxl.healthcareapi.dto.RoomResponse;
 import be.pxl.healthcareapi.services.RoomService;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
+import java.util.UUID;
+import org.springframework.web.bind.annotation.RequestHeader;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -20,10 +26,14 @@ public class RoomController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Room createRoom(@Valid @RequestBody CreateRoomRequest request) {
+    public Room createRoom(
+            @Valid @RequestBody CreateRoomRequest request,
+            @RequestHeader("X-User-Id") UUID ownerId
+    ) {
         return roomService.createRoom(
                 request.name(),
-                request.description()
+                request.description(),
+                ownerId
         );
     }
 
@@ -38,12 +48,39 @@ public class RoomController {
     }
 
     @GetMapping("/{code}")
-    public Room getRoomByCode(@PathVariable String code) {
-        return roomService.getRoomByCode(code);
+    public RoomResponse getRoomByCode(@PathVariable String code) {
+        return roomService.getRoomDetails(code);
     }
 
     @PatchMapping("/{code}/close")
     public Room closeRoom(@PathVariable String code) {
         return roomService.closeRoom(code);
+    }
+
+    @PostMapping("/{code}/join")
+    public RoomParticipant joinRoom(
+            @PathVariable String code,
+            @RequestHeader("X-User-Id") UUID userId
+    ) {
+        return roomService.joinRoom(code, userId);
+    }
+
+    @GetMapping("/{code}/members")
+    public List<RoomParticipantResponse> getRoomParticipants(
+            @PathVariable String code
+    ) {
+        return roomService.getRoomParticipants(code);
+    }
+
+    @PostMapping("/{code}/start")
+    public Room startRoom(
+            @PathVariable String code,
+            @RequestHeader("X-User-Id") UUID userId
+    ) {
+        System.out.println("START ENDPOINT BEREIKT");
+        System.out.println("Room code: " + code);
+        System.out.println("User ID: " + userId);
+
+        return roomService.startRoom(code, userId);
     }
 }
