@@ -1,4 +1,4 @@
-package be.pxl.healthcareapi.services.Authentication;
+package be.pxl.healthcareapi.services.authentication;
 
 import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,5 @@
 package be.pxl.healthcareapi.services.authentication;
 
-import be.pxl.healthcareapi.services.Authentication.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
