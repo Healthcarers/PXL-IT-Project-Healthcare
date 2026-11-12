@@ -42,7 +42,7 @@ public class AuthService {
 
         personRepo.save(user);
 
-        return new RegisterResponse("Account for " + user.getFirstname() + " " + user.getLastname() + " has been registered.");
+        return new RegisterResponse("Account voor " + user.getFirstname() + " " + user.getLastname() + " is registreerd.");
     }
 
     public TokenPair login(LoginRequest loginRequest) {
@@ -56,7 +56,7 @@ public class AuthService {
             throw new BadRequestException("Login gegevens zijn niet correct");
         }
 
-        String accesToken = jwtService.generateToken(person.getId());
+        String accesToken = jwtService.generateToken(person.getId(), person.getRole());
         String refreshToken = refreshTokenService.createRefreshToken(person);
 
         return new TokenPair(accesToken, refreshToken);
@@ -73,7 +73,7 @@ public class AuthService {
         refreshTokenService.revokeToken(oldToken);
 
         String newAccessToken =
-                jwtService.generateToken(person.getId());
+                jwtService.generateToken(person.getId(), person.getRole());
 
         String newRefreshToken =
                 refreshTokenService.createRefreshToken(person);

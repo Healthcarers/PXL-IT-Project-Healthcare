@@ -56,15 +56,15 @@ public class RefreshTokenService {
         RefreshToken refreshToken = refreshTokenRepository
                 .findByTokenHash(tokenHash)
                 .orElseThrow(() ->
-                        new BadCredentialsException("Invalid refresh token")
+                        new BadCredentialsException("")
                 );
 
         if (refreshToken.getRevokedAt() != null) {
-            throw new BadCredentialsException("Invalid refresh token");
+            throw new BadCredentialsException("Ongeldige refresh token");
         }
 
         if (refreshToken.getExpiresAt().isBefore(Instant.now())) {
-            throw new BadCredentialsException("Invalid refresh token");
+            throw new BadCredentialsException("Ongeldige refresh token");
         }
 
         return refreshToken;
@@ -85,7 +85,7 @@ public class RefreshTokenService {
             return HexFormat.of().formatHex(hash);
 
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 not available", e);
+            throw new IllegalStateException("SHA-256 niet beschikbaar", e);
         }
     }
 }

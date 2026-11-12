@@ -1,5 +1,6 @@
 package be.pxl.healthcareapi.services.authentication;
 
+import be.pxl.healthcareapi.domein.enums.Role;
 import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
 import org.springframework.security.oauth2.jwt.*;
 import org.springframework.stereotype.Service;
@@ -17,7 +18,7 @@ public class JwtService {
         this.jwtDecoder = jwtDecoder;
     }
 
-    public String generateToken(UUID userId) {
+    public String generateToken(UUID userId, Role role) {
         Instant now = Instant.now();
 
         JwtClaimsSet claims = JwtClaimsSet.builder()
@@ -25,6 +26,7 @@ public class JwtService {
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(900))
                 .subject(userId.toString())
+                .claim("role", role.name())
                 .build();
 
         JwsHeader header = JwsHeader

@@ -5,6 +5,7 @@ import MonitorView from "../views/MonitorView.vue";
 import { useAuthStore } from "../stores/Authstore.ts";
 import DashboardView from "../views/DashboardView.vue";
 import type { Person } from "../models/Person.ts";
+import UnauthorizedView from "../views/UnauthorizedView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -33,6 +34,12 @@ const router = createRouter({
       name: "dashboard",
       component: DashboardView,
       meta: { requiresAuth: true, role: "LECTOR" },
+    },
+    {
+      path: "/unauthorized",
+      name: "unauthorized",
+      component: UnauthorizedView,
+      meta: { requiresAuth: false },
     },
   ],
 });

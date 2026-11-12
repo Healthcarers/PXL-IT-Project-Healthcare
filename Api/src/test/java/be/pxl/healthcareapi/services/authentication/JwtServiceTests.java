@@ -1,5 +1,6 @@
 package be.pxl.healthcareapi.services.authentication;
 
+import be.pxl.healthcareapi.domein.enums.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,7 @@ class JwtServiceTests {
     void generateToken_shouldGenerateJwtWithCorrectClaims() {
         // Arrange
         UUID userId = UUID.randomUUID();
+        Role role = Role.CURSIST;
 
         Jwt generatedJwt = Jwt.withTokenValue("test-token")
                 .header("alg", "HS256")
@@ -47,7 +49,7 @@ class JwtServiceTests {
                 .thenReturn(generatedJwt);
 
         // Act
-        String token = jwtService.generateToken(userId);
+        String token = jwtService.generateToken(userId, role);
 
         // Assert
         assertEquals("test-token", token);
@@ -61,6 +63,7 @@ class JwtServiceTests {
 
         assertEquals("healthcare-api", claims.getClaim("iss"));
         assertEquals(userId.toString(), claims.getSubject());
+        assertEquals(role.name(), claims.getClaim("role"));
         assertNotNull(claims.getIssuedAt());
         assertNotNull(claims.getExpiresAt());
 

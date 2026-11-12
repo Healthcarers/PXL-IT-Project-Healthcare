@@ -62,7 +62,7 @@ class AuthServiceTests {
         assertEquals("test@email.com", savedPerson.getEmail());
         assertEquals("hashed-password", savedPerson.getPassword());
         assertEquals(Role.CURSIST, savedPerson.getRole());
-        assertEquals("Account for test user has been registered.", response.message());
+        assertEquals("Account voor test user is registreerd.", response.message());
     }
 
     @Test
@@ -74,8 +74,9 @@ class AuthServiceTests {
         when(personRepo.getPersonByEmail(request.email())).thenReturn(Optional.of(person));
         when(person.getPassword()).thenReturn("hashed-password");
         when(person.getId()).thenReturn(personId);
+        when(person.getRole()).thenReturn(Role.CURSIST);
         when(passwordEncoder.matches(request.password(), "hashed-password")).thenReturn(true);
-        when(jwtService.generateToken(personId)).thenReturn("access-token");
+        when(jwtService.generateToken(personId, Role.CURSIST)).thenReturn("access-token");
         when(refreshTokenService.createRefreshToken(person)).thenReturn("refresh-token");
 
         // Act
@@ -84,7 +85,7 @@ class AuthServiceTests {
         // Assert
         assertEquals(new TokenPair("access-token", "refresh-token"), tokens);
         verify(passwordEncoder).matches(request.password(), "hashed-password");
-        verify(jwtService).generateToken(personId);
+        verify(jwtService).generateToken(personId, Role.CURSIST);
         verify(refreshTokenService).createRefreshToken(person);
     }
 
@@ -135,7 +136,8 @@ class AuthServiceTests {
         when(refreshTokenService.validateRefreshToken(oldRawToken)).thenReturn(oldToken);
         when(oldToken.getPerson()).thenReturn(person);
         when(person.getId()).thenReturn(personId);
-        when(jwtService.generateToken(personId)).thenReturn("new-access-token");
+        when(person.getRole()).thenReturn(Role.LECTOR);
+        when(jwtService.generateToken(personId, Role.LECTOR)).thenReturn("new-access-token");
         when(refreshTokenService.createRefreshToken(person)).thenReturn("new-refresh-token");
 
         // Act
@@ -144,7 +146,7 @@ class AuthServiceTests {
         // Assert
         assertEquals(new TokenPair("new-access-token", "new-refresh-token"), tokens);
         verify(refreshTokenService).revokeToken(oldToken);
-        verify(jwtService).generateToken(personId);
+        verify(jwtService).generateToken(personId, Role.LECTOR);
         verify(refreshTokenService).createRefreshToken(person);
     }
 
@@ -153,7 +155,7 @@ class AuthServiceTests {
         // Arrange
         String rawToken = "invalid-refresh-token";
         when(refreshTokenService.validateRefreshToken(rawToken))
-                .thenThrow(new BadCredentialsException("Invalid refresh token"));
+                .thenThrow(new BadCredentialsException("Ongeldige refresh token"));
 
         // Act
         BadCredentialsException exception = assertThrows(
@@ -162,7 +164,7 @@ class AuthServiceTests {
         );
 
         // Assert
-        assertEquals("Invalid refresh token", exception.getMessage());
+        assertEquals("Ongeldige refresh token", exception.getMessage());
         verify(refreshTokenService, never()).revokeToken(any());
         verifyNoInteractions(jwtService);
     }
