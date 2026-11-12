@@ -1,8 +1,6 @@
 package be.pxl.healthcareapi.controllers;
 
-import be.pxl.healthcareapi.dto.AuthResponse;
-import be.pxl.healthcareapi.dto.LoginRequest;
-import be.pxl.healthcareapi.dto.RegisterRequest;
+import be.pxl.healthcareapi.DTO.RegisterRequest;
 import be.pxl.healthcareapi.config.SecurityConfig;
 import be.pxl.healthcareapi.domein.TokenPair;
 import be.pxl.healthcareapi.domein.enums.Role;
