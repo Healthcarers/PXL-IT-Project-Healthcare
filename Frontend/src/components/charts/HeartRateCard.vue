@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { useVitals } from '../../composables/useVitals'
-import { useChannelActive } from '../../composables/useChannelActive'
-import MonitorCard from './MonitorCard.vue'
+import { useVitals } from '../../composables/useVitals';
+import { useChannelActive } from '../../composables/useChannelActive';
+import MonitorCard from './MonitorCard.vue';
 
-const { vitals } = useVitals()
-const { active, toggle } = useChannelActive('ecg')
+const { vitals } = useVitals();
+const { active, toggle } = useChannelActive('ecg');
 
 </script>
 

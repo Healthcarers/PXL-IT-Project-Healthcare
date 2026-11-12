@@ -1,5 +1,5 @@
-import { onMounted, onUnmounted, ref } from "vue";
-import axios from "axios";
+import { onUnmounted, ref } from "vue";
+import api from "../services/refreshService.ts";
 
 export interface VitalsResponse {
     heartRate: number;
@@ -7,36 +7,55 @@ export interface VitalsResponse {
     ampScale: number;
 }
 
-const VITALS_URL = "http://localhost:8090/api/vitals";
+const VITALS_URL = "/vitals";
+const POLL_INTERVAL_MS = 1000;
 
-export function useVitals(intervalMs = 1000) {
-    const vitals = ref<VitalsResponse | null>(null);
-    let timer: number | undefined;
+const vitals = ref<VitalsResponse | null>(null);
 
-    async function refresh() {
+let timer: number | undefined;
+let subscribers = 0;
+let inFlight: Promise<void> | null = null;
+
+async function refresh(): Promise<void> {
+    if (inFlight) return inFlight;
+
+    inFlight = (async () =>  {
         try {
-            const res = await axios.get(VITALS_URL);
+            const res = await api.get<VitalsResponse>(VITALS_URL);
             vitals.value = {
                 heartRate: Math.round(res.data.heartRate),
                 spo2: Math.round(res.data.spo2),
                 ampScale: res.data.ampScale
             };
-            console.log(vitals.value)
         } catch {
             vitals.value = null;
+        } finally {
+            inFlight = null;
         }
+    })();
+
+    return inFlight;
+}
+
+function acquire() {
+    subscribers++;
+    if (subscribers === 1) {
+        void refresh();
+        timer = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
     }
+}
 
-    onMounted(() => {
-        refresh();
-        timer = window.setInterval(refresh, intervalMs);
-    });
+function release() {
+    subscribers--;
+    if (subscribers === 0 && timer !== undefined) {
+        window.clearInterval(timer);
+        timer = undefined;
+    }
+}
 
-    onUnmounted(() => {
-        if (timer !== undefined) {
-            window.clearInterval(timer);
-        }
-    });
+export function useVitals() {
+    acquire();
+    onUnmounted(release);
 
     return { vitals };
 }

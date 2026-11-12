@@ -75,7 +75,7 @@ public class EcgSourceTest {
 
     @Test
     void flatlineWhenHeartRateIsZero() {
-        VitalsSnapshot flat = new VitalsSnapshot(0, 1.0);
+        VitalsSnapshot flat = new VitalsSnapshot(0, 98, 1.0);
         for (double t = 0; t < 2000; t += 25) {
             assertThat(ecg.valueAt(t, flat)).isEqualTo(0.0);
         }

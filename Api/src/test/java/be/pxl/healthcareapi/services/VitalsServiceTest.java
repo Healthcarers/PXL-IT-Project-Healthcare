@@ -68,7 +68,7 @@ public class VitalsServiceTest {
     @Test
     void heartRateZeroIsAcceptedForFlatline() {
         applyUpdatesTo(current);
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, null));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, 98.0, null));
         assertThat(result.heartRate()).isEqualTo(0);
     }
 }
