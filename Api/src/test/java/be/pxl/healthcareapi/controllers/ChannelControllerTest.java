@@ -23,18 +23,19 @@ class ChannelControllerTest {
 
     @Test
     void listReturnsMetadataForEveryChannel() {
-        when(streamService.channels()).thenReturn(List.of(
-                source("ecg", 250, "mV", -1, 2)
-        ));
+        // Build the sources first, so no stubbing is open while the helper runs.
+        WaveformSource ecg = source("ecg", 250, "mV", -1, 2);
+        WaveformSource resp = source("resp", 25, "a.u.", 0, 1);
+        when(streamService.channels()).thenReturn(List.of(ecg, resp));
 
         ResponseEntity<List<ChannelResponse>> response = new ChannelController(streamService).list();
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).hasSize(1);
+        assertThat(response.getBody()).hasSize(2);
         assertThat(response.getBody())
                 .extracting(ChannelResponse::channel)
-                .containsExactly("ecg");
-        assertThat(response.getBody().getFirst())
+                .containsExactly("ecg", "resp");
+        assertThat(response.getBody().get(0))
                 .isEqualTo(new ChannelResponse("ecg", 250, "mV", -1, 2));
     }
 
