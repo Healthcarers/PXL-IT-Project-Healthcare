@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useRoom } from '../composables/useRoom'
 import { useAuthStore } from '../stores/Authstore'
 
@@ -8,7 +7,6 @@ const props = defineProps<{
     code: string
 }>()
 
-const router = useRouter()
 const authStore = useAuthStore()
 
 const {

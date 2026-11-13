@@ -5,6 +5,7 @@ import be.pxl.healthcareapi.domein.Room;
 import be.pxl.healthcareapi.domein.RoomParticipant;
 import be.pxl.healthcareapi.dto.RoomParticipantResponse;
 import be.pxl.healthcareapi.dto.RoomResponse;
+import be.pxl.healthcareapi.exception.BadRequestException;
 import be.pxl.healthcareapi.services.RoomService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -27,13 +28,21 @@ public class RoomController {
         this.roomService = roomService;
     }
 
+    private UUID getUserIdFromJwt(Jwt jwt) {
+        try {
+            return UUID.fromString(jwt.getSubject());
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Ongeldige gebruikers-ID");
+        }
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Room createRoom(
             @Valid @RequestBody CreateRoomRequest request,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID ownerId = UUID.fromString(jwt.getSubject());
+        UUID ownerId = getUserIdFromJwt(jwt);
 
         return roomService.createRoom(
                 request.name(),
@@ -67,7 +76,7 @@ public class RoomController {
             @PathVariable String code,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = getUserIdFromJwt(jwt);
 
         return roomService.joinRoom(code, userId);
     }
@@ -84,7 +93,7 @@ public class RoomController {
             @PathVariable String code,
             @AuthenticationPrincipal Jwt jwt
     ) {
-        UUID userId = UUID.fromString(jwt.getSubject());
+        UUID userId = getUserIdFromJwt(jwt);
 
         return roomService.startRoom(code, userId);
     }

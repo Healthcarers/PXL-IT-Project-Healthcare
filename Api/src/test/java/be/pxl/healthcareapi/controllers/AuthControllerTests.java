@@ -22,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -107,7 +108,12 @@ public class AuthControllerTests {
         // Arrange
         LoginRequest request = new LoginRequest("test@email.com", "testpass");
         TokenPair tokens = new TokenPair("access-token", "refresh-token");
-        AuthResponse authResponse = new AuthResponse("test", "user", Role.CURSIST);
+        AuthResponse authResponse = new AuthResponse(
+                UUID.randomUUID(),
+                "test",
+                "user",
+                Role.CURSIST
+        );
         ResponseCookie accessCookie = ResponseCookie.from("access_token", tokens.accessToken()).build();
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", tokens.refreshToken()).build();
         when(authService.login(any(LoginRequest.class))).thenReturn(tokens);
@@ -163,7 +169,12 @@ public class AuthControllerTests {
     void authorize_ShouldReturnPersonForAccessTokenCookie() throws Exception {
         // Arrange
         String accessToken = "access-token";
-        AuthResponse authResponse = new AuthResponse("test", "user", Role.CURSIST);
+        AuthResponse authResponse = new AuthResponse(
+                UUID.randomUUID(),
+                "test",
+                "user",
+                Role.CURSIST
+        );
         when(jwtDecoder.decode(accessToken)).thenReturn(withTokenValue(accessToken)
                 .header("alg", "HS256")
                 .subject("person-id")

@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -32,6 +33,9 @@ class RoomServiceTest {
 
     @Mock
     private RoomParticipantRepository roomParticipantRepository;
+
+    @Mock
+    private PersonRepository personRepository;
 
     @InjectMocks
     private RoomService roomService;
@@ -369,5 +373,34 @@ class RoomServiceTest {
         assertEquals(RoomStatus.CLOSED, room.getStatus());
 
         verify(roomRepository).save(room);
+    }
+
+    @Test
+    void joinRoom_userNotYetJoined_savesParticipant() {
+        UUID roomId = UUID.randomUUID();
+        UUID participantUserId = UUID.randomUUID();
+
+        Room room = new Room("ABC123", "Test room", ownerId);
+        ReflectionTestUtils.setField(room, "id", roomId);
+
+        when(roomRepository.findByCode("ABC123"))
+                .thenReturn(Optional.of(room));
+
+        when(roomParticipantRepository.existsByRoomIdAndUserId(
+                roomId, participantUserId))
+                .thenReturn(false);
+
+        when(roomParticipantRepository.save(any(RoomParticipant.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        RoomParticipant result =
+                roomService.joinRoom("ABC123", participantUserId);
+
+        assertNotNull(result);
+        assertEquals(roomId, result.getRoom().getId());
+        assertEquals(participantUserId, result.getUserId());
+        assertNotNull(result.getJoinedAt());
+
+        verify(roomParticipantRepository).save(any(RoomParticipant.class));
     }
 }

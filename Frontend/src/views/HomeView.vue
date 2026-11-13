@@ -32,23 +32,10 @@ function openRoom() {
       </h1>
 
       <p class="mt-3 text-gray-500">
-        Start een nieuwe simulatie of neem deel aan een bestaande room.
+        Neem deel aan een bestaande simulatie met een roomcode.
       </p>
 
-      <button
-        class="mt-8 w-full rounded-lg bg-black px-5 py-4 font-bold text-white transition hover:bg-gray-800"
-        @click="router.push({ name: 'create-room' })"
-      >
-        Nieuwe room aanmaken
-      </button>
-
-      <div class="my-8 flex items-center gap-4">
-        <div class="h-px flex-1 bg-gray-200"></div>
-        <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Of</span>
-        <div class="h-px flex-1 bg-gray-200"></div>
-      </div>
-
-      <form class="space-y-4" @submit.prevent="openRoom">
+      <form class="mt-8 space-y-4" @submit.prevent="openRoom">
         <label for="code" class="block text-sm font-semibold">
           Deelnemen met een roomcode
         </label>
@@ -68,7 +55,7 @@ function openRoom() {
 
         <button
           type="submit"
-          class="w-full rounded-lg border border-gray-300 px-5 py-3 font-bold transition hover:bg-gray-50"
+          class="w-full cursor-pointer rounded-lg bg-black px-5 py-4 font-bold text-white transition hover:bg-gray-800"
         >
           Room openen
         </button>

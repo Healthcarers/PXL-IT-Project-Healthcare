@@ -128,8 +128,8 @@ describe("Authstore", () => {
 
   describe("login", () => {
     it.each([
-      ["CURSIST", "/monitor"],
-      ["LECTOR", "/dashboard"],
+      ["CURSIST", "/"],
+      ["LECTOR", "/rooms/new"],
     ])("routeert een %s naar de juiste pagina", async (role, route) => {
       // Arrange
       const person: Person = {

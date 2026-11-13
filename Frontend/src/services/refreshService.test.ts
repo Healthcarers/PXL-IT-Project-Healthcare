@@ -1,14 +1,16 @@
+
 import axios, {
   AxiosError,
   type AxiosAdapter,
   type AxiosResponse,
 } from "axios";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
-const originalAdapter = axios.defaults.adapter;
+const originalCreate = axios.create;
 
 afterEach(() => {
-  axios.defaults.adapter = originalAdapter;
+  vi.restoreAllMocks();
+  vi.resetModules();
 });
 
 describe("refreshService", () => {
@@ -16,7 +18,7 @@ describe("refreshService", () => {
     const requests: string[] = [];
     let authRequestCount = 0;
 
-    axios.defaults.adapter = (async (config) => {
+    const mockAdapter: AxiosAdapter = async (config) => {
       const url = config.url ?? "";
       requests.push(`${config.method?.toUpperCase()} ${url}`);
 
@@ -30,7 +32,8 @@ describe("refreshService", () => {
         };
       }
 
-      authRequestCount += 1;
+      authRequestCount++;
+
       if (authRequestCount === 1) {
         const response: AxiosResponse = {
           data: {},
@@ -39,6 +42,7 @@ describe("refreshService", () => {
           headers: {},
           config,
         };
+
         throw new AxiosError(
           "Unauthorized",
           AxiosError.ERR_BAD_REQUEST,
@@ -55,12 +59,21 @@ describe("refreshService", () => {
         headers: {},
         config,
       };
-    }) as AxiosAdapter;
+    };
+
+    vi.spyOn(axios, "create").mockImplementation((config) =>
+      originalCreate({
+        ...config,
+        adapter: mockAdapter,
+      }),
+    );
 
     const { default: api } = await import("./refreshService");
+
     const response = await api.get("/auth/me");
 
     expect(response.data).toEqual({ id: "test-person" });
+
     expect(requests).toEqual([
       "GET /auth/me",
       "POST /auth/refresh",

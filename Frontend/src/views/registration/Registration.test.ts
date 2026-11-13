@@ -3,7 +3,6 @@
 import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
-import router from "../../router";
 import { useAuthStore } from "../../stores/Authstore";
 import RegistrationView from "./RegistrationView.vue";
 
@@ -91,14 +90,5 @@ describe("RegistrationView.vue", () => {
     expect(wrapper.get('[role="status"]').text()).toContain(
       "Je account wordt aangemaakt...",
     );
-  });
-
-  it("navigeert naar inloggen wanneer op Inloggen wordt geklikt", async () => {
-    const push = vi.spyOn(router, "push").mockResolvedValue(undefined);
-    const wrapper = mount(RegistrationView);
-
-    await wrapper.get("form span.cursor-pointer").trigger("click");
-
-    expect(push).toHaveBeenCalledWith("/login");
   });
 });

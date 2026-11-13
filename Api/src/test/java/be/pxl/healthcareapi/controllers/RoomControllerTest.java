@@ -2,6 +2,7 @@
 package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.domein.Room;
+import be.pxl.healthcareapi.domein.RoomParticipant;
 import be.pxl.healthcareapi.domein.RoomStatus;
 import be.pxl.healthcareapi.dto.RoomParticipantResponse;
 import be.pxl.healthcareapi.dto.RoomResponse;
@@ -13,17 +14,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import be.pxl.healthcareapi.domein.RoomParticipant;
-import static org.mockito.ArgumentMatchers.any;
-
-import java.util.List;
 
 @WebMvcTest(RoomController.class)
 class RoomControllerTest {
@@ -38,7 +38,6 @@ class RoomControllerTest {
 
     @Test
     void createRoomReturnsCreatedRoom() throws Exception {
-        // Arrange
         Room room = new Room(
                 "ABC123",
                 "Test room",
@@ -52,11 +51,9 @@ class RoomControllerTest {
                 ownerId
         )).thenReturn(room);
 
-        // Act & Assert
         mockMvc.perform(post("/api/rooms")
-                        .with(user("testuser"))
+                        .with(jwt().jwt(jwt -> jwt.subject(ownerId.toString())))
                         .with(csrf())
-                        .header("X-User-Id", ownerId.toString())
                         .contentType("application/json")
                         .content("""
                         {
@@ -78,7 +75,7 @@ class RoomControllerTest {
                 "ABC123",
                 "Test room",
                 "Test description",
-                java.time.LocalDateTime.now(),
+                LocalDateTime.now(),
                 RoomStatus.OPEN,
                 ownerId,
                 3
@@ -157,9 +154,8 @@ class RoomControllerTest {
                 .thenReturn(participant);
 
         mockMvc.perform(post("/api/rooms/ABC123/join")
-                        .with(user("testuser"))
-                        .with(csrf())
-                        .header("X-User-Id", userId.toString()))
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.userId").value(userId.toString()))
                 .andExpect(jsonPath("$.joinedAt").exists());
@@ -175,6 +171,8 @@ class RoomControllerTest {
         RoomParticipantResponse participant = new RoomParticipantResponse(
                 participantId,
                 userId,
+                "test",
+                "user",
                 LocalDateTime.now()
         );
 
@@ -187,6 +185,8 @@ class RoomControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(participantId.toString()))
                 .andExpect(jsonPath("$[0].userId").value(userId.toString()))
+                .andExpect(jsonPath("$[0].firstname").value("test"))
+                .andExpect(jsonPath("$[0].lastname").value("user"))
                 .andExpect(jsonPath("$[0].joinedAt").exists());
     }
 
@@ -218,9 +218,8 @@ class RoomControllerTest {
                 .thenReturn(room);
 
         mockMvc.perform(post("/api/rooms/ABC123/start")
-                        .with(user("testuser"))
-                        .with(csrf())
-                        .header("X-User-Id", userId.toString()))
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .with(csrf()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value("ABC123"))
                 .andExpect(jsonPath("$.status").value("STARTED"));
@@ -236,9 +235,8 @@ class RoomControllerTest {
                 ));
 
         mockMvc.perform(post("/api/rooms/ABC123/join")
-                        .with(user("testuser"))
-                        .with(csrf())
-                        .header("X-User-Id", userId.toString()))
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .with(csrf()))
                 .andExpect(status().isConflict())
                 .andExpect(content().string(
                         "Deze room is niet meer beschikbaar."
@@ -255,9 +253,8 @@ class RoomControllerTest {
                 ));
 
         mockMvc.perform(post("/api/rooms/ABC123/start")
-                        .with(user("testuser"))
-                        .with(csrf())
-                        .header("X-User-Id", userId.toString()))
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .with(csrf()))
                 .andExpect(status().isConflict())
                 .andExpect(content().string(
                         "Alleen de host kan deze room starten."
@@ -398,9 +395,8 @@ class RoomControllerTest {
     @Test
     void createRoomWithInvalidUserIdReturnsBadRequest() throws Exception {
         mockMvc.perform(post("/api/rooms")
-                        .with(user("testuser"))
+                        .with(jwt().jwt(jwt -> jwt.subject("invalid-uuid")))
                         .with(csrf())
-                        .header("X-User-Id", "invalid-uuid")
                         .contentType("application/json")
                         .content("""
                             {
@@ -416,9 +412,8 @@ class RoomControllerTest {
     @Test
     void joinRoomWithInvalidUserIdReturnsBadRequest() throws Exception {
         mockMvc.perform(post("/api/rooms/ABC123/join")
-                        .with(user("testuser"))
-                        .with(csrf())
-                        .header("X-User-Id", "invalid-uuid"))
+                        .with(jwt().jwt(jwt -> jwt.subject("invalid-uuid")))
+                        .with(csrf()))
                 .andExpect(status().isBadRequest());
 
         verify(roomService, never())
@@ -435,9 +430,8 @@ class RoomControllerTest {
                 ));
 
         mockMvc.perform(post("/api/rooms/UNKNOWN/join")
-                        .with(user("testuser"))
-                        .with(csrf())
-                        .header("X-User-Id", userId.toString()))
+                        .with(jwt().jwt(jwt -> jwt.subject(userId.toString())))
+                        .with(csrf()))
                 .andExpect(status().isNotFound())
                 .andExpect(content().string("Room niet gevonden: UNKNOWN"));
     }
