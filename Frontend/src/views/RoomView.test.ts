@@ -214,7 +214,8 @@ describe('RoomView', () => {
   })
 
   it('sluit de room niet wanneer de host annuleren kiest', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(false)
+    const confirmMock = vi.fn().mockReturnValue(false)
+    vi.stubGlobal('confirm', confirmMock)
 
     const wrapper = mountView()
     await flushPromises()
@@ -222,14 +223,18 @@ describe('RoomView', () => {
     await findButton(wrapper, 'Room sluiten').trigger('click')
     await flushPromises()
 
-    expect(window.confirm).toHaveBeenCalledOnce()
+    expect(confirmMock).toHaveBeenCalledWith(
+      'Ben je zeker dat je deze room wilt sluiten?',
+    )
     expect(closeRoomMock).not.toHaveBeenCalled()
 
     wrapper.unmount()
+    vi.unstubAllGlobals()
   })
 
   it('sluit de room wanneer de host bevestigt', async () => {
-    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const confirmMock = vi.fn().mockReturnValue(true)
+    vi.stubGlobal('confirm', confirmMock)
 
     const wrapper = mountView()
     await flushPromises()
@@ -237,12 +242,13 @@ describe('RoomView', () => {
     await findButton(wrapper, 'Room sluiten').trigger('click')
     await flushPromises()
 
-    expect(window.confirm).toHaveBeenCalledWith(
+    expect(confirmMock).toHaveBeenCalledWith(
       'Ben je zeker dat je deze room wilt sluiten?',
     )
     expect(closeRoomMock).toHaveBeenCalledOnce()
 
     wrapper.unmount()
+    vi.unstubAllGlobals()
   })
 
   it('toont een foutmelding wanneer het laden mislukt', async () => {
