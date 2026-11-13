@@ -1,12 +1,10 @@
 package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.dto.PersonIdRequest;
-import be.pxl.healthcareapi.services.person.PersonService;
 import jakarta.validation.Valid;
 import be.pxl.healthcareapi.dto.AdminAccountResponse;
 import be.pxl.healthcareapi.dto.AdminStatsResponse;
 import be.pxl.healthcareapi.services.admin.AdminService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,10 +18,8 @@ import java.util.List;
 @RequestMapping("/api/admin")
 public class AdminController {
     private final AdminService adminService;
-    private final PersonService personService;
 
-    public AdminController (PersonService personService, AdminService adminService){
-        this.personService = personService;
+    public AdminController (AdminService adminService){
         this.adminService = adminService;
     }
 
@@ -39,7 +35,7 @@ public class AdminController {
 
     @DeleteMapping("/delete")
     public ResponseEntity<Void> deletePerson(@Valid @RequestBody PersonIdRequest personIdRequest){
-        personService.deletePerson(personIdRequest);
+        adminService.deletePerson(personIdRequest);
         return ResponseEntity.ok().build();
     }
 

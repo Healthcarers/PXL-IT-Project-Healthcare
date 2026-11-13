@@ -3,10 +3,49 @@
 import { flushPromises, mount } from "@vue/test-utils";
 import { createPinia, setActivePinia } from "pinia";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import router from "../router";
-import api from "../services/refreshService";
-import { useAuthStore } from "../stores/Authstore";
+import router from "../../router/index.ts";
+import api from "../../services/refreshService.ts";
+import { useAdminStore } from "../../stores/AdminStore.ts";
+import { useAuthStore } from "../../stores/Authstore.ts";
 import AdminDashboardView from "./AdminDashboardView.vue";
+
+const accountsResponse = [
+  {
+    id: "11111111-1111-4111-8111-111111111111",
+    firstname: "Inge",
+    lastname: "Maes",
+    email: "Inge.Maes@pxl.be",
+    role: "LECTOR",
+    createdAt: "2025-01-02",
+  },
+  {
+    id: "22222222-2222-4222-8222-222222222222",
+    firstname: "Test",
+    lastname: "User",
+    email: "test.user@student.pxl.be",
+    role: "CURSIST",
+    createdAt: "2025-01-03",
+  },
+  {
+    id: "33333333-3333-4333-8333-333333333333",
+    firstname: "Voornaam",
+    lastname: "Achternaam",
+    email: "voornaam@student.pxl.be",
+    role: "CURSIST",
+    createdAt: null,
+  },
+];
+
+function mockAdminGet(stats = { totalAccounts: 12, lectoren: 3, cursisten: 8 }) {
+  return vi.spyOn(api, "get").mockImplementation((url) =>
+    Promise.resolve({
+      data:
+        url === "/admin/accounts"
+          ? accountsResponse
+          : stats,
+    }),
+  );
+}
 
 vi.mock("../config/api", () => ({
   API_BASE_URL: "http://localhost:8080/api",
@@ -19,18 +58,17 @@ describe("AdminDashboardView.vue", () => {
   });
 
   it("haalt live accountstatistieken op en rendert topbar, melding, KPI-kaarten en Recente accounts", async () => {
-    const getSpy = vi.spyOn(api, "get").mockResolvedValue({
-      data: {
-        totalAccounts: 12,
-        lectoren: 3,
-        cursisten: 8,
-      },
-    });
+    const getSpy = mockAdminGet();
+    const fetchLiveStatsSpy = vi.spyOn(useAdminStore(), "fetchLiveStats");
+    const fetchAccountsSpy = vi.spyOn(useAdminStore(), "fetchAccounts");
 
     const wrapper = mount(AdminDashboardView);
     await flushPromises();
 
+    expect(fetchLiveStatsSpy).toHaveBeenCalledOnce();
+    expect(fetchAccountsSpy).toHaveBeenCalledOnce();
     expect(getSpy).toHaveBeenCalledWith("/admin/stats");
+    expect(getSpy).toHaveBeenCalledWith("/admin/accounts");
 
     const header = wrapper.get("header");
     expect(header.text()).toContain("Virtuele monitor-defibrillator");
@@ -56,15 +94,18 @@ describe("AdminDashboardView.vue", () => {
     const rows = wrapper.findAll("table[aria-label='Recente accounts'] tbody tr");
     expect(rows).toHaveLength(3);
     expect(rows[0]?.text()).toContain("Inge Maes");
+    expect(rows[0]?.text()).toContain("Inge.Maes@pxl.be");
+    expect(rows[0]?.text()).toContain("Lector");
+    expect(rows[0]?.text()).toContain("02/01/2025");
   });
 
   it("toont een foutmelding en '-' als live statistieken niet opgehaald kunnen worden en herstelt bij Opnieuw proberen", async () => {
-    const getSpy = vi
-      .spyOn(api, "get")
-      .mockRejectedValueOnce(new Error("Network error"))
-      .mockResolvedValueOnce({
-        data: { totalAccounts: 5, lectoren: 1, cursisten: 3 },
-      });
+    const getSpy = mockAdminGet({
+      totalAccounts: 5,
+      lectoren: 1,
+      cursisten: 3,
+    });
+    getSpy.mockRejectedValueOnce(new Error("Network error"));
 
     const wrapper = mount(AdminDashboardView);
     await flushPromises();
@@ -80,15 +121,13 @@ describe("AdminDashboardView.vue", () => {
     await wrapper.get("[role='alert'] button").trigger("click");
     await flushPromises();
 
-    expect(getSpy).toHaveBeenCalledTimes(2);
+    expect(getSpy).toHaveBeenCalledTimes(3);
     expect(wrapper.find("[role='alert']").exists()).toBe(false);
     expect(statCards[0]?.text()).toContain("5");
   });
 
   it("toont melding bij Uitloggen en laat meldingen sluiten", async () => {
-    vi.spyOn(api, "get").mockResolvedValue({
-      data: { totalAccounts: 1, lectoren: 0, cursisten: 0 },
-    });
+    mockAdminGet();
 
     const wrapper = mount(AdminDashboardView);
     await flushPromises();
@@ -106,41 +145,25 @@ describe("AdminDashboardView.vue", () => {
     expect(wrapper.find("[role='status']").exists()).toBe(false);
   });
 
-  it("ondersteunt annuleren bij rol wijzigen/verwijderen, Admin-badge en lege tabelweergave", async () => {
-    vi.spyOn(api, "get").mockResolvedValue({
-      data: { totalAccounts: 1, lectoren: 0, cursisten: 0 },
-    });
+  it("ondersteunt annuleren bij rol wijzigen/verwijderen en een lege tabelweergave", async () => {
+    mockAdminGet();
+    vi.spyOn(api, "delete").mockResolvedValue({ data: undefined });
 
     const wrapper = mount(AdminDashboardView);
     await flushPromises();
 
     // Rol wijzigen openen en annuleren
-    const firstRowButtons = wrapper
-      .findAll("table[aria-label='Recente accounts'] tbody tr")[0]!
+    const cursistRowButtons = wrapper
+      .findAll("table[aria-label='Recente accounts'] tbody tr")[1]!
       .findAll("button");
-    await firstRowButtons
+    await cursistRowButtons
       .find((btn) => btn.text().trim() === "Rol wijzigen")!
       .trigger("click");
     await wrapper
       .findAll("table[aria-label='Recente accounts'] tbody button")
       .find((btn) => btn.text().trim() === "Annuleer")!
       .trigger("click");
-    expect(wrapper.find("#role-select-acc-1").exists()).toBe(false);
-
-    // Rol wijzigen naar Admin (dekt Admin badge)
-    await wrapper
-      .findAll("table[aria-label='Recente accounts'] tbody tr")[0]!
-      .findAll("button")
-      .find((btn) => btn.text().trim() === "Rol wijzigen")!
-      .trigger("click");
-    await wrapper.get("#role-select-acc-1").setValue("Admin");
-    await wrapper
-      .findAll("table[aria-label='Recente accounts'] tbody button")
-      .find((btn) => btn.text().trim() === "Opslaan")!
-      .trigger("click");
-    expect(
-      wrapper.findAll("table[aria-label='Recente accounts'] tbody tr")[0]!.text(),
-    ).toContain("Admin");
+    expect(wrapper.find("#role-select-acc-2").exists()).toBe(false);
 
     // Verwijderen openen en annuleren
     await wrapper
@@ -167,6 +190,7 @@ describe("AdminDashboardView.vue", () => {
         .findAll("table[aria-label='Recente accounts'] tbody button")
         .find((btn) => btn.text().trim() === "Bevestig")!
         .trigger("click");
+      await flushPromises();
     }
 
     expect(wrapper.find("table[aria-label='Recente accounts']").exists()).toBe(
@@ -175,9 +199,10 @@ describe("AdminDashboardView.vue", () => {
     expect(wrapper.text()).toContain("Geen accounts beschikbaar");
   });
 
-  it("wijzigt een rol in de dummy-tabel en toont een bevestigingsmelding", async () => {
-    vi.spyOn(api, "get").mockResolvedValue({
-      data: { totalAccounts: 1, lectoren: 0, cursisten: 0 },
+  it("maakt een cursist via de adminstore lector en toont een bevestigingsmelding", async () => {
+    mockAdminGet();
+    const deleteSpy = vi.spyOn(api, "delete").mockResolvedValue({
+      data: undefined,
     });
 
     const wrapper = mount(AdminDashboardView);
@@ -188,21 +213,58 @@ describe("AdminDashboardView.vue", () => {
       .findAll("button")
       .find((btn) => btn.text().trim() === "Rol wijzigen");
     await roleButton!.trigger("click");
-    await wrapper.get("#role-select-acc-2").setValue("Lector");
+    await wrapper
+      .get("#role-select-22222222-2222-4222-8222-222222222222")
+      .setValue("Lector");
 
     const saveButton = wrapper
       .findAll("table[aria-label='Recente accounts'] tbody button")
       .find((btn) => btn.text().trim() === "Opslaan");
     await saveButton!.trigger("click");
+    await flushPromises();
 
+    expect(deleteSpy).toHaveBeenCalledWith("/admin/changeRole", {
+      data: { uuid: "22222222-2222-4222-8222-222222222222" },
+    });
+    expect(rows[1]!.text()).toContain("Lector");
     expect(wrapper.get("[role='status']").text()).toContain(
       "Rol van Test User gewijzigd naar lector.",
     );
   });
 
-  it("verwijdert een dummy-account uit de lijst na bevestiging", async () => {
-    vi.spyOn(api, "get").mockResolvedValue({
-      data: { totalAccounts: 1, lectoren: 0, cursisten: 0 },
+  it("laat de accountrol ongewijzigd en toont een fout als de backendpromotie mislukt", async () => {
+    mockAdminGet();
+    vi.spyOn(api, "delete").mockRejectedValue(new Error("Request failed"));
+
+    const wrapper = mount(AdminDashboardView);
+    await flushPromises();
+
+    await wrapper
+      .findAll("table[aria-label='Recente accounts'] tbody tr")[1]!
+      .findAll("button")
+      .find((btn) => btn.text().trim() === "Rol wijzigen")!
+      .trigger("click");
+    await wrapper
+      .get("#role-select-22222222-2222-4222-8222-222222222222")
+      .setValue("Lector");
+    await wrapper
+      .findAll("table[aria-label='Recente accounts'] tbody button")
+      .find((btn) => btn.text().trim() === "Opslaan")!
+      .trigger("click");
+    await flushPromises();
+
+    expect(
+      wrapper.findAll("table[aria-label='Recente accounts'] tbody tr")[1]!.text(),
+    ).toContain("Cursist");
+    expect(wrapper.get("[role='alert']").text()).toContain(
+      "Rol van Test User kon niet gewijzigd worden.",
+    );
+  });
+
+  it("verwijdert een account via de adminstore na bevestiging", async () => {
+    mockAdminGet();
+    const deleteSpy = vi.spyOn(api, "delete").mockResolvedValue({
+      data: undefined,
     });
 
     const wrapper = mount(AdminDashboardView);
@@ -218,12 +280,45 @@ describe("AdminDashboardView.vue", () => {
       .findAll("table[aria-label='Recente accounts'] tbody button")
       .find((btn) => btn.text().trim() === "Bevestig");
     await confirmButton!.trigger("click");
+    await flushPromises();
 
+    expect(deleteSpy).toHaveBeenCalledWith("/admin/delete", {
+      data: { uuid: "33333333-3333-4333-8333-333333333333" },
+    });
     expect(
       wrapper.findAll("table[aria-label='Recente accounts'] tbody tr"),
     ).toHaveLength(2);
     expect(wrapper.get("[role='status']").text()).toContain(
       "Account van Voornaam Achternaam verwijderd.",
+    );
+  });
+
+  it("behoudt het account en toont een fout als verwijderen mislukt", async () => {
+    mockAdminGet();
+    vi.spyOn(api, "delete").mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 409 },
+    });
+
+    const wrapper = mount(AdminDashboardView);
+    await flushPromises();
+
+    await wrapper
+      .findAll("table[aria-label='Recente accounts'] tbody tr")[2]!
+      .findAll("button")
+      .find((btn) => btn.text().trim() === "Verwijderen")!
+      .trigger("click");
+    await wrapper
+      .findAll("table[aria-label='Recente accounts'] tbody button")
+      .find((btn) => btn.text().trim() === "Bevestig")!
+      .trigger("click");
+    await flushPromises();
+
+    expect(
+      wrapper.findAll("table[aria-label='Recente accounts'] tbody tr"),
+    ).toHaveLength(3);
+    expect(wrapper.get("[role='alert']").text()).toContain(
+      "Account van Voornaam Achternaam kon niet verwijderd worden.",
     );
   });
 

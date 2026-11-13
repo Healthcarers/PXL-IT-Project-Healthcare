@@ -1,6 +1,16 @@
 export type Role = "Cursist" | "Lector" | "Admin";
+export type ApiRole = "CURSIST" | "LECTOR" | "ADMIN";
 
 export type UserStatus = "Actief" | "Geblokkeerd";
+
+export interface AdminAccountResponse {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  role: ApiRole;
+  createdAt: string | null;
+}
 
 export interface AdminUser {
   id: string;
@@ -25,6 +35,6 @@ export interface AdminStatCard {
 }
 
 export interface AdminNotification {
-  type: "success" | "info";
+  type: "success" | "info" | "error";
   message: string;
 }

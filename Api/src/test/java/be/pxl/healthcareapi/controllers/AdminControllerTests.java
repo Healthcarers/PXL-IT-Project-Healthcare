@@ -3,7 +3,9 @@ package be.pxl.healthcareapi.controllers;
 import be.pxl.healthcareapi.config.SecurityConfig;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.enums.Role;
+import be.pxl.healthcareapi.dto.PersonIdRequest;
 import be.pxl.healthcareapi.repos.PersonRepo;
+import be.pxl.healthcareapi.repos.RefreshTokenRepo;
 import be.pxl.healthcareapi.services.admin.AdminService;
 import be.pxl.healthcareapi.services.person.PersonService;
 import jakarta.servlet.http.Cookie;
@@ -11,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -20,11 +23,15 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.oauth2.jwt.Jwt.withTokenValue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,6 +44,9 @@ class AdminControllerTests {
 
     @MockitoBean
     private PersonRepo personRepo;
+
+    @MockitoBean
+    private RefreshTokenRepo refreshTokenRepo;
 
     @MockitoBean
     private PersonService personService;
@@ -121,5 +131,53 @@ class AdminControllerTests {
                 .andExpect(jsonPath("$[0].email").value("ada@example.com"))
                 .andExpect(jsonPath("$[0].role").value("LECTOR"))
                 .andExpect(jsonPath("$[0].createdAt").value("2025-01-02"));
+    }
+
+    @Test
+    void deletePerson_ShouldDeleteAccountForAdminRole() throws Exception {
+        String token = "admin-token";
+        PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
+        Person person = mock(Person.class);
+        when(personService.getPersonByUUID(request)).thenReturn(person);
+        when(person.getRole()).thenReturn(Role.CURSIST);
+        when(jwtDecoder.decode(token)).thenReturn(withTokenValue(token)
+                .header("alg", "HS256")
+                .subject("admin-id")
+                .claim("role", "ADMIN")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(900))
+                .build());
+
+        mockMvc.perform(delete("/api/admin/delete")
+                        .cookie(new Cookie("access_token", token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"uuid\":\"" + request.uuid() + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+
+        verify(personService).getPersonByUUID(request);
+        var deletionOrder = inOrder(refreshTokenRepo, personRepo);
+        deletionOrder.verify(refreshTokenRepo).deleteAllByPerson(person);
+        deletionOrder.verify(personRepo).delete(person);
+    }
+
+    @Test
+    void deletePerson_ShouldReturnForbiddenForNonAdminRole() throws Exception {
+        String token = "cursist-token";
+        when(jwtDecoder.decode(token)).thenReturn(withTokenValue(token)
+                .header("alg", "HS256")
+                .subject("cursist-id")
+                .claim("role", "CURSIST")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(900))
+                .build());
+
+        mockMvc.perform(delete("/api/admin/delete")
+                        .cookie(new Cookie("access_token", token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"uuid\":\"" + UUID.randomUUID() + "\"}"))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(personRepo, refreshTokenRepo, personService);
     }
 }

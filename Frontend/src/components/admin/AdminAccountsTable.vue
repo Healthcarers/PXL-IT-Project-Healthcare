@@ -17,9 +17,12 @@ const editingUserId = ref<string | null>(null);
 const pendingRole = ref<Role>("Cursist");
 const confirmDeleteId = ref<string | null>(null);
 
-const availableRoles: Role[] = ["Cursist", "Lector", "Admin"];
+const availableRoles: Role[] = ["Cursist", "Lector"];
 
 function startRoleEdit(user: AdminUser) {
+  if (user.role !== "Cursist") {
+    return;
+  }
   confirmDeleteId.value = null;
   editingUserId.value = user.id;
   pendingRole.value = user.role;
@@ -169,6 +172,7 @@ function getRoleBadgeClass(role: Role): string {
               <!-- Standaard actieknoppen -->
               <div v-else class="flex flex-wrap items-center gap-2">
                 <button
+                  v-if="user.role === 'Cursist'"
                   type="button"
                   class="cursor-pointer rounded-full border border-pxl-black bg-pxl-white px-4 py-1 text-xs font-semibold text-pxl-black transition hover:bg-pxl-black hover:text-pxl-white focus:outline-none focus:ring-2 focus:ring-pxl-gold"
                   @click="startRoleEdit(user)"

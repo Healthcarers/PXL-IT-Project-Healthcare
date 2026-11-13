@@ -7,8 +7,9 @@ import be.pxl.healthcareapi.dto.AdminStatsResponse;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
 import be.pxl.healthcareapi.exception.BadRequestException;
 import be.pxl.healthcareapi.repos.PersonRepo;
+import be.pxl.healthcareapi.repos.RefreshTokenRepo;
 import be.pxl.healthcareapi.services.person.PersonService;
-import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
@@ -17,10 +18,12 @@ import java.util.List;
 @Service
 public class AdminService {
     private final PersonRepo personRepo;
+    private final RefreshTokenRepo refreshTokenRepo;
     private final PersonService personService;
 
-    public AdminService (PersonRepo personRepo, PersonService personService){
+    public AdminService(PersonRepo personRepo, RefreshTokenRepo refreshTokenRepo, PersonService personService) {
         this.personRepo = personRepo;
+        this.refreshTokenRepo = refreshTokenRepo;
         this.personService = personService;
     }
 
@@ -59,5 +62,18 @@ public class AdminService {
 
         personToChange.changeRole(Role.LECTOR);
         personRepo.save(personToChange);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @Transactional
+    public void deletePerson(PersonIdRequest personIdRequest) {
+        Person personToDelete = personService.getPersonByUUID(personIdRequest);
+
+        if (personToDelete.getRole() == Role.ADMIN) {
+            throw new BadRequestException("Deze gebruiker kan je niet verwijderen");
+        }
+
+        refreshTokenRepo.deleteAllByPerson(personToDelete);
+        personRepo.delete(personToDelete);
     }
 }

@@ -1,12 +1,9 @@
 package be.pxl.healthcareapi.services.person;
 
 import be.pxl.healthcareapi.domein.Person;
-import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
-import be.pxl.healthcareapi.exception.BadRequestException;
 import be.pxl.healthcareapi.exception.NotFoundException;
 import be.pxl.healthcareapi.repos.PersonRepo;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -30,18 +27,6 @@ public class PersonService {
 
         return personOptional.get();
     }
-
-    //TODO moet in securityFilterChain gedaan worden
-    @PreAuthorize("hasRole('ADMIN')")
-    public void deletePerson(PersonIdRequest personIdRequest){
-        Person personToDelete = getPersonByUUID(personIdRequest);
-
-        if (personToDelete.getRole() == Role.ADMIN){
-            throw new BadRequestException("Deze gebruiker kan je niet verwijderen");
-        }
-        personRepo.delete(personToDelete);
-    }
-
 
 }
 

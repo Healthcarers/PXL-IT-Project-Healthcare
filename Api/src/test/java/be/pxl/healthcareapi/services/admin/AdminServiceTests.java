@@ -4,7 +4,10 @@ import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.dto.AdminAccountResponse;
 import be.pxl.healthcareapi.dto.AdminStatsResponse;
+import be.pxl.healthcareapi.dto.PersonIdRequest;
+import be.pxl.healthcareapi.exception.BadRequestException;
 import be.pxl.healthcareapi.repos.PersonRepo;
+import be.pxl.healthcareapi.repos.RefreshTokenRepo;
 import be.pxl.healthcareapi.services.person.PersonService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -17,7 +20,10 @@ import java.util.UUID;
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -25,6 +31,9 @@ class AdminServiceTests {
 
     @Mock
     private PersonRepo personRepo;
+
+    @Mock
+    private RefreshTokenRepo refreshTokenRepo;
 
     @Mock
     private PersonService personService;
@@ -70,5 +79,56 @@ class AdminServiceTests {
                 )),
                 result
         );
+    }
+
+    @Test
+    void setPersonRole_ShouldChangeRoleToLectorAndSavePerson() {
+        PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
+        Person person = mock(Person.class);
+        when(personService.getPersonByUUID(request)).thenReturn(person);
+        when(person.getRole()).thenReturn(Role.CURSIST);
+
+        adminService.setPersonRole(request);
+
+        verify(person).changeRole(Role.LECTOR);
+        verify(personRepo).save(person);
+    }
+
+    @Test
+    void setPersonRole_ShouldRejectPersonWhoIsAlreadyLector() {
+        PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
+        Person person = mock(Person.class);
+        when(personService.getPersonByUUID(request)).thenReturn(person);
+        when(person.getRole()).thenReturn(Role.LECTOR);
+
+        assertThrows(BadRequestException.class, () -> adminService.setPersonRole(request));
+
+        org.mockito.Mockito.verifyNoInteractions(personRepo);
+    }
+
+    @Test
+    void deletePerson_ShouldDeleteNonAdminAccount() {
+        PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
+        Person person = mock(Person.class);
+        when(personService.getPersonByUUID(request)).thenReturn(person);
+        when(person.getRole()).thenReturn(Role.CURSIST);
+
+        adminService.deletePerson(request);
+
+        var deletionOrder = inOrder(refreshTokenRepo, personRepo);
+        deletionOrder.verify(refreshTokenRepo).deleteAllByPerson(person);
+        deletionOrder.verify(personRepo).delete(person);
+    }
+
+    @Test
+    void deletePerson_ShouldRejectAdminAccount() {
+        PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
+        Person person = mock(Person.class);
+        when(personService.getPersonByUUID(request)).thenReturn(person);
+        when(person.getRole()).thenReturn(Role.ADMIN);
+
+        assertThrows(BadRequestException.class, () -> adminService.deletePerson(request));
+
+        org.mockito.Mockito.verifyNoInteractions(personRepo);
     }
 }

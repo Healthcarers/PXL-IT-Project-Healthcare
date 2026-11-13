@@ -13,24 +13,32 @@ const emit = defineEmits<{
 <template>
   <div
     v-if="notification"
-    role="status"
+    :role="notification.type === 'error' ? 'alert' : 'status'"
     aria-live="polite"
     :class="[
       'flex items-center justify-between gap-3 rounded-lg border px-4 py-3',
       notification.type === 'success'
         ? 'border-[#2E9E5B]/60 bg-[#EDF7F0]'
-        : 'border-pxl-gold/70 bg-pxl-white',
+        : notification.type === 'error'
+          ? 'border-red-500/60 bg-red-50'
+          : 'border-pxl-gold/70 bg-pxl-white',
     ]"
   >
     <div class="flex items-center gap-3">
       <span
         :class="[
           'flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-pxl-white',
-          notification.type === 'success' ? 'bg-[#168A45]' : 'bg-pxl-black',
+          notification.type === 'success'
+            ? 'bg-[#168A45]'
+            : notification.type === 'error'
+              ? 'bg-red-600'
+              : 'bg-pxl-black',
         ]"
         aria-hidden="true"
       >
+        <span v-if="notification.type === 'error'">!</span>
         <svg
+          v-else
           class="h-3.5 w-3.5"
           viewBox="0 0 20 20"
           fill="currentColor"
