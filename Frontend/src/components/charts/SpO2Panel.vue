@@ -21,7 +21,7 @@ const { active } = useChannelActive('spo2');
         :y-min="-1"
         :y-max="2"
         color="#38bdf8"
-        :show-cursor="false"
+        :show-cursor="true"
     />
   </MonitorCard>
 </template>
