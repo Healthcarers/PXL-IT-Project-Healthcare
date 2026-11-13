@@ -135,11 +135,10 @@ jobs:
               "project": { "key": "IT2627T01" },
               "summary": "CI-run ${GITHUB_REF_NAME} - ${DATUM} - ${SHORT_SHA}",
               "description": "Automatische run #${GITHUB_RUN_NUMBER}: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
-              "issuetype": { "name": "Test Execution" }
-            },
-            "xrayFields": {
-              "testPlanKey": "IT2627T01-90",
-              "environments": ["CI"]
+              "issuetype": { "name": "Test Execution" },
+              "customfield_10226": ["IT2627T01-90"],
+              "customfield_10224": ["CI"],
+              "customfield_10218": "${SHORT_SHA}"
             }
           }
           EOF

@@ -40,11 +40,15 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/ws", "/ws/**").permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh"
                         ).permitAll()
+                        //TODO: replace permitAll() with the commented methods. Kept like this so bruno/postman still works
+                        .requestMatchers(HttpMethod.GET, "/api/vitals", "/api/channels").permitAll()//.hasAnyRole("CURSIST", "LECTOR")
+                        .requestMatchers(HttpMethod.PATCH, "/api/vitals").permitAll()//.hasRole("LECTOR")
                         .anyRequest().authenticated()
                 )
 
@@ -93,7 +97,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
