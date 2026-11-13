@@ -62,6 +62,7 @@ class AuthServiceTests {
         assertEquals("test@email.com", savedPerson.getEmail());
         assertEquals("hashed-password", savedPerson.getPassword());
         assertEquals(Role.CURSIST, savedPerson.getRole());
+        assertNotNull(savedPerson.getCreatedAt());
         assertEquals("Account voor test user is registreerd.", response.message());
     }
 

@@ -3,7 +3,7 @@ import RegistrationView from "../views/registration/RegistrationView.vue";
 import LoginView from "../views/login/LoginView.vue";
 import { useAuthStore } from "../stores/Authstore.ts";
 import DashboardView from "../views/DashboardView.vue";
-import AdminDashboardView from "../views/AdminDashboardView.vue";
+import AdminDashboardView from "../views/admin/AdminDashboardView.vue";
 import type { Person } from "../models/Person.ts";
 import UnauthorizedView from "../views/UnauthorizedView.vue";
 import CursistDashboard from "../views/CursistDashboard.vue";
@@ -12,6 +12,10 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
 
   routes: [
+    {
+      path: "/",
+      redirect: "login",
+    },
     {
       path: "/registration",
       name: "registration",
