@@ -21,6 +21,8 @@ public class VitalsService {
         return vitalsRepository.update(current -> new VitalsSnapshot(
                 req.heartRate() != null ? checkRange("heartRate", req.heartRate(), 0, 220) : current.heartRate(),
                 req.spo2() != null ? checkRange("spo2", req.spo2(), 50, 100) : current.spo2(),
+                req.respRate() != null ? checkRange("respRate", req.respRate(), 0, 60) : current.respRate(),
+                req.etco2() != null ? checkRange("etco2", req.etco2(), 0, 100) : current.etco2(),
                 req.ampScale()  != null ? checkRange("ampScale",  req.ampScale(),  0.1, 3)  : current.ampScale()
         ));
     }
