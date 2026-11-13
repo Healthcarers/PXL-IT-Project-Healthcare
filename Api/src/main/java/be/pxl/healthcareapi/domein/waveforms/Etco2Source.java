@@ -18,7 +18,7 @@ public class Etco2Source implements WaveformSource {
     @Override public int sampleRate() { return 50; }
     @Override public String unit() { return "mmHg"; }
     @Override public double yMin() { return 0; }
-    @Override public double yMax() { return 50; }
+    @Override public double yMax() { return 100; }
 
     @Override
     public double periodMs(VitalsSnapshot v) {
@@ -52,7 +52,7 @@ public class Etco2Source implements WaveformSource {
             double ripple = CARDIOGENIC_MMHG
                     * Math.sin(2 * Math.PI * beatsPerBreath * p)
                     * Math.sin(Math.PI * t);
-            return plateau + ripple;
+            return Math.max(plateau + ripple, 0.0);
         }
         double t = (p - DOWNSTROKE_START) / (1.0 - DOWNSTROKE_START);
         double start = e * (1 + PLATEAU_SLOPE);

@@ -19,7 +19,7 @@ const { active } = useChannelActive('etco2');
         :cursor-x="cursorX"
         :window-ms="WINDOW_MS"
         :y-min="-10"
-        :y-max="60"
+        :y-max="110"
         color="#facc15"
         :show-cursor="true"
     />

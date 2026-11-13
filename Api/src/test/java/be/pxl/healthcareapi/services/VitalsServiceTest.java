@@ -85,7 +85,7 @@ public class VitalsServiceTest {
     void rejectsRespRateOutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, 120.0,  100.0, null, null)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, null,  100.0, null, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -94,5 +94,12 @@ public class VitalsServiceTest {
         applyUpdatesTo(current);
         VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, 98.0, null, null, null));
         assertThat(result.heartRate()).isEqualTo(0);
+    }
+
+    @Test
+    void respRateZeroIsAcceptedForFlatline() {
+        applyUpdatesTo(current);
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(90.0, 98.0, 0.0, null, null));
+        assertThat(result.respRate()).isEqualTo(0);
     }
 }
