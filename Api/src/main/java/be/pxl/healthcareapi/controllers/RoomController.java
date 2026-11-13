@@ -1,3 +1,4 @@
+
 package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.domein.Room;
@@ -5,14 +6,16 @@ import be.pxl.healthcareapi.domein.RoomParticipant;
 import be.pxl.healthcareapi.dto.RoomParticipantResponse;
 import be.pxl.healthcareapi.dto.RoomResponse;
 import be.pxl.healthcareapi.services.RoomService;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
-import java.util.UUID;
-import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -28,8 +31,10 @@ public class RoomController {
     @ResponseStatus(HttpStatus.CREATED)
     public Room createRoom(
             @Valid @RequestBody CreateRoomRequest request,
-            @RequestHeader("X-User-Id") UUID ownerId
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID ownerId = UUID.fromString(jwt.getSubject());
+
         return roomService.createRoom(
                 request.name(),
                 request.description(),
@@ -60,8 +65,10 @@ public class RoomController {
     @PostMapping("/{code}/join")
     public RoomParticipant joinRoom(
             @PathVariable String code,
-            @RequestHeader("X-User-Id") UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
+        UUID userId = UUID.fromString(jwt.getSubject());
+
         return roomService.joinRoom(code, userId);
     }
 
@@ -75,11 +82,9 @@ public class RoomController {
     @PostMapping("/{code}/start")
     public Room startRoom(
             @PathVariable String code,
-            @RequestHeader("X-User-Id") UUID userId
+            @AuthenticationPrincipal Jwt jwt
     ) {
-        System.out.println("START ENDPOINT BEREIKT");
-        System.out.println("Room code: " + code);
-        System.out.println("User ID: " + userId);
+        UUID userId = UUID.fromString(jwt.getSubject());
 
         return roomService.startRoom(code, userId);
     }

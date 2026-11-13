@@ -15,6 +15,8 @@ export interface Room {
 export interface RoomParticipant {
   id: string
   userId: string
+  firstname: string
+  lastname: string
   joinedAt: string
 }
 

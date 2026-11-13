@@ -156,8 +156,15 @@ code {
   }
 }
 
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  cursor: pointer;
+}
+
 #app {
-  width: 1126px;
   max-width: 100%;
   margin: 0 auto;
   text-align: center;

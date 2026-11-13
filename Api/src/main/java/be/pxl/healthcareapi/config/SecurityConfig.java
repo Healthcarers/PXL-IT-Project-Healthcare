@@ -34,19 +34,37 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/rooms").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/start").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/join").permitAll()
-                        .requestMatchers(HttpMethod.POST,
+
+                        // Publieke authenticatie-endpoints
+                        .requestMatchers(
+                                HttpMethod.POST,
                                 "/api/auth/register",
                                 "/api/auth/login",
                                 "/api/auth/refresh"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/rooms/**").permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/*/close").permitAll()
+
+                        // Alleen lectoren mogen rooms aanmaken en starten
+                        .requestMatchers(HttpMethod.POST, "/api/rooms")
+                        .hasRole("LECTOR")
+
+                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/start")
+                        .hasRole("LECTOR")
+
+                        // Alleen cursisten mogen deelnemen
+                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/join")
+                        .hasRole("CURSIST")
+
+                        // Alleen lectoren mogen rooms sluiten
+                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/*/close")
+                        .hasRole("LECTOR")
+
+                        // Roomgegevens bekijken
+                        .requestMatchers(HttpMethod.GET, "/api/rooms/**")
+                        .permitAll()
+
                         .anyRequest().authenticated()
                 )
 

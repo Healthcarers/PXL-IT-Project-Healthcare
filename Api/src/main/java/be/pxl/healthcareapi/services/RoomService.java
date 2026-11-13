@@ -11,6 +11,11 @@ import be.pxl.healthcareapi.domein.RoomParticipant;
 import be.pxl.healthcareapi.repositories.RoomParticipantRepository;
 import java.util.UUID;
 import java.util.List;
+import be.pxl.healthcareapi.domein.Person;
+import be.pxl.healthcareapi.repositories.PersonRepository;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Service
 public class RoomService {
@@ -19,9 +24,12 @@ public class RoomService {
 
     private final RoomParticipantRepository roomParticipantRepository;
 
-    public RoomService(RoomRepository roomRepository, RoomParticipantRepository roomParticipantRepository) {
+    private final PersonRepository personRepository;
+
+    public RoomService(RoomRepository roomRepository, RoomParticipantRepository roomParticipantRepository, PersonRepository personRepository) {
         this.roomRepository = roomRepository;
         this.roomParticipantRepository = roomParticipantRepository;
+        this.personRepository = personRepository;
     }
 
     @Transactional
@@ -95,13 +103,30 @@ public class RoomService {
     public List<RoomParticipantResponse> getRoomParticipants(String code) {
         Room room = getRoomByCode(code);
 
-        return roomParticipantRepository.findByRoomId(room.getId())
+        List<RoomParticipant> participants =
+                roomParticipantRepository.findByRoomId(room.getId());
+
+        List<UUID> userIds = participants.stream()
+                .map(RoomParticipant::getUserId)
+                .distinct()
+                .toList();
+
+        Map<UUID, Person> persons = personRepository.findAllById(userIds)
                 .stream()
-                .map(participant -> new RoomParticipantResponse(
-                        participant.getId(),
-                        participant.getUserId(),
-                        participant.getJoinedAt()
-                ))
+                .collect(Collectors.toMap(Person::getId, Function.identity()));
+
+        return participants.stream()
+                .map(participant -> {
+                    Person person = persons.get(participant.getUserId());
+
+                    return new RoomParticipantResponse(
+                            participant.getId(),
+                            participant.getUserId(),
+                            person != null ? person.getFirstname() : "Onbekend",
+                            person != null ? person.getLastname() : "",
+                            participant.getJoinedAt()
+                    );
+                })
                 .toList();
     }
 

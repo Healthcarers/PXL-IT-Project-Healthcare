@@ -132,7 +132,12 @@ describe("Authstore", () => {
       ["LECTOR", "/dashboard"],
     ])("routeert een %s naar de juiste pagina", async (role, route) => {
       // Arrange
-      const person: Person = { firstname: "Test", lastname: "User", role };
+      const person: Person = {
+        id: "12345678-1234-1234-1234-123456789012",
+        firstname: "Test",
+        lastname: "User",
+        role,
+      };
       const post = vi.spyOn(axios, "post").mockResolvedValue({ data: person });
       const push = vi.spyOn(router, "push").mockResolvedValue(undefined);
       const store = useAuthStore();
@@ -206,6 +211,7 @@ describe("Authstore", () => {
     it("geeft de persoon terug wanneer de sessie geldig is", async () => {
       // Arrange
       const person: Person = {
+        id: "12345678-1234-1234-1234-123456789012",
         firstname: "Test",
         lastname: "User",
         role: "CURSIST",

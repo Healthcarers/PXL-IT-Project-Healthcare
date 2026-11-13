@@ -2,14 +2,6 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api'
 
-const DEFAULT_USER_ID = import.meta.env.VITE_DEV_USER_ID
-
-export function getCurrentUserId(): string | undefined {
-  const selectedUserId = localStorage.getItem('dev-user-id')
-
-  return selectedUserId || DEFAULT_USER_ID
-}
-
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {},
@@ -22,15 +14,10 @@ export async function apiRequest<T>(
     headers.set('Content-Type', 'application/json')
   }
 
-  const userId = getCurrentUserId()
-
-  if (userId) {
-    headers.set('X-User-Id', userId)
-  }
-
   const response = await fetch(url, {
     ...options,
     headers,
+    credentials: 'include',
   })
 
   if (!response.ok) {
