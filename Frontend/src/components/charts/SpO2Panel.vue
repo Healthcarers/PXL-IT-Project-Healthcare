@@ -12,7 +12,7 @@ const { active } = useChannelActive('spo2');
 </script>
 
 <template>
-  <MonitorCard label="Pleth" color="#22c55e" tone="blue">
+  <MonitorCard label="Pleth" tone="blue">
     <SweepChart
         v-model:active="active"
         :points="points"

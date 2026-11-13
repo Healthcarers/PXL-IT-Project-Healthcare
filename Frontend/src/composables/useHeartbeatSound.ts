@@ -20,7 +20,7 @@ const SOUND_LEAD_S = 0;                       // nudge beeps earlier (+) or late
 const MAX_LATE_S = 0.05;                      // skip beats more than 50 ms late
 
 const NORMAL_SPO2 = 98;                       // reference point, plays at BEEP_BASE_HZ
-const MIN_SPO2 = 70;                          // clamp so extreme values stay audible
+const MIN_SPO2 = 50;                          // clamp so extreme values stay audible
 const MAX_SPO2 = 100;
 const BEEP_BASE_HZ = 880;                     // set this to the current beep frequency
 

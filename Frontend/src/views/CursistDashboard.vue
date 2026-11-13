@@ -7,7 +7,7 @@ import SpO2Panel from "../components/charts/SpO2Panel.vue";
 import SpO2Card from "../components/charts/SpO2Card.vue";
 
 export default defineComponent({
-  components: {Spo2Card: SpO2Card, SpO2Panel, HeartRateCard, EcgPanel },
+  components: {SpO2Card: SpO2Card, SpO2Panel, HeartRateCard, EcgPanel },
   computed: {
     connected() {
       return connected.value;
@@ -46,7 +46,7 @@ export default defineComponent({
 
       <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1">
         <HeartRateCard />
-        <Spo2Card />
+        <SpO2Card />
       </section>
     </main>
   </div>

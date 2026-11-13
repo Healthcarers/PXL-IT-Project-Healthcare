@@ -28,11 +28,12 @@ public class Spo2Source implements WaveformSource {
 
     @Override
     public double periodMs(VitalsSnapshot v) {
-        return 60000.0 / v.heartRate();
+        return v.heartRate() > 0 ? 60000.0 / v.heartRate() : 1000;
     }
 
     @Override
     public double valueAt(double cycleMs, VitalsSnapshot v) {
+        if (v.heartRate() <= 0) return BASELINE;
         double p = cycleMs / periodMs(v);
 
         double sysOffset = wrap(p - SYS_CENTER);

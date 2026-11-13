@@ -20,7 +20,7 @@ const { active, toggle } = useChannelActive('spo2');
       <span class="font-extrabold text-[#38bdf8] leading-none tabular-nums text-[clamp(56px,7vw,110px)] transition-opacity"
             :class="{ 'opacity-[0.35]': !active }"
       >
-        {{ !active ? '--' : vitals!.spo2 ?? '--' }}
+        {{ !active ? '--' : (vitals?.spo2 ?? '--') }}
       </span>
     </div>
   </MonitorCard>

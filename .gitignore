@@ -31,7 +31,6 @@ coverage/
 .nyc_output/
 
 Frontend/dist
-Frontend/package-lock.json
 Frontend/dev-dist/
 Frontend/dev-dist/sw.js
 dev-dist/

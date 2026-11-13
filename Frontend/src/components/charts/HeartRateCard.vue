@@ -16,12 +16,14 @@ const { active, toggle } = useChannelActive('ecg');
         :aria-pressed="active"
         :aria-label="active ? 'Stop ECG' : 'Start ECG'"
         @click="toggle"
+        tabIndex="0"
+        @keydown="toggle"
     >
       <span
           class="font-extrabold leading-none tabular-nums text-[clamp(56px,7vw,110px)] text-[#22c55e] transition-opacity"
           :class="{ 'opacity-[0.35]': !active }"
       >
-        {{ !active ? '--' : vitals!.heartRate ?? '--' }}
+        {{ !active ? '--' : (vitals?.heartRate ?? '--') }}
       </span>
     </div>
   </MonitorCard>

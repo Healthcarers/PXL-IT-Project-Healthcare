@@ -43,7 +43,7 @@ public class VitalsServiceTest {
     void partialUpdateKeepsUnchangedFields() {
         applyUpdatesTo(current);
 
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(120.0, 98.0, null));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(120.0, null, null));
 
         assertThat(result).isEqualTo(new VitalsSnapshot(120, 98, 1.0));
     }
@@ -62,6 +62,13 @@ public class VitalsServiceTest {
         applyUpdatesTo(current);
 
         assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(999.0, 98.0, null)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+    @Test
+    void rejectsSpo2OutOfRange() {
+        applyUpdatesTo(current);
+
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, 120.0, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
