@@ -201,7 +201,7 @@ describe("AdminDashboardView.vue", () => {
 
   it("maakt een cursist via de adminstore lector en toont een bevestigingsmelding", async () => {
     mockAdminGet();
-    const deleteSpy = vi.spyOn(api, "delete").mockResolvedValue({
+    const patchSpy = vi.spyOn(api, "patch").mockResolvedValue({
       data: undefined,
     });
 
@@ -223,7 +223,7 @@ describe("AdminDashboardView.vue", () => {
     await saveButton!.trigger("click");
     await flushPromises();
 
-    expect(deleteSpy).toHaveBeenCalledWith("/admin/changeRole", {
+    expect(patchSpy).toHaveBeenCalledWith("/admin/changeRole", {
       data: { uuid: "22222222-2222-4222-8222-222222222222" },
     });
     expect(rows[1]!.text()).toContain("Lector");
@@ -234,7 +234,7 @@ describe("AdminDashboardView.vue", () => {
 
   it("laat de accountrol ongewijzigd en toont een fout als de backendpromotie mislukt", async () => {
     mockAdminGet();
-    vi.spyOn(api, "delete").mockRejectedValue(new Error("Request failed"));
+    vi.spyOn(api, "patch").mockRejectedValue(new Error("Request failed"));
 
     const wrapper = mount(AdminDashboardView);
     await flushPromises();

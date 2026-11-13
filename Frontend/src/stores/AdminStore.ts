@@ -55,7 +55,7 @@ export const useAdminStore = defineStore("admin", () => {
   }
 
   async function setLectorRole(uuid: string) {
-    await api.delete<void>("/admin/changeRole", { data: { uuid } });
+    await api.patch<void>("/admin/changeRole", { data: { uuid } });
   }
 
   async function deletePerson(uuid: string) {

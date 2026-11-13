@@ -82,8 +82,8 @@ describe("AdminStore", () => {
       status: "Actief",
       createdAt: "02/01/2025",
     };
-    const deleteSpy = vi
-      .spyOn(api, "delete")
+    const patchSpy = vi
+      .spyOn(api, "patch")
       .mockResolvedValue({ data: undefined });
     vi.spyOn(api, "get").mockResolvedValue({
       data: { totalAccounts: 1, lectoren: 1, cursisten: 0 },
@@ -93,7 +93,7 @@ describe("AdminStore", () => {
 
     await store.handleChangeRole(user.id, "Lector");
 
-    expect(deleteSpy).toHaveBeenCalledWith("/admin/changeRole", {
+    expect(patchSpy).toHaveBeenCalledWith("/admin/changeRole", {
       data: { uuid: user.id },
     });
     expect(user.role).toBe("Lector");
