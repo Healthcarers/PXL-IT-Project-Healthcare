@@ -36,7 +36,7 @@ public class AdminController {
     }
 
     @PatchMapping("/changeRole")
-    public ResponseEntity<Void> changeRoleToLector(@Valid @RequestBody PersonIdRequest personIdRequest){
+    public ResponseEntity<Void> changePersonRole(@Valid @RequestBody PersonIdRequest personIdRequest){
         adminService.setPersonRole(personIdRequest);
         return ResponseEntity.ok().build();
     }

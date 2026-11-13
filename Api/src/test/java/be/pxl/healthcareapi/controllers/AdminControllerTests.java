@@ -31,6 +31,7 @@ import static org.mockito.Mockito.when;
 import static org.springframework.security.oauth2.jwt.Jwt.withTokenValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -131,6 +132,33 @@ class AdminControllerTests {
                 .andExpect(jsonPath("$[0].email").value("ada@example.com"))
                 .andExpect(jsonPath("$[0].role").value("LECTOR"))
                 .andExpect(jsonPath("$[0].createdAt").value("2025-01-02"));
+    }
+
+    @Test
+    void changePersonRole_ShouldAcceptUuidRequestBodyForAdminRole() throws Exception {
+        String token = "admin-token";
+        PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
+        Person person = mock(Person.class);
+        when(personService.getPersonByUUID(request)).thenReturn(person);
+        when(person.getRole()).thenReturn(Role.LECTOR);
+        when(jwtDecoder.decode(token)).thenReturn(withTokenValue(token)
+                .header("alg", "HS256")
+                .subject("admin-id")
+                .claim("role", "ADMIN")
+                .issuedAt(Instant.now())
+                .expiresAt(Instant.now().plusSeconds(900))
+                .build());
+
+        mockMvc.perform(patch("/api/admin/changeRole")
+                        .cookie(new Cookie("access_token", token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"uuid\":\"" + request.uuid() + "\"}"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+
+        verify(personService).getPersonByUUID(request);
+        verify(person).changeRole(Role.CURSIST);
+        verify(personRepo).save(person);
     }
 
     @Test

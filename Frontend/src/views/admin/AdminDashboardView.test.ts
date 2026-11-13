@@ -224,11 +224,43 @@ describe("AdminDashboardView.vue", () => {
     await flushPromises();
 
     expect(patchSpy).toHaveBeenCalledWith("/admin/changeRole", {
-      data: { uuid: "22222222-2222-4222-8222-222222222222" },
+      uuid: "22222222-2222-4222-8222-222222222222",
     });
     expect(rows[1]!.text()).toContain("Lector");
     expect(wrapper.get("[role='status']").text()).toContain(
       "Rol van Test User gewijzigd naar lector.",
+    );
+  });
+
+  it("wijzigt een lector via de adminstore naar cursist", async () => {
+    mockAdminGet();
+    const patchSpy = vi.spyOn(api, "patch").mockResolvedValue({
+      data: undefined,
+    });
+
+    const wrapper = mount(AdminDashboardView);
+    await flushPromises();
+
+    const rows = wrapper.findAll("table[aria-label='Recente accounts'] tbody tr");
+    await rows[0]!
+      .findAll("button")
+      .find((btn) => btn.text().trim() === "Rol wijzigen")!
+      .trigger("click");
+    await wrapper
+      .get("#role-select-11111111-1111-4111-8111-111111111111")
+      .setValue("Cursist");
+    await wrapper
+      .findAll("table[aria-label='Recente accounts'] tbody button")
+      .find((btn) => btn.text().trim() === "Opslaan")!
+      .trigger("click");
+    await flushPromises();
+
+    expect(patchSpy).toHaveBeenCalledWith("/admin/changeRole", {
+      uuid: "11111111-1111-4111-8111-111111111111",
+    });
+    expect(rows[0]!.text()).toContain("Cursist");
+    expect(wrapper.get("[role='status']").text()).toContain(
+      "Rol van Inge Maes gewijzigd naar cursist.",
     );
   });
 

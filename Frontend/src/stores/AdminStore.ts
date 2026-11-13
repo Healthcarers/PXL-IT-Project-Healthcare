@@ -54,8 +54,8 @@ export const useAdminStore = defineStore("admin", () => {
     }
   }
 
-  async function setLectorRole(uuid: string) {
-    await api.patch<void>("/admin/changeRole", { data: { uuid } });
+  async function setPersonRole(uuid: string) {
+    await api.patch<void>("/admin/changeRole", { uuid });
   }
 
   async function deletePerson(uuid: string) {
@@ -64,17 +64,23 @@ export const useAdminStore = defineStore("admin", () => {
 
   async function handleChangeRole(userId: string, newRole: Role) {
     const target = users.value.find((user) => user.id === userId);
-    if (!target || target.role !== "Cursist" || newRole !== "Lector") {
+    if (
+      !target ||
+      !(
+        (target.role === "Cursist" && newRole === "Lector") ||
+        (target.role === "Lector" && newRole === "Cursist")
+      )
+    ) {
       return;
     }
 
     try {
-      await setLectorRole(userId);
-      target.role = "Lector";
+      await setPersonRole(userId);
+      target.role = newRole;
       highlightedUserId.value = userId;
       notification.value = {
         type: "success",
-        message: `Rol van ${target.firstname} ${target.lastname} gewijzigd naar lector.`,
+        message: `Rol van ${target.firstname} ${target.lastname} gewijzigd naar ${newRole.toLowerCase()}.`,
       };
       void fetchLiveStats();
     } catch {
@@ -140,7 +146,7 @@ export const useAdminStore = defineStore("admin", () => {
     notification,
     fetchLiveStats,
     fetchAccounts,
-    setLectorRole,
+    setPersonRole,
     deletePerson,
     handleChangeRole,
     handleDeleteUser,

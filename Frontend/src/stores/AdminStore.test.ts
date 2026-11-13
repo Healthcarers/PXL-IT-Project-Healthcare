@@ -94,13 +94,44 @@ describe("AdminStore", () => {
     await store.handleChangeRole(user.id, "Lector");
 
     expect(patchSpy).toHaveBeenCalledWith("/admin/changeRole", {
-      data: { uuid: user.id },
+      uuid: user.id,
     });
     expect(user.role).toBe("Lector");
     expect(store.highlightedUserId).toBe(user.id);
     expect(store.notification).toEqual({
       type: "success",
       message: "Rol van Ada Lovelace gewijzigd naar lector.",
+    });
+  });
+
+  it("wijzigt een lector naar cursist na een succesvolle API-call", async () => {
+    const user: AdminUser = {
+      id: "lector-id",
+      firstname: "Grace",
+      lastname: "Hopper",
+      email: "grace@example.com",
+      role: "Lector",
+      status: "Actief",
+      createdAt: "02/01/2025",
+    };
+    const patchSpy = vi
+      .spyOn(api, "patch")
+      .mockResolvedValue({ data: undefined });
+    vi.spyOn(api, "get").mockResolvedValue({
+      data: { totalAccounts: 1, lectoren: 0, cursisten: 1 },
+    });
+    const store = useAdminStore();
+    store.users = [user];
+
+    await store.handleChangeRole(user.id, "Cursist");
+
+    expect(patchSpy).toHaveBeenCalledWith("/admin/changeRole", {
+      uuid: user.id,
+    });
+    expect(user.role).toBe("Cursist");
+    expect(store.notification).toEqual({
+      type: "success",
+      message: "Rol van Grace Hopper gewijzigd naar cursist.",
     });
   });
 
