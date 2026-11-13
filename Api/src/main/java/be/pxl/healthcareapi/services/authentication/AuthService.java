@@ -87,6 +87,13 @@ public class AuthService {
         if (personOptional.isEmpty()){
             throw new BadRequestException("Deze persoon bestaat niet");
         }
-        return new AuthResponse(personOptional.get().getFirstname(), personOptional.get().getLastname(), personOptional.get().getRole());
+        Person person = personOptional.get();
+
+        return new AuthResponse(
+                person.getId(),
+                person.getFirstname(),
+                person.getLastname(),
+                person.getRole()
+        );
     }
 }

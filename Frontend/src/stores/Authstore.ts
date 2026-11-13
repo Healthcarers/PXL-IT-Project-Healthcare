@@ -70,16 +70,15 @@ export const useAuthStore = defineStore("auth", () => {
         withCredentials: true,
       });
 
-      if (!error.value) {
-        const person: Person = res.data;
+      const loggedInPerson: Person = res.data;
+      person.value = loggedInPerson;
 
-        if (person.role === "CURSIST") {
-          router.push("/monitor");
-        } else if (person.role === "LECTOR") {
-          router.push("/dashboard");
-        } else if (person.role === "ADMIN") {
-          router.push("/admin");
-        }
+      if (loggedInPerson.role === "CURSIST") {
+        await router.push("/");
+      } else if (loggedInPerson.role === "LECTOR") {
+        await router.push("/rooms/new");
+      } else if (loggedInPerson.role === "ADMIN") {
+          await router.push("/admin");
       }
 
       return res.data;
@@ -108,14 +107,20 @@ export const useAuthStore = defineStore("auth", () => {
     }
   }
 
-  async function isAuthenticated() {
+  async function isAuthenticated(): Promise<Person> {
     loading.value = true;
     error.value = null;
+
     try {
       const res = await api.get("/auth/me");
-      const person: Person = res.data;
-      return person;
+
+      const authenticatedPerson: Person = res.data;
+
+      person.value = authenticatedPerson;
+
+      return authenticatedPerson;
     } catch (err) {
+      person.value = null;
       throw new Error("Not authenticated");
     } finally {
       loading.value = false;

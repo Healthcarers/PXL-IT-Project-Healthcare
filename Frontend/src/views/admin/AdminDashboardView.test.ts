@@ -368,6 +368,7 @@ describe("AdminDashboardView.vue", () => {
     expect(router.currentRoute.value.name).toBe("login");
 
     vi.spyOn(store, "isAuthenticated").mockResolvedValueOnce({
+      id: "12345678-1234-1234-1234-123456789012",
       firstname: "Test",
       lastname: "Cursist",
       role: "CURSIST",
@@ -376,6 +377,7 @@ describe("AdminDashboardView.vue", () => {
     expect(router.currentRoute.value.name).toBe("unauthorized");
 
     vi.spyOn(store, "isAuthenticated").mockResolvedValueOnce({
+      id: "12345678-1234-1234-1234-123456789012",
       firstname: "Sofie",
       lastname: "Peeters",
       role: "ADMIN",

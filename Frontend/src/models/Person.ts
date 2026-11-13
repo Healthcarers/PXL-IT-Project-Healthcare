@@ -1,5 +1,6 @@
 export interface Person {
-  firstname: String;
-  lastname: String;
-  role: String;
+  id: string;
+  firstname: string;
+  lastname: string;
+  role: string;
 }

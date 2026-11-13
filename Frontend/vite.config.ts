@@ -1,3 +1,4 @@
+
 import vue from "@vitejs/plugin-vue";
 import { defineConfig } from "vitest/config";
 import { VitePWA } from "vite-plugin-pwa";
@@ -8,37 +9,69 @@ export default defineConfig({
     vue(),
     tailwindcss(),
     VitePWA({
-      registerType: "autoUpdate",
+      registerType: 'autoUpdate',
       devOptions: {
         enabled: true,
       },
-      includeAssets: ["favicon.ico", "pwa-192x192.png", "pwa-512x512.png"],
+      includeAssets: [
+        'favicon.ico',
+        'pwa-192x192.png',
+        'pwa-512x512.png',
+      ],
       manifest: {
-        name: "Test",
-        short_name: "Test",
-        description: "Test",
-        theme_color: "#ffffff",
-        display: "standalone",
-        start_url: "/",
+        id: '/',
+        name: 'Defibrillator Sim',
+        short_name: 'Defib Sim',
+        description: 'Defibrillator-simulaties beheren en uitvoeren.',
+        theme_color: '#030203',
+        background_color: '#ffffff',
+        display: 'standalone',
+        start_url: '/',
+        scope: '/',
+        orientation: 'any',
         icons: [
           {
-            src: "pwa-192x192.png",
-            sizes: "192x192",
-            type: "image/png",
+            src: 'pwa-192x192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'any',
           },
           {
-            src: "pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any',
+          },
+          {
+            src: 'pwa-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+        ],
+        screenshots: [
+          {
+            src: 'pwa-screenshot-wide.png',
+            sizes: '1280x720',
+            type: 'image/png',
+            form_factor: 'wide',
+            label: 'Defibrillator Sim op desktop',
+          },
+          {
+            src: 'pwa-screenshot-mobile.png',
+            sizes: '390x844',
+            type: 'image/png',
+            label: 'Defibrillator Sim op mobiel',
           },
         ],
       },
     }),
   ],
+
   test: {
-    coverage: {
-      provider: "v8",
-      reporter: ["text", "json", "html"],
-    },
+    globals: true,
+    environment: "happy-dom",
+    setupFiles: "./src/test/setup.ts",
+    css: true,
   },
 });

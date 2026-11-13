@@ -1,17 +1,25 @@
-@import "tailwindcss";
-
-@theme {
-  --color-pxl-black: #030203;
-  --color-pxl-white: #ffffff;
-  --color-pxl-gold: #ae9a64;
-  --color-pxl-canvas: #f5f4f0;
-
-  --font-heading: "Raleway", sans-serif;
-  --font-body: "Museo Sans", "Segoe UI", Roboto, Arial, sans-serif;
-  --font-official: Arial, Helvetica, sans-serif;
-}
 
 :root {
+  /* Algemene kleuren */
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px,
+    rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  /* Lettertypes */
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  /* PXL-huisstijl */
   --pxl-black: rgb(3, 2, 3);
   --pxl-white: rgb(255, 255, 255);
   --pxl-gold: rgb(174, 154, 100);
@@ -20,8 +28,36 @@
   --pxl-font-heading: "Raleway", sans-serif;
   --pxl-font-body: "Museo Sans", "Segoe UI", Roboto, Arial, sans-serif;
   --pxl-font-official: Arial, Helvetica, sans-serif;
+
+  font-family: var(--sans);
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Knoppen */
+button,
+[role="button"],
+input[type="button"],
+input[type="submit"],
+input[type="reset"] {
+  cursor: pointer;
+}
+
+/* PXL-typografie */
 .font-heading {
   font-family: var(--pxl-font-heading);
   font-weight: 900;
@@ -35,6 +71,7 @@
   font-family: var(--pxl-font-official);
 }
 
+/* Admin-dashboard */
 .admin-theme h1,
 .admin-theme h2,
 .admin-theme h3 {

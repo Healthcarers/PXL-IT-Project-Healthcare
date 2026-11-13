@@ -170,14 +170,19 @@ class AuthServiceTests {
         verifyNoInteractions(jwtService);
     }
 
+
     @Test
     void getPersonFromUUID_shouldReturnPersonDetailsWhenPersonExists() {
         // Arrange
         String accessToken = "access-token";
         UUID personId = UUID.randomUUID();
+
         Person person = mock(Person.class);
+
         when(jwtService.extractUserId(accessToken)).thenReturn(personId);
         when(personRepo.getPersonById(personId)).thenReturn(Optional.of(person));
+
+        when(person.getId()).thenReturn(personId);
         when(person.getFirstname()).thenReturn("test");
         when(person.getLastname()).thenReturn("user");
         when(person.getRole()).thenReturn(Role.CURSIST);
@@ -186,7 +191,11 @@ class AuthServiceTests {
         AuthResponse response = authService.getPersonFromUUID(accessToken);
 
         // Assert
-        assertEquals(new AuthResponse("test", "user", Role.CURSIST), response);
+        assertEquals(
+                new AuthResponse(personId, "test", "user", Role.CURSIST),
+                response
+        );
+
         verify(personRepo).getPersonById(personId);
     }
 

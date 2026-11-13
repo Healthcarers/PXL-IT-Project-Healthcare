@@ -35,7 +35,6 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, BearerTokenResolver cookieBearerTokenResolver) throws Exception {
         http
-                //TODO Alleen voor development dit doen
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .authorizeHttpRequests(auth -> auth
@@ -46,6 +45,26 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/refresh"
                         ).permitAll()
+
+                        // Alleen lectoren mogen rooms aanmaken en starten
+                        .requestMatchers(HttpMethod.POST, "/api/rooms")
+                        .hasRole("LECTOR")
+
+                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/start")
+                        .hasRole("LECTOR")
+
+                        // Alleen cursisten mogen deelnemen
+                        .requestMatchers(HttpMethod.POST, "/api/rooms/*/join")
+                        .hasRole("CURSIST")
+
+                        // Alleen lectoren mogen rooms sluiten
+                        .requestMatchers(HttpMethod.PATCH, "/api/rooms/*/close")
+                        .hasRole("LECTOR")
+
+                        // Roomgegevens bekijken
+                        .requestMatchers(HttpMethod.GET, "/api/rooms/**")
+                        .permitAll()
+
                         //TODO: replace permitAll() with the commented methods. Kept like this so bruno/postman still works
                         .requestMatchers(HttpMethod.GET, "/api/vitals", "/api/channels").permitAll()//.hasAnyRole("CURSIST", "LECTOR")
                         .requestMatchers(HttpMethod.PATCH, "/api/vitals").permitAll()//.hasRole("LECTOR")
