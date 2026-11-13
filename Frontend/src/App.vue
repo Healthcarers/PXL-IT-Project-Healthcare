@@ -1,9 +1,10 @@
+
 <script setup lang="ts">
 import { RouterView } from "vue-router";
 </script>
 
 <template>
-    <RouterView />
+  <RouterView />
 </template>
 
 <style>
@@ -11,7 +12,10 @@ html,
 body,
 #app {
   margin: 0;
-  height: 100%;
-  background: #050506;
+  min-height: 100%;
+}
+
+body {
+  min-width: 320px;
 }
 </style>

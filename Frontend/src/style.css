@@ -1,4 +1,13 @@
 
+@import "tailwindcss";
+
+@theme {
+  --color-pxl-black: rgb(3, 2, 3);
+  --color-pxl-white: rgb(255, 255, 255);
+  --color-pxl-gold: rgb(174, 154, 100);
+  --color-pxl-canvas: #f5f4f0;
+}
+
 :root {
   /* Algemene kleuren */
   --text: #6b6375;

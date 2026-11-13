@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { ref } from "vue";
 import type { AdminUser, Role } from "../../types/admin";
@@ -57,6 +58,15 @@ function getRoleBadgeClass(role: Role): string {
   }
   return "border-pxl-black/15 bg-pxl-canvas text-pxl-black";
 }
+
+const primaryButtonClass =
+  "cursor-pointer rounded-full border border-pxl-black bg-pxl-black px-3.5 py-1 text-xs font-semibold text-pxl-white transition hover:border-pxl-gold hover:bg-pxl-black hover:text-pxl-white focus:outline-none focus:ring-2 focus:ring-pxl-gold";
+
+const secondaryButtonClass =
+  "cursor-pointer rounded-full border border-pxl-black/30 bg-pxl-white px-3 py-1 text-xs font-medium text-pxl-black transition hover:border-pxl-black hover:bg-pxl-black hover:text-pxl-white focus:outline-none focus:ring-2 focus:ring-pxl-gold";
+
+const actionButtonClass =
+  "cursor-pointer rounded-full border border-pxl-black bg-pxl-white px-4 py-1 text-xs font-semibold text-pxl-black transition hover:bg-pxl-black hover:text-pxl-white focus:outline-none focus:ring-2 focus:ring-pxl-gold";
 </script>
 
 <template>
@@ -77,6 +87,7 @@ function getRoleBadgeClass(role: Role): string {
             <th class="px-6 py-3 font-medium">Acties</th>
           </tr>
         </thead>
+
         <tbody class="divide-y divide-pxl-black/10">
           <tr
             v-for="user in users"
@@ -91,9 +102,11 @@ function getRoleBadgeClass(role: Role): string {
             <td class="px-6 py-4 font-medium text-pxl-black">
               {{ user.firstname }} {{ user.lastname }}
             </td>
+
             <td class="px-4 py-4 text-pxl-black/80">
               {{ user.email }}
             </td>
+
             <td class="px-4 py-4">
               <span
                 :class="[
@@ -104,18 +117,24 @@ function getRoleBadgeClass(role: Role): string {
                 {{ user.role }}
               </span>
             </td>
+
             <td class="px-4 py-4 text-pxl-black/80">
               {{ user.createdAt }}
             </td>
+
             <td class="px-6 py-4">
               <!-- Inline rol wijzigen -->
               <div
                 v-if="editingUserId === user.id"
                 class="flex flex-wrap items-center gap-2"
               >
-                <label :for="`role-select-${user.id}`" class="sr-only">
+                <label
+                  :for="`role-select-${user.id}`"
+                  class="sr-only"
+                >
                   Kies nieuwe rol voor {{ user.firstname }} {{ user.lastname }}
                 </label>
+
                 <select
                   :id="`role-select-${user.id}`"
                   v-model="pendingRole"
@@ -129,16 +148,18 @@ function getRoleBadgeClass(role: Role): string {
                     {{ roleOption }}
                   </option>
                 </select>
+
                 <button
                   type="button"
-                  class="cursor-pointer rounded-full border border-pxl-black bg-pxl-black px-3.5 py-1 text-xs font-semibold text-pxl-white transition hover:border-pxl-gold focus:outline-none focus:ring-2 focus:ring-pxl-gold"
+                  :class="primaryButtonClass"
                   @click="saveRoleEdit(user.id)"
                 >
                   Opslaan
                 </button>
+
                 <button
                   type="button"
-                  class="cursor-pointer rounded-full border border-pxl-black/30 bg-pxl-white px-3 py-1 text-xs font-medium text-pxl-black transition hover:border-pxl-black focus:outline-none focus:ring-2 focus:ring-pxl-gold"
+                  :class="secondaryButtonClass"
                   @click="cancelRoleEdit"
                 >
                   Annuleer
@@ -153,16 +174,18 @@ function getRoleBadgeClass(role: Role): string {
                 <span class="text-xs italic text-pxl-black/75">
                   Verwijderen?
                 </span>
+
                 <button
                   type="button"
-                  class="cursor-pointer rounded-full border border-pxl-black bg-pxl-black px-3.5 py-1 text-xs font-semibold text-pxl-white transition hover:border-pxl-gold focus:outline-none focus:ring-2 focus:ring-pxl-gold"
+                  :class="primaryButtonClass"
                   @click="confirmDelete(user.id)"
                 >
                   Bevestig
                 </button>
+
                 <button
                   type="button"
-                  class="cursor-pointer rounded-full border border-pxl-black/30 bg-pxl-white px-3 py-1 text-xs font-medium text-pxl-black transition hover:border-pxl-black focus:outline-none focus:ring-2 focus:ring-pxl-gold"
+                  :class="secondaryButtonClass"
                   @click="cancelDelete"
                 >
                   Annuleer
@@ -170,18 +193,22 @@ function getRoleBadgeClass(role: Role): string {
               </div>
 
               <!-- Standaard actieknoppen -->
-              <div v-else class="flex flex-wrap items-center gap-2">
+              <div
+                v-else
+                class="flex flex-wrap items-center gap-2"
+              >
                 <button
                   v-if="user.role !== 'Admin'"
                   type="button"
-                  class="cursor-pointer rounded-full border border-pxl-black bg-pxl-white px-4 py-1 text-xs font-semibold text-pxl-black transition hover:bg-pxl-black hover:text-pxl-white focus:outline-none focus:ring-2 focus:ring-pxl-gold"
+                  :class="actionButtonClass"
                   @click="startRoleEdit(user)"
                 >
                   Rol wijzigen
                 </button>
+
                 <button
                   type="button"
-                  class="cursor-pointer rounded-full border border-pxl-black bg-pxl-white px-4 py-1 text-xs font-semibold text-pxl-black transition hover:bg-pxl-black hover:text-pxl-white focus:outline-none focus:ring-2 focus:ring-pxl-gold"
+                  :class="actionButtonClass"
                   @click="requestDelete(user.id)"
                 >
                   Verwijderen
@@ -193,10 +220,14 @@ function getRoleBadgeClass(role: Role): string {
       </table>
     </div>
 
-    <div v-else class="border-t border-pxl-black/10 px-6 py-10 text-center">
+    <div
+      v-else
+      class="border-t border-pxl-black/10 px-6 py-10 text-center"
+    >
       <p class="font-heading text-base text-pxl-black">
         Geen accounts beschikbaar
       </p>
+
       <p class="font-body mt-1 text-xs italic text-pxl-black/60">
         Er zijn momenteel geen recente accounts om weer te geven.
       </p>
