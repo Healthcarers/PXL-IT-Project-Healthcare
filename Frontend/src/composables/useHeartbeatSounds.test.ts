@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { nextTick, ref } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import type { WaveformChunk } from '../types/waveform';
-import { useHeartbeatSound } from './useHeartbeatSound';
+import { useHeartbeatSound, spo2ToFrequency } from './useHeartbeatSound';
 
 const stubs = vi.hoisted(() => ({
     handler: null as null | ((chunk: WaveformChunk) => void),
@@ -9,7 +9,7 @@ const stubs = vi.hoisted(() => ({
     subscribeTopic: vi.fn(),
     unmountHooks: [] as Array<() => void>,
     useChannelActive: vi.fn(),
-    useHeartRate: vi.fn(),
+    useVitals: vi.fn(),
     audio: {
         audioNow: vi.fn(),
         ensureAudio: vi.fn(),
@@ -40,16 +40,18 @@ vi.mock('./useChannelActive', () => ({
     useChannelActive: stubs.useChannelActive
 }));
 
-vi.mock('./useHeartRate', () => ({
-    useHeartRate: stubs.useHeartRate
+vi.mock('./useVitals.ts', () => ({
+    useVitals: stubs.useVitals
 }));
 
 const RATE = 250;
 const CHUNK = 10;
 const LATENCY = 0.05;
+const BASE_HZ = 880;
 
 let active = ref(true);
 let bpm = ref<number | null>(75);
+let spo2 = ref<number | null>(98);
 
 function deliver(startIndex: number, samples: number[], latencyS = LATENCY) {
     const newestSec = (startIndex + samples.length - 1) / RATE;
@@ -92,8 +94,11 @@ beforeEach(() => {
 
     active = ref(true);
     bpm = ref<number | null>(75);
+    spo2 = ref<number | null>(98);
     stubs.useChannelActive.mockReturnValue({ active });
-    stubs.useHeartRate.mockReturnValue({ bpm });
+    stubs.useVitals.mockReturnValue({
+        vitals: computed(() => ({ heartRate: bpm.value, spo2: spo2.value }))
+    });
 });
 
 describe('subscription', () => {
@@ -124,6 +129,67 @@ describe('peak detection', () => {
         deliver(0, samples);
 
         expect(beepCount()).toBe(0);
+    });
+
+    it('does not double-trigger within the minimum beat gap', () => {
+        mountComposable();
+
+        streamSpikes(40, [5, 25]);
+
+        expect(beepCount()).toBe(1);
+    });
+});
+
+describe('SpO2 pitch', () => {
+    it('plays the base frequency at a normal SpO2 of 98', () => {
+        mountComposable();
+
+        deliver(0, spikeAt(4));
+
+        expect(stubs.audio.scheduleBeep).toHaveBeenLastCalledWith(
+            expect.any(Number),
+            BASE_HZ
+        );
+    });
+
+    it('drops one semitone per percentage point below 98', () => {
+        spo2.value = 96;
+        mountComposable();
+
+        deliver(0, spikeAt(4));
+
+        const [, freq] = stubs.audio.scheduleBeep.mock.calls[0];
+        expect(freq).toBeCloseTo(BASE_HZ * Math.pow(2, -2 / 12), 6);
+    });
+
+    it('falls back to the normal frequency when SpO2 is missing', () => {
+        spo2.value = null;
+        mountComposable();
+
+        deliver(0, spikeAt(4));
+
+        expect(stubs.audio.scheduleBeep).toHaveBeenLastCalledWith(
+            expect.any(Number),
+            BASE_HZ
+        );
+    });
+});
+
+describe('spo2ToFrequency', () => {
+    it('returns the base frequency at 98', () => {
+        expect(spo2ToFrequency(98, BASE_HZ)).toBeCloseTo(BASE_HZ, 6);
+    });
+
+    it('lowers the pitch as SpO2 drops', () => {
+        expect(spo2ToFrequency(90, BASE_HZ)).toBeLessThan(spo2ToFrequency(95, BASE_HZ));
+    });
+
+    it('clamps values below 50 to the 50 frequency', () => {
+        expect(spo2ToFrequency(30, BASE_HZ)).toBeCloseTo(spo2ToFrequency(50, BASE_HZ), 6);
+    });
+
+    it('clamps values above 100 to the 100 frequency', () => {
+        expect(spo2ToFrequency(120, BASE_HZ)).toBeCloseTo(spo2ToFrequency(100, BASE_HZ), 6);
     });
 });
 

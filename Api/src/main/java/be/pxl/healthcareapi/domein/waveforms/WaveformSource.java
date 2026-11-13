@@ -1,4 +1,6 @@
-package be.pxl.healthcareapi.domein;
+package be.pxl.healthcareapi.domein.waveforms;
+
+import be.pxl.healthcareapi.domein.VitalsSnapshot;
 
 public interface WaveformSource {
     String channel();

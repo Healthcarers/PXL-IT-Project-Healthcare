@@ -1,15 +1,16 @@
 import { onUnmounted, ref } from "vue";
-import api from "../services/refreshService";
+import api from "../services/refreshService.ts";
 
-interface VitalsResponse {
+export interface VitalsResponse {
     heartRate: number;
+    spo2: number;
     ampScale: number;
 }
 
 const VITALS_URL = "/vitals";
 const POLL_INTERVAL_MS = 1000;
 
-const bpm = ref<number | null>(null);
+const vitals = ref<VitalsResponse | null>(null);
 
 let timer: number | undefined;
 let subscribers = 0;
@@ -18,12 +19,16 @@ let inFlight: Promise<void> | null = null;
 async function refresh(): Promise<void> {
     if (inFlight) return inFlight;
 
-    inFlight = (async () => {
+    inFlight = (async () =>  {
         try {
             const res = await api.get<VitalsResponse>(VITALS_URL);
-            bpm.value = Math.round(res.data.heartRate);
+            vitals.value = {
+                heartRate: Math.round(res.data.heartRate),
+                spo2: Math.round(res.data.spo2),
+                ampScale: res.data.ampScale
+            };
         } catch {
-            bpm.value = null;
+            vitals.value = null;
         } finally {
             inFlight = null;
         }
@@ -48,9 +53,9 @@ function release() {
     }
 }
 
-export function useHeartRate() {
+export function useVitals() {
     acquire();
     onUnmounted(release);
 
-    return { bpm };
+    return { vitals };
 }

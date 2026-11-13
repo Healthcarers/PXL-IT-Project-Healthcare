@@ -1,6 +1,6 @@
 package be.pxl.healthcareapi.dto;
 
-import be.pxl.healthcareapi.domein.WaveformSource;
+import be.pxl.healthcareapi.domein.waveforms.WaveformSource;
 
 public record ChannelResponse(String channel, int sampleRate, String unit, double yMin, double yMax) {
     public static ChannelResponse from(WaveformSource source) {

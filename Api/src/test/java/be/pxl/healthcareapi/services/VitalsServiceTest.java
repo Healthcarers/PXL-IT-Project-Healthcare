@@ -20,7 +20,7 @@ public class VitalsServiceTest {
     @Mock
     VitalsRepository repository;
 
-    private final VitalsSnapshot current = new VitalsSnapshot(75, 1.0);
+    private final VitalsSnapshot current = new VitalsSnapshot(75, 98, 1.0);
 
     private VitalsService service() {
         return new VitalsService(repository);
@@ -43,32 +43,39 @@ public class VitalsServiceTest {
     void partialUpdateKeepsUnchangedFields() {
         applyUpdatesTo(current);
 
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(120.0, null));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(120.0, null, null));
 
-        assertThat(result).isEqualTo(new VitalsSnapshot(120, 1.0));
+        assertThat(result).isEqualTo(new VitalsSnapshot(120, 98, 1.0));
     }
 
     @Test
     void updateAllFieldsWhenProvided() {
         applyUpdatesTo(current);
 
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(95.0, 1.5));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(95.0, 98.0, 1.5));
 
-        assertThat(result).isEqualTo(new VitalsSnapshot(95, 1.5));
+        assertThat(result).isEqualTo(new VitalsSnapshot(95, 98, 1.5));
     }
 
     @Test
     void rejectsHeartRateOutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(999.0, null)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(999.0, 98.0, null)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+    @Test
+    void rejectsSpo2OutOfRange() {
+        applyUpdatesTo(current);
+
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, 120.0, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void heartRateZeroIsAcceptedForFlatline() {
         applyUpdatesTo(current);
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, null));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, 98.0, null));
         assertThat(result.heartRate()).isEqualTo(0);
     }
 }

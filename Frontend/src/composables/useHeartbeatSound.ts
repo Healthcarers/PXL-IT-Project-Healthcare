@@ -10,7 +10,7 @@ import {
 } from '../services/heartbeatAudio';
 import type { WaveformChunk } from '../types/waveform';
 import { useChannelActive } from './useChannelActive';
-import { useHeartRate } from './useHeartRate';
+import {useVitals} from "./useVitals.ts";
 
 const RATE = 250;                             // must match the ECG source sampleRate
 const R_THRESHOLD = 0.5;                      // mV, the R peak is about 1.0
@@ -19,9 +19,25 @@ const OFFSET_WINDOW = 40;                     // about 1.6 s of chunks
 const SOUND_LEAD_S = 0;                       // nudge beeps earlier (+) or later (-)
 const MAX_LATE_S = 0.05;                      // skip beats more than 50 ms late
 
+const NORMAL_SPO2 = 98;                       // reference point, plays at BEEP_BASE_HZ
+const MIN_SPO2 = 50;                          // clamp so extreme values stay audible
+const MAX_SPO2 = 100;
+const BEEP_BASE_HZ = 880;                     // set this to the current beep frequency
+
+export function spo2ToFrequency(spo2: number, baseHz: number = BEEP_BASE_HZ): number {
+    const clamped = Math.min(MAX_SPO2, Math.max(MIN_SPO2, spo2));
+    const semitones = clamped - NORMAL_SPO2;   // negative when SpO2 drops
+    return baseHz * Math.pow(2, semitones / 12);
+}
+
 export function useHeartbeatSound() {
     const { active } = useChannelActive('ecg');
-    const { bpm } = useHeartRate();
+    const { vitals } = useVitals();
+    const bpm = computed(() => vitals.value?.heartRate ?? null);
+
+    // Fall back to the normal reading until the first vitals message arrives.
+    const spo2 = computed(() => vitals.value?.spo2 ?? NORMAL_SPO2);
+    const beepHz = computed(() => spo2ToFrequency(spo2.value));
 
     // Heart rate of 0 is the flatline state. The tone follows the same value.
     const flatline = computed(() => bpm.value === 0);
@@ -54,7 +70,7 @@ export function useHeartbeatSound() {
 
             const t = base + idx / RATE - SOUND_LEAD_S;
             if (t >= audioNow() - MAX_LATE_S) {
-                scheduleBeep(Math.max(t, audioNow()));
+                scheduleBeep(Math.max(t, audioNow()), beepHz.value);
             }
         }
     });
