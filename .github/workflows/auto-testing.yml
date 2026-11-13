@@ -1,0 +1,164 @@
+name: Automated Tests
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: Backend Tests (JUnit / Maven)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: 'Api/pom.xml'
+
+      - name: Run Backend JUnit Tests
+        working-directory: ./Api
+        run: |
+          if [ -f "./mvnw" ]; then
+            chmod +x ./mvnw
+            ./mvnw clean test -B
+          else
+            mvn clean test -B
+          fi
+
+      - name: Upload Backend Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: junit-test-reports
+          path: Api/target/surefire-reports/TEST-*.xml
+          if-no-files-found: ignore
+
+  frontend-tests:
+    name: Frontend Tests (Vitest)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'Frontend/package-lock.json'
+
+      - name: Install Frontend Dependencies
+        working-directory: ./Frontend
+        run: npm ci
+
+      - name: Run Frontend Vitest Tests
+        working-directory: ./Frontend
+        env:
+          VITE_API_BASE_URL: http://localhost:8080
+        run: npx vitest run --reporter=default --reporter=junit --outputFile=junit.xml
+
+      - name: Upload Frontend Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vitest-test-reports
+          path: Frontend/junit.xml
+          if-no-files-found: ignore
+
+  report-to-xray:
+    name: Report Results to Jira Xray
+    runs-on: ubuntu-latest
+    needs: [ backend-tests, frontend-tests ]
+    if: always()
+
+    steps:
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download Backend Test Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: junit-test-reports
+          path: backend-reports
+        continue-on-error: true
+
+      - name: Download Frontend Test Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: vitest-test-reports
+          path: frontend-reports
+        continue-on-error: true
+
+      - name: Merge Test Reports
+        run: |
+          mkdir -p all-reports
+          [ -d backend-reports ] && cp backend-reports/*.xml all-reports/ 2>/dev/null || true
+          [ -d frontend-reports ] && cp frontend-reports/*.xml all-reports/ 2>/dev/null || true
+          
+          if ls all-reports/*.xml 1> /dev/null 2>&1; then
+            npx junit-report-merger merged-test-results.xml "all-reports/*.xml"
+            echo "Samengevoegd rapport aangemaakt:"
+            ls -lh merged-test-results.xml
+          else
+            echo "Geen testrapporten gevonden om te rapporteren."
+            exit 1
+          fi
+
+      - name: Send Results to Jira Xray
+        if: github.ref == 'refs/heads/dev' || github.ref == 'refs/heads/main'
+        env:
+          JIRA_XRAY_TOKEN: ${{ secrets.JIRA_XRAY_TOKEN }}
+        run: |
+          SHORT_SHA=${GITHUB_SHA::7}
+          DATUM=$(TZ=Europe/Brussels date +'%d/%m/%Y %H:%M')
+
+          cat > info.json <<EOF
+          {
+            "fields": {
+              "project": { "key": "IT2627T01" },
+              "summary": "CI-run ${GITHUB_REF_NAME} - ${DATUM} - ${SHORT_SHA}",
+              "description": "Automatische run #${GITHUB_RUN_NUMBER}: ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+              "issuetype": { "name": "Test Execution" },
+              "customfield_10226": ["IT2627T01-90"],
+              "customfield_10224": ["CI"],
+              "customfield_10218": "${SHORT_SHA}"
+            }
+          }
+          EOF
+
+          echo "Versturen naar Jira Xray op jiradigi.pxl.be..."
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            -H "Authorization: Bearer $JIRA_XRAY_TOKEN" \
+            -F "file=@merged-test-results.xml" \
+            -F "info=@info.json;type=application/json" \
+            "https://jiradigi.pxl.be/rest/raven/1.0/import/execution/junit/multipart")
+
+          HTTP_BODY=$(echo "$RESPONSE" | sed '$d')
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -n 1)
+
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response: $HTTP_BODY"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "Succesvol geïmporteerd in Jira Xray!"
+          else
+            echo "Fout bij importeren in Jira Xray!"
+            exit 1
+          fi
