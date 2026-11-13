@@ -1,10 +1,10 @@
+
 package be.pxl.healthcareapi.exception;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -15,6 +15,7 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<String> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new LinkedHashMap<>();
@@ -28,6 +29,7 @@ public class GlobalExceptionHandler {
         String message = errors.values().stream()
                 .findFirst()
                 .orElse("Validatiefout opgetreden");
+
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
     }
 
@@ -36,7 +38,7 @@ public class GlobalExceptionHandler {
             IllegalArgumentException exception
     ) {
         return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
+                .status(HttpStatus.BAD_REQUEST)
                 .body(exception.getMessage());
     }
 
