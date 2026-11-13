@@ -301,3 +301,45 @@ input[type="reset"] {
     border-right-color: var(--border);
   }
 }
+
+@theme {
+  --color-pxl-black: #030203;
+  --color-pxl-white: #ffffff;
+  --color-pxl-gold: #ae9a64;
+  --color-pxl-canvas: #f5f4f0;
+
+  --font-heading: "Raleway", sans-serif;
+  --font-body: "Museo Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --font-official: Arial, Helvetica, sans-serif;
+}
+
+:root {
+  --pxl-black: rgb(3, 2, 3);
+  --pxl-white: rgb(255, 255, 255);
+  --pxl-gold: rgb(174, 154, 100);
+  --pxl-canvas: #f5f4f0;
+
+  --pxl-font-heading: "Raleway", sans-serif;
+  --pxl-font-body: "Museo Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --pxl-font-official: Arial, Helvetica, sans-serif;
+}
+
+.font-heading {
+  font-family: var(--pxl-font-heading);
+  font-weight: 900;
+}
+
+.font-body {
+  font-family: var(--pxl-font-body);
+}
+
+.font-official {
+  font-family: var(--pxl-font-official);
+}
+
+.admin-theme h1,
+.admin-theme h2,
+.admin-theme h3 {
+  font-family: var(--pxl-font-heading);
+  font-weight: 900;
+}

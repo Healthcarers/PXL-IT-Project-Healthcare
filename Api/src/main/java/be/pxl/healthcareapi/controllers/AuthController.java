@@ -69,4 +69,3 @@ public class AuthController {
         return headers;
     }
 }
-
