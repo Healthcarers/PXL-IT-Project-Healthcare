@@ -7,11 +7,9 @@ import RoomView from '../views/RoomView.vue'
 import HostDashboardView from '../views/HostDashboardView.vue'
 import RegistrationView from '../views/registration/RegistrationView.vue'
 import LoginView from '../views/login/LoginView.vue'
-import MonitorView from '../views/MonitorView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
 import AdminDashboardView from "../views/admin/AdminDashboardView.vue";
-import type { Person } from "../models/Person.ts";
 import CursistDashboard from "../views/CursistDashboard.vue";
 
 const router = createRouter({

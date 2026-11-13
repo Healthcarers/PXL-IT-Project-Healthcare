@@ -77,8 +77,8 @@ export const useAuthStore = defineStore("auth", () => {
         await router.push("/");
       } else if (loggedInPerson.role === "LECTOR") {
         await router.push("/rooms/new");
-      } else if (person.role === "ADMIN") {
-          router.push("/admin");
+      } else if (loggedInPerson.role === "ADMIN") {
+          await router.push("/admin");
       }
 
       return res.data;
