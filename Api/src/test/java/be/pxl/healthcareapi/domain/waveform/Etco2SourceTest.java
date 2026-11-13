@@ -18,7 +18,7 @@ class Etco2SourceTest {
         assertThat(src.sampleRate()).isEqualTo(50);
         assertThat(src.unit()).isEqualTo("mmHg");
         assertThat(src.yMin()).isZero();
-        assertThat(src.yMax()).isEqualTo(50);
+        assertThat(src.yMax()).isEqualTo(100);
     }
 
     @Test
