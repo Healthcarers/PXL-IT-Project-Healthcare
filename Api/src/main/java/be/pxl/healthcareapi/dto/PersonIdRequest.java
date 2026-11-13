@@ -1,4 +1,6 @@
 package be.pxl.healthcareapi.dto;
 
-public record PersonIdRequest(String uuid) {
+import jakarta.validation.constraints.NotBlank;
+
+public record PersonIdRequest(@NotBlank String uuid) {
 }

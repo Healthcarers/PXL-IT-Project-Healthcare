@@ -6,11 +6,7 @@ import be.pxl.healthcareapi.dto.AdminAccountResponse;
 import be.pxl.healthcareapi.dto.AdminStatsResponse;
 import be.pxl.healthcareapi.services.admin.AdminService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -39,7 +35,7 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/changeRole")
+    @PatchMapping("/changeRole")
     public ResponseEntity<Void> changeRoleToLector(@Valid @RequestBody PersonIdRequest personIdRequest){
         adminService.setPersonRole(personIdRequest);
         return ResponseEntity.ok().build();

@@ -11,6 +11,11 @@ import be.pxl.healthcareapi.repos.RefreshTokenRepo;
 import be.pxl.healthcareapi.services.person.PersonService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -18,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.UUID;
 import java.time.LocalDate;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -81,29 +87,25 @@ class AdminServiceTests {
         );
     }
 
-    @Test
-    void setPersonRole_ShouldChangeRoleToLectorAndSavePerson() {
+    static Stream<Arguments> roleProvider() {
+        return Stream.of(
+                Arguments.of(Role.CURSIST, Role.LECTOR),
+                Arguments.of(Role.LECTOR, Role.CURSIST)
+        );
+    }
+
+    @ParameterizedTest
+    @MethodSource("roleProvider")
+    void setPersonRole_ShouldChangeRoleCorrect(Role role, Role changedRole) {
         PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
         Person person = mock(Person.class);
         when(personService.getPersonByUUID(request)).thenReturn(person);
-        when(person.getRole()).thenReturn(Role.CURSIST);
+        when(person.getRole()).thenReturn(role);
 
         adminService.setPersonRole(request);
 
-        verify(person).changeRole(Role.LECTOR);
+        verify(person).changeRole(changedRole);
         verify(personRepo).save(person);
-    }
-
-    @Test
-    void setPersonRole_ShouldRejectPersonWhoIsAlreadyLector() {
-        PersonIdRequest request = new PersonIdRequest(UUID.randomUUID().toString());
-        Person person = mock(Person.class);
-        when(personService.getPersonByUUID(request)).thenReturn(person);
-        when(person.getRole()).thenReturn(Role.LECTOR);
-
-        assertThrows(BadRequestException.class, () -> adminService.setPersonRole(request));
-
-        org.mockito.Mockito.verifyNoInteractions(personRepo);
     }
 
     @Test

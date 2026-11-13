@@ -55,12 +55,15 @@ public class AdminService {
     @PreAuthorize("hasRole('ADMIN')")
     public void setPersonRole(PersonIdRequest personIdRequest){
         Person personToChange = personService.getPersonByUUID(personIdRequest);
-
-        if (personToChange.getRole() == Role.LECTOR){
-            throw new BadRequestException("Deze gebruiker heeft al lector als rol");
+        if (personToChange.getRole() == Role.ADMIN){
+            throw new BadRequestException("Admin role kan niet veranderd worden");
         }
-
-        personToChange.changeRole(Role.LECTOR);
+        else if (personToChange.getRole() == Role.CURSIST){
+            personToChange.changeRole(Role.LECTOR);
+        }
+        else {
+            personToChange.changeRole(Role.CURSIST);
+        }
         personRepo.save(personToChange);
     }
 
