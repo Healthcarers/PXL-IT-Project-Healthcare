@@ -13,7 +13,7 @@ public class EcgSourceTest {
     private final EcgSource ecg = new EcgSource();
 
     private static VitalsSnapshot vitals(double bpm) {
-        return new VitalsSnapshot(bpm, 98, 1);
+        return new VitalsSnapshot(bpm, 98, 15, 38, 1);
     }
 
     private double peakOverCycle(VitalsSnapshot vitals) {
@@ -48,8 +48,8 @@ public class EcgSourceTest {
 
     @Test
     void ampScaleScalesEveryPointLinearly() {
-        VitalsSnapshot base = new VitalsSnapshot(75, 98, 1.0);
-        VitalsSnapshot doubled = new VitalsSnapshot(75, 98, 2.0);
+        VitalsSnapshot base = new VitalsSnapshot(75, 98, 15, 38, 1.0);
+        VitalsSnapshot doubled = new VitalsSnapshot(75, 98, 15, 38, 2.0);
 
         for (double t = 0; t < 1000; t += 37) {
             assertThat(ecg.valueAt(t, doubled))
@@ -75,7 +75,7 @@ public class EcgSourceTest {
 
     @Test
     void flatlineWhenHeartRateIsZero() {
-        VitalsSnapshot flat = new VitalsSnapshot(0, 98, 1.0);
+        VitalsSnapshot flat = new VitalsSnapshot(0, 98, 15, 38, 1.0);
         for (double t = 0; t < 2000; t += 25) {
             assertThat(ecg.valueAt(t, flat)).isEqualTo(0.0);
         }

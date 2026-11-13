@@ -24,7 +24,7 @@ useHeartbeatSound();
           :y-min="-1"
           :y-max="2"
           color="#22c55e"
-          :show-cursor="false"
+          :show-cursor="true"
       />
   </MonitorCard>
 </template>

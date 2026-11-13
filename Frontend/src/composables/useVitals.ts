@@ -4,6 +4,8 @@ import api from "../services/refreshService.ts";
 export interface VitalsResponse {
     heartRate: number;
     spo2: number;
+    etco2: number;
+    respRate: number;
     ampScale: number;
 }
 
@@ -25,6 +27,8 @@ async function refresh(): Promise<void> {
             vitals.value = {
                 heartRate: Math.round(res.data.heartRate),
                 spo2: Math.round(res.data.spo2),
+                etco2: Math.round(res.data.etco2),
+                respRate: Math.round(res.data.respRate),
                 ampScale: res.data.ampScale
             };
         } catch {

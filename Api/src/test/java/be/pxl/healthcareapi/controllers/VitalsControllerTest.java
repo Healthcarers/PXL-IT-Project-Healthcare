@@ -28,7 +28,7 @@ public class VitalsControllerTest {
 
     @Test
     void getReturnsVitalsAsJson() throws Exception {
-        when(vitalsService.get()).thenReturn(new VitalsSnapshot(75, 98, 1.0));
+        when(vitalsService.get()).thenReturn(new VitalsSnapshot(75, 98, 15, 38, 1.0));
 
         mvc.perform(get("/api/vitals"))
                 .andExpect(status().isOk())
@@ -38,7 +38,7 @@ public class VitalsControllerTest {
 
     @Test
     void patchPassesOnlyTheProvidedFields() throws Exception {
-        when(vitalsService.update(any())).thenReturn(new VitalsSnapshot(120, 98, 1.0));
+        when(vitalsService.update(any())).thenReturn(new VitalsSnapshot(120, 98, 15, 38, 1.0));
 
         mvc.perform(patch("/api/vitals")
                 .contentType(MediaType.APPLICATION_JSON)
