@@ -27,6 +27,8 @@ public class Etco2Source implements WaveformSource {
 
     @Override
     public double valueAt(double cycleMs, VitalsSnapshot v) {
+        if (v.respRate() <= 0) return 0;
+
         double e = v.etco2();
         double p = cycleMs / periodMs(v);
         p -= Math.floor(p);

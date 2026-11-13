@@ -12,7 +12,7 @@ const { active } = useChannelActive('etco2');
 </script>
 
 <template>
-  <MonitorCard label="etCO2" unit="mmHg" tone="yellow">
+  <MonitorCard label="etCO2" unit="" tone="yellow">
     <SweepChart
         v-model:active="active"
         :points="points"
