@@ -16,6 +16,7 @@ import be.pxl.healthcareapi.repositories.PersonRepository;
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import be.pxl.healthcareapi.exception.NotFoundException;
 
 @Service
 public class RoomService {
@@ -67,7 +68,7 @@ public class RoomService {
     public Room getRoomByCode(String code) {
         return roomRepository.findByCode(code.toUpperCase())
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
+                        new NotFoundException(
                                 "Room niet gevonden: " + code
                         ));
     }

@@ -5,6 +5,7 @@ import be.pxl.healthcareapi.domein.Room;
 import be.pxl.healthcareapi.domein.RoomParticipant;
 import be.pxl.healthcareapi.domein.RoomStatus;
 import be.pxl.healthcareapi.dto.RoomResponse;
+import be.pxl.healthcareapi.exception.NotFoundException;
 import be.pxl.healthcareapi.repositories.RoomParticipantRepository;
 import be.pxl.healthcareapi.repositories.RoomRepository;
 import org.junit.jupiter.api.Test;
@@ -128,12 +129,12 @@ class RoomServiceTest {
     }
 
     @Test
-    void getRoomByCodeThrowsExceptionWhenRoomDoesNotExist() {
+    void getRoomByCodeThrowsNotFoundExceptionWhenRoomDoesNotExist() {
         when(roomRepository.findByCode("NOT123"))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        NotFoundException exception = assertThrows(
+                NotFoundException.class,
                 () -> roomService.getRoomByCode("NOT123")
         );
 

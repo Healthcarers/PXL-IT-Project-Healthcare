@@ -25,11 +25,22 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
-    void illegalArgumentException_returnsNotFound() {
+    void illegalArgumentException_returnsBadRequest() {
         IllegalArgumentException exception =
-                new IllegalArgumentException("Room niet gevonden.");
+                new IllegalArgumentException("Ongeldige invoer.");
 
         var response = handler.handleIllegalArgumentException(exception);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("Ongeldige invoer.", response.getBody());
+    }
+
+    @Test
+    void notFoundException_returnsNotFound() {
+        NotFoundException exception =
+                new NotFoundException("Room niet gevonden.");
+
+        var response = handler.handleNotFoundException(exception);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals("Room niet gevonden.", response.getBody());

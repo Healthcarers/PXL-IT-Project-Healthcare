@@ -6,6 +6,7 @@ import be.pxl.healthcareapi.domein.RoomParticipant;
 import be.pxl.healthcareapi.domein.RoomStatus;
 import be.pxl.healthcareapi.dto.RoomParticipantResponse;
 import be.pxl.healthcareapi.dto.RoomResponse;
+import be.pxl.healthcareapi.exception.NotFoundException;
 import be.pxl.healthcareapi.services.RoomService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,7 +130,7 @@ class RoomControllerTest {
     @Test
     void getRoomByCodeReturnsNotFoundWhenRoomDoesNotExist() throws Exception {
         when(roomService.getRoomDetails("UNKNOWN"))
-                .thenThrow(new IllegalArgumentException("Room niet gevonden: UNKNOWN"));
+                .thenThrow(new NotFoundException("Room niet gevonden: UNKNOWN"));
 
         mockMvc.perform(get("/api/rooms/UNKNOWN")
                         .with(user("testuser")))
@@ -288,7 +289,7 @@ class RoomControllerTest {
     @Test
     void closeRoomWhenRoomDoesNotExistReturnsNotFound() throws Exception {
         when(roomService.closeRoom("UNKNOWN"))
-                .thenThrow(new IllegalArgumentException(
+                .thenThrow(new NotFoundException(
                         "Room niet gevonden: UNKNOWN"
                 ));
 
@@ -425,7 +426,7 @@ class RoomControllerTest {
         UUID userId = UUID.randomUUID();
 
         when(roomService.joinRoom("UNKNOWN", userId))
-                .thenThrow(new IllegalArgumentException(
+                .thenThrow(new NotFoundException(
                         "Room niet gevonden: UNKNOWN"
                 ));
 
@@ -439,7 +440,7 @@ class RoomControllerTest {
     @Test
     void getRoomParticipantsWhenRoomDoesNotExistReturnsNotFound() throws Exception {
         when(roomService.getRoomParticipants("UNKNOWN"))
-                .thenThrow(new IllegalArgumentException(
+                .thenThrow(new NotFoundException(
                         "Room niet gevonden: UNKNOWN"
                 ));
 
