@@ -17,7 +17,7 @@ const { active, toggle } = useChannelActive('spo2');
       :aria-label="active ? 'Stop SpO2' : 'Start SpO2'"
       @click="toggle"
     >
-      <span class="font-extrabold text-[#38bdf8] leading-none tabular-nums text-[clamp(56px,7vw,110px)] transition-opacity"
+      <span class="font-extrabold text-[#38bdf8] leading-none tabular-nums text-[clamp(40px,5vw,72px)] transition-opacity"
             :class="{ 'opacity-[0.35]': !active }"
       >
         {{ !active ? '--' : (vitals?.spo2 ?? '--') }}
