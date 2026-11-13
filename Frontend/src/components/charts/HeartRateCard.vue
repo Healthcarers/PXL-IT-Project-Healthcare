@@ -20,7 +20,7 @@ const { active, toggle } = useChannelActive('ecg');
         @keydown="toggle"
     >
       <span
-          class="font-extrabold leading-none tabular-nums text-[clamp(56px,7vw,110px)] text-[#22c55e] transition-opacity"
+          class="font-extrabold leading-none tabular-nums text-[clamp(40px,5vw,72px)] text-[#22c55e] transition-opacity"
           :class="{ 'opacity-[0.35]': !active }"
       >
         {{ !active ? '--' : (vitals?.heartRate ?? '--') }}

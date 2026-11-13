@@ -16,7 +16,7 @@ const { active, toggle } = useChannelActive('etco2');
         :aria-label="active ? 'Stop etCO2' : 'Start etCO2'"
         @click="toggle"
     >
-      <span class="font-extrabold text-[#facc15] leading-none tabular-nums text-[clamp(56px,7vw,110px)] transition-opacity"
+      <span class="font-extrabold text-[#facc15] leading-none tabular-nums text-[clamp(40px,5vw,72px)] transition-opacity"
             :class="{ 'opacity-[0.35]': !active }"
       >
         {{ !active ? '--' : (vitals?.etco2 ?? '--') }}

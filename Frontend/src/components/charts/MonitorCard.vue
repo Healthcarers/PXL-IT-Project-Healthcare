@@ -2,7 +2,8 @@
 const tones = {
   green: 'text-[#22c55e]',
   blue: 'text-[#38bdf8]',
-  yellow: 'text-[#facc15]'
+  yellow: 'text-[#facc15]',
+  red: 'text-[#ff0707]',
 } as const
 
 defineProps<{

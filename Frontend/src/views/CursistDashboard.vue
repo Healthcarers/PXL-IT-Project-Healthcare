@@ -7,9 +7,11 @@ import SpO2Panel from "../components/charts/SpO2Panel.vue";
 import SpO2Card from "../components/charts/SpO2Card.vue";
 import Etco2Panel from "../components/charts/Etco2Panel.vue";
 import Etco2Card from "../components/charts/Etco2Card.vue";
+import IBPCard from "../components/charts/IBPCard.vue";
 
 export default defineComponent({
-  components: {Etco2Card, Etco2Panel, SpO2Card: SpO2Card, SpO2Panel, HeartRateCard, EcgPanel },
+  components: {
+    IBPCard, Etco2Card, Etco2Panel, SpO2Card, SpO2Panel, HeartRateCard, EcgPanel },
   computed: {
     connected() {
       return connected.value;
@@ -51,6 +53,7 @@ export default defineComponent({
         <HeartRateCard />
         <SpO2Card />
         <Etco2Card />
+        <IBPCard />
       </section>
     </main>
   </div>

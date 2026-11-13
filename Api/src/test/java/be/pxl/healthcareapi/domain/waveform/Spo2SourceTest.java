@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.within;
 class Spo2SourceTest {
 
     private final Spo2Source src = new Spo2Source();
-    private final VitalsSnapshot v = new VitalsSnapshot(60, 98, 15, 38, 1.0);
+    private final VitalsSnapshot v = new VitalsSnapshot(60, 98, 15, 38, 1.0, 120, 80);
 
     @Test
     void metadataMatchesContract() {
@@ -24,7 +24,7 @@ class Spo2SourceTest {
     @Test
     void periodFollowsHeartRate() {
         assertThat(src.periodMs(v)).isCloseTo(1000, within(1e-9));
-        assertThat(src.periodMs(new VitalsSnapshot(120, 98, 15, 38, 1.0))).isCloseTo(500, within(1e-9));
+        assertThat(src.periodMs(new VitalsSnapshot(120, 98, 15, 38, 1.0, 120, 80))).isCloseTo(500, within(1e-9));
     }
 
     @Test
@@ -36,7 +36,7 @@ class Spo2SourceTest {
 
     @Test
     void valuesStayWithinDisplayRangeAtHighAmpScale() {
-        VitalsSnapshot highGain = new VitalsSnapshot(60, 98, 15, 38, 3.0);
+        VitalsSnapshot highGain = new VitalsSnapshot(60, 98, 15, 38, 3.0, 120, 80);
 
         for (double t = 0; t < src.periodMs(highGain); t += 4) {
             assertThat(src.valueAt(t, highGain)).isBetween(src.yMin(), src.yMax());
@@ -67,7 +67,7 @@ class Spo2SourceTest {
 
     @Test
     void shapeScalesInTimeWithHeartRate() {
-        VitalsSnapshot fast = new VitalsSnapshot(120, 98, 15, 38, 1.0);
+        VitalsSnapshot fast = new VitalsSnapshot(120, 98, 15, 38, 1.0, 120, 80);
 
         assertThat(src.valueAt(0.34 * src.periodMs(fast), fast))
                 .isCloseTo(src.valueAt(0.34 * src.periodMs(v), v), within(1e-9));
@@ -75,7 +75,7 @@ class Spo2SourceTest {
 
     @Test
     void ampScaleChangesPeakHeight() {
-        VitalsSnapshot half = new VitalsSnapshot(60, 98, 15, 38, 0.5);
+        VitalsSnapshot half = new VitalsSnapshot(60, 98, 15, 38, 0.5, 120, 80);
         double peakTime = 0.18 * src.periodMs(v);
 
         double full = src.valueAt(peakTime, v) - 0.05;
@@ -86,7 +86,7 @@ class Spo2SourceTest {
 
     @Test
     void highAmpScaleClipsPeakAtDisplayMaximum() {
-        VitalsSnapshot highGain = new VitalsSnapshot(60, 98, 15, 38, 3.0);
+        VitalsSnapshot highGain = new VitalsSnapshot(60, 98, 15, 38, 3.0, 120, 80);
 
         assertThat(src.valueAt(0.18 * src.periodMs(highGain), highGain))
                 .isEqualTo(src.yMax());
