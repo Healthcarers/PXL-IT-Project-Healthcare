@@ -29,6 +29,7 @@ dist-ssr
 # Coverage directories
 coverage/
 .nyc_output/
+loadtest/results/
 
 Frontend/dist
 Frontend/dev-dist/

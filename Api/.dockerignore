@@ -5,3 +5,5 @@ target/
 .gitignore
 .gitattributes
 compose.yaml
+.env
+.env.*

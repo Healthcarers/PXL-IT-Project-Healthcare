@@ -8,7 +8,7 @@
 # ==============================================================================
 
 # Core & Location
-project_name = "cheap-pg"
+project_name = "pxl-healthcare"
 location     = "switzerlandnorth"
 
 # Database Configuration
@@ -24,10 +24,6 @@ db_name     = "PXL_Healthcare_DB"
 # Monitoring & Alerting
 alert_email = "student@pxl.be"
 
-# Container App API
-api_image = "mendhak/http-https-echo:31"
-
-# Container Registry Authentication (Optional for private registries like ghcr.io)
-# registry_server          = "ghcr.io"
-# registry_username        = "your-github-username"
-# registry_password_secret = "ghp_yourPersonalAccessToken"
+# Container Registry (default: provisions ACR Basic + Managed Identity AcrPull)
+use_acr   = true
+image_tag = "latest"

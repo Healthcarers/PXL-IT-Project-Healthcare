@@ -1,62 +1,54 @@
-# Healthcare API – Scalability & Load Testing (k6)
+# PXL Healthcare – Scalability & DDoS Protection Tests (k6 + Docker Compose)
 
-Deze map bevat het k6 Burst/Spike load-testing script om de automatische schaalbaarheid (auto-scaling van `1` naar `5` replica's) van onze API op **Azure Container Apps** live aan te tonen tijdens demo's en feedbackmomenten.
-
----
-
-## 🎯 Doel van de Test
-
-Onze Azure Container App (`cheap-pg-api`) is via Terraform geconfigureerd met:
-* **Minimale replica's**: `1`
-* **Maximale replica's**: `5`
-* **HTTP Concurrency Scale Rule**: Triggert opschaling al vanaf **2 gelijktijdige in-flight requests** (`concurrent_requests = "2"`), zodat elke kleine piek direct zichtbaar meerdere replica's bijstart.
-
-Het k6-script (`k6-scalability-test.js`) voert een **Burst / Spike Test** van ~2 minuten uit met minimale pauze (`sleep(0.05)`):
-1. **Fase 1 (15s)**: Rustige baseline op `2` VUs (blijft stabiel op `1` replica).
-2. **Fase 2 (90s)**: Directe spike naar `100` parallelle VUs (5s ramp + 85s hold) zodat de KEDA-scaler (die elke 15–30s evalueert) gegarandeerd opschaalt naar meerdere replica's (`2..5`).
-3. **Fase 3 (20s)**: Cooldown naar `0` VUs om scale-down te observeren.
-
-*(Tip: Wanneer de placeholder container `mendhak/http-https-echo:31` draait, zorgt de header `x-set-response-delay-ms: 200` automatisch voor realistische verwerkingstijd per request. De echte Spring Boot API negeert deze header en levert zijn eigen CPU/PostgreSQL-load.)*
+Deze map bevat de geautomatiseerde **Scalability Burst Test** en **L7 DDoS / Brute-Force Protection Test** om zowel auto-scaling (`1 → 5` replica's) als Nginx rate-limiting (`429 Too Many Requests`) op Azure aan te tonen.
 
 ---
 
-## 🚀 De Test Uitvoeren
+## 🎯 Wat wordt er getest?
 
-Je kunt de test lokaal uitvoeren met de k6 CLI of via Docker (geen installatie vereist).
+1. **Scalability Burst Test (`k6-scalability-test.js`)**
+   * Stuurt eerst een rustige baseline (`2 VUs`, 15s) en daarna een gecontroleerde burst (`50 VUs`, 75s) naar `GET /api/channels` (veilig publiek endpoint zonder zware database-writes).
+   * Blijft netjes binnen de Nginx `/api/` rate-limit (`300r/s`, burst `600`) zodat KEDA (`concurrent_requests = "2"`) `pxl-healthcare-api` opschaalt van `1` naar `5` replica's en na de 20s cooldown weer afschaalt.
+2. **DDoS & Brute-Force Test (`k6-ddos-test.js`)**
+   * **Auth Flood:** `40 VUs` zonder pauze op `POST /api/auth/login` (Nginx limit `10r/s`, burst `15`).
+   * **HTTP API Flood:** `120 VUs` zonder pauze op `GET /api/channels` (Nginx limit `300r/s`, burst `600`).
+   * **Beschikbaarheidscheck tijdens aanval:** controleert continu `GET /healthz`.
+   * **Slaagcriteria:** actief HTTP `429 Too Many Requests` (`rate_limited_429 > 0`), **0** `5xx`-crashes (`server_errors_5xx == 0`), en **100%** uptime op `/healthz`.
 
-### Optie A: Met lokaal geïnstalleerde k6
+---
 
-```bash
-# Windows (PowerShell / CMD) of Linux / macOS
-k6 run -e API_URL=https://<jouw-container-app-fqdn> loadtest/k6-scalability-test.js
-```
+## 🚀 Uitvoeren via Docker Compose (aanbevolen)
 
-### Optie B: Zonder k6 installatie via Docker
-
+### Volledige suite (eerst Scalability, daarna DDoS)
 ```powershell
-# In PowerShell:
-docker run --rm -v "${PWD}/loadtest:/scripts" -e API_URL="https://<jouw-container-app-fqdn>" grafana/k6 run /scripts/k6-scalability-test.js
+# PowerShell:
+$env:TARGET_URL="https://<jouw-web-fqdn>"
+docker compose -f loadtest/docker-compose.yml up --exit-code-from ddos-test
 ```
 
 ```bash
-# In Bash / Git Bash:
-docker run --rm -i -e API_URL="https://<jouw-container-app-fqdn>" grafana/k6 run - < loadtest/k6-scalability-test.js
+# Bash / CI:
+TARGET_URL="https://<jouw-web-fqdn>" docker compose -f loadtest/docker-compose.yml up --exit-code-from ddos-test
+```
+
+De JSON-resultaten verschijnen automatisch in `loadtest/results/`.
+
+### Losse tests uitvoeren
+```bash
+# Enkel scalability test:
+TARGET_URL="https://<jouw-web-fqdn>" docker compose -f loadtest/docker-compose.yml run --rm scalability-test
+
+# Enkel DDoS test (zonder eerst scalability te draaien):
+TARGET_URL="https://<jouw-web-fqdn>" docker compose -f loadtest/docker-compose.yml run --rm --no-deps ddos-test
 ```
 
 ---
 
-## 📸 Visuele Monitoring & Screenshots in Azure Portal
+## 📸 Visuele Monitoring in Azure Portal
 
-### 1. Kant-en-klaar Azure Monitoring Dashboard (`pxl-healthcare-monitoring-dashboard`)
-Na `terraform apply` (of `.\up.ps1`) verschijnt direct in de output een klikbare **`dashboard_url`**. Dit dashboard toont alle KPI's overzichtelijk in 1 scherm (tijdsbereik standaard op het laatste uur):
-* **Container App — Replica Count (Max)** (`1` $\rightarrow$ `5` schaling)
-* **Container App — HTTP Requests (Sum)**
-* **Container App — CPU Usage (Avg)** & **Memory Working Set (Avg)**
-* **PostgreSQL — CPU Percent (Avg)** & **Active Connections (Max)**
-
-### 2. Application Insights (`cheap-pg-ai`)
-* **Availability ($\rightarrow$ Availability)**: Toont de automatische 5-minuten SSL/HTTP 200 Availability Ping Test vanaf meerdere regio's (*West Europe*, *North Europe*, *South Central US*) als groene vinkjes op de wereldkaart.
-* **Live Metrics (Investigate $\rightarrow$ Live Metrics)**: Real-time *Incoming Requests/sec*, *Request Duration* en *Online Servers* tijdens de k6-run.
-
-### 3. Alerts Overzicht (`cheap-pg-rg` $\rightarrow$ `Alerts`)
-Naast database- en request-alerts triggert tijdens de schaling ook de alert **`cheap-pg-api-auto-scaled`** (`Replicas > 1`), zichtbaar in Azure Monitor Alerts als bewijs dat auto-scaling actief is aangeslagen.
+Open de **`dashboard_url`** uit de Terraform output (`pxl-healthcare-monitoring-dashboard`) om alle KPI's live op 1 scherm te tonen:
+1. **Scaling (`1 → 5` replica's)** op `pxl-healthcare-api`
+2. **Gateway vs. Internal API Requests** (zichtbaar verschil wanneer Nginx tijdens DDoS `429` teruggeeft!)
+3. **Response Time (ms)**, **Multi-Region Availability (%)** & **Failed Requests**
+4. **Container Restarts (`0`)**, **CPU**, **Memory**
+5. **PostgreSQL CPU (%)** & **Active Connections** (blijft beschermd onder de limiet)

@@ -1,20 +1,25 @@
-name: "Terraform - Deploy Healthcare Cloud & API (Thu & Fri)"
+name: "Terraform - Deploy Healthcare Cloud, Gateway & API (Thu & Fri)"
 
 on:
   schedule:
     # Elke donderdag en vrijdag om 07:00 UTC (08:00 CET / 09:00 CEST).
-    # Hierdoor is de database & API ruim voor 08:30 klaar voor gebruik.
+    # Hierdoor is de volledige stack ruim voor 08:30 klaar voor gebruik.
     - cron: '0 7 * * 4,5'
-  workflow_dispatch: # Hiermee kun je de deployment handmatig starten met 1 klik in GitHub
+  workflow_dispatch:
+    inputs:
+      run_load_tests:
+        description: "Run Docker Compose k6 Scalability + DDoS test suite after deploy"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
   id-token: write
-  packages: write
 
 jobs:
   deploy:
-    name: "Deploy Azure Infrastructure & API"
+    name: "Deploy Azure Infrastructure, Web Gateway & API"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -26,29 +31,18 @@ jobs:
       ARM_TENANT_ID: ${{ secrets.ARM_TENANT_ID }}
       ARM_USE_OIDC: "true"
       TF_VAR_db_password: ${{ secrets.DB_PASSWORD }}
+      TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL || 'student@pxl.be' }}
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Log in to GitHub Container Registry
-        uses: docker/login-action@v3
+      - name: Azure CLI Login (OIDC)
+        uses: azure/login@v2
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and Push API Docker Image
-        working-directory: .
-        run: |
-          # Zorg dat de image tag altijd lowercase is (vereiste voor GHCR)
-          IMAGE_NAME="ghcr.io/${{ github.repository }}/healthcare-api:latest"
-          IMAGE_NAME=$(echo "$IMAGE_NAME" | tr '[:upper:]' '[:lower:]')
-          echo "API_IMAGE=$IMAGE_NAME" >> $GITHUB_ENV
-          
-          echo "Building and pushing container image: $IMAGE_NAME"
-          docker build -t "$IMAGE_NAME" ./Api
-          docker push "$IMAGE_NAME"
+          client-id: ${{ secrets.ARM_CLIENT_ID }}
+          tenant-id: ${{ secrets.ARM_TENANT_ID }}
+          subscription-id: ${{ secrets.ARM_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
@@ -68,31 +62,93 @@ jobs:
       - name: Terraform Validate
         run: terraform validate
 
-      - name: Terraform Apply
+      - name: Provision ACR & Managed Identity Permissions
         run: |
           terraform apply -auto-approve -input=false \
-            -var="api_image=${{ env.API_IMAGE }}" \
-            -var="registry_server=ghcr.io" \
-            -var="registry_username=${{ github.actor }}" \
-            -var="registry_password_secret=${{ secrets.GITHUB_TOKEN }}"
+            -target="azurerm_container_registry.acr" \
+            -target="azurerm_role_assignment.api_acr_pull" \
+            -target="azurerm_role_assignment.web_acr_pull"
+          echo "ACR_NAME=$(terraform output -raw acr_name)" >> $GITHUB_ENV
+          echo "ACR_LOGIN_SERVER=$(terraform output -raw acr_login_server)" >> $GITHUB_ENV
+
+      - name: Build and Push API & Web Gateway Images to ACR
+        working-directory: .
+        run: |
+          az acr login --name "${{ env.ACR_NAME }}"
+
+          API_IMAGE="${{ env.ACR_LOGIN_SERVER }}/healthcare-api:latest"
+          WEB_IMAGE="${{ env.ACR_LOGIN_SERVER }}/healthcare-web:latest"
+          echo "API_IMAGE=$API_IMAGE" >> $GITHUB_ENV
+          echo "WEB_IMAGE=$WEB_IMAGE" >> $GITHUB_ENV
+
+          echo "Building and pushing API image: $API_IMAGE"
+          docker build -t "$API_IMAGE" ./Api
+          docker push "$API_IMAGE"
+
+          echo "Building and pushing Frontend + Nginx Gateway image: $WEB_IMAGE"
+          docker build -t "$WEB_IMAGE" ./Frontend
+          docker push "$WEB_IMAGE"
+
+      - name: Terraform Apply Full Infrastructure
+        run: terraform apply -auto-approve -input=false
+
+      - name: Capture Terraform Outputs
+        if: success()
+        run: |
+          echo "WEB_URL=$(terraform output -raw web_url)" >> $GITHUB_ENV
+          echo "API_URL=$(terraform output -raw api_url)" >> $GITHUB_ENV
+          echo "DB_HOST=$(terraform output -raw host)" >> $GITHUB_ENV
+          echo "DB_NAME=$(terraform output -raw database)" >> $GITHUB_ENV
+          echo "DB_USER=$(terraform output -raw user)" >> $GITHUB_ENV
+          echo "KV_NAME=$(terraform output -raw key_vault_name)" >> $GITHUB_ENV
+          echo "AI_NAME=$(terraform output -raw application_insights_name)" >> $GITHUB_ENV
+          echo "DASHBOARD_URL=$(terraform output -raw dashboard_url)" >> $GITHUB_ENV
+
+      - name: Wait for Web Gateway & API Health
+        if: github.event_name == 'workflow_dispatch' && inputs.run_load_tests == true
+        working-directory: .
+        run: |
+          echo "Waiting for ${WEB_URL}/api/channels to return HTTP 200..."
+          for i in $(seq 1 30); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${WEB_URL}/api/channels" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Gateway & API healthy (HTTP 200)!"
+              exit 0
+            fi
+            echo "Attempt $i/30: HTTP $STATUS - retrying in 5s..."
+            sleep 5
+          done
+          echo "Timed out waiting for API readiness."
+          exit 1
+
+      - name: Run Docker Compose Scalability & DDoS Tests
+        if: github.event_name == 'workflow_dispatch' && inputs.run_load_tests == true
+        working-directory: .
+        run: |
+          mkdir -p loadtest/results
+          TARGET_URL="${WEB_URL}" docker compose -f loadtest/docker-compose.yml up --exit-code-from ddos-test
+
+      - name: Upload Load & DDoS Test Results
+        if: always() && github.event_name == 'workflow_dispatch' && inputs.run_load_tests == true
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-scalability-ddos-results
+          path: loadtest/results/
+          if-no-files-found: ignore
 
       - name: Publish Deployment Summary
         if: success()
         run: |
-          DB_HOST=$(terraform output -raw host)
-          DB_NAME=$(terraform output -raw database)
-          DB_USER=$(terraform output -raw user)
-          API_URL=$(terraform output -raw api_url)
-          KV_NAME=$(terraform output -raw key_vault_name)
-          AI_NAME=$(terraform output -raw application_insights_name)
-          DASHBOARD_URL=$(terraform output -raw dashboard_url)
-
-          echo "### 🚀 Azure Healthcare Cloud & API Ready!" >> $GITHUB_STEP_SUMMARY
+          echo "### 🚀 PXL Healthcare Cloud Ready!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "#### 🌐 Container App API:" >> $GITHUB_STEP_SUMMARY
-          echo "- **API URL:** $API_URL" >> $GITHUB_STEP_SUMMARY
-          echo "- **Container Image:** \`${{ env.API_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "- **Azure Dashboard:** $DASHBOARD_URL" >> $GITHUB_STEP_SUMMARY
+          echo "#### 🌐 Public Web App & Nginx Gateway:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web App URL:** $WEB_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Web Container Image:** \`${{ env.WEB_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **Azure Monitoring Dashboard:** $DASHBOARD_URL" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### ⚙️ Internal API Container App:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Internal API URL:** \`$API_URL\`" >> $GITHUB_STEP_SUMMARY
+          echo "- **API Container Image:** \`${{ env.API_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### 🗄️ Azure PostgreSQL Database:" >> $GITHUB_STEP_SUMMARY
           echo "- **Host:** \`$DB_HOST\`" >> $GITHUB_STEP_SUMMARY
@@ -101,5 +157,6 @@ jobs:
           echo "- **User:** \`$DB_USER\`" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### 🔒 Security & Monitoring:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Container Registry:** \`${{ env.ACR_NAME }}\` (Managed Identity AcrPull)" >> $GITHUB_STEP_SUMMARY
           echo "- **Key Vault:** \`$KV_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Application Insights:** \`$AI_NAME\`" >> $GITHUB_STEP_SUMMARY

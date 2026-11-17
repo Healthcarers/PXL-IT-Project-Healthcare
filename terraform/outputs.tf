@@ -1,4 +1,32 @@
 # ==============================================================================
+# Public Application & Gateway Outputs
+# ==============================================================================
+
+output "web_url" {
+  description = "Public HTTPS URL of the Healthcare Frontend & Nginx Security Gateway"
+  value       = "https://${azurerm_container_app.web.ingress[0].fqdn}"
+}
+
+output "web_fqdn" {
+  description = "Fully qualified domain name of the public Web Gateway"
+  value       = azurerm_container_app.web.ingress[0].fqdn
+}
+
+# ==============================================================================
+# Internal API Hosting Outputs
+# ==============================================================================
+
+output "api_url" {
+  description = "Internal HTTPS URL of the Spring Boot API inside the Container Apps Environment"
+  value       = "https://${azurerm_container_app.api.ingress[0].fqdn}"
+}
+
+output "container_app_fqdn" {
+  description = "Internal FQDN of the Spring Boot API Container App"
+  value       = azurerm_container_app.api.ingress[0].fqdn
+}
+
+# ==============================================================================
 # Database Outputs
 # ==============================================================================
 
@@ -51,28 +79,20 @@ output "application_insights_name" {
   value       = azurerm_application_insights.appinsights.name
 }
 
+output "acr_name" {
+  description = "Name of the Azure Container Registry (when use_acr = true)"
+  value       = var.use_acr ? azurerm_container_registry.acr[0].name : ""
+}
+
+output "acr_login_server" {
+  description = "Login server URL of the Azure Container Registry (when use_acr = true)"
+  value       = var.use_acr ? azurerm_container_registry.acr[0].login_server : ""
+}
+
 output "log_analytics_workspace_name" {
   description = "Name of the Log Analytics Workspace"
   value       = azurerm_log_analytics_workspace.logs.name
 }
-
-# ==============================================================================
-# API Hosting Outputs
-# ==============================================================================
-
-output "api_url" {
-  description = "Public HTTPS URL of the Container App API"
-  value       = "https://${azurerm_container_app.api.ingress[0].fqdn}"
-}
-
-output "container_app_fqdn" {
-  description = "Fully qualified domain name of the Container App API"
-  value       = azurerm_container_app.api.ingress[0].fqdn
-}
-
-# ==============================================================================
-# Visual Monitoring & Availability Outputs
-# ==============================================================================
 
 output "dashboard_name" {
   description = "Name of the Azure Portal Monitoring Dashboard"
@@ -80,7 +100,7 @@ output "dashboard_name" {
 }
 
 output "dashboard_url" {
-  description = "Direct Azure Portal URL for the live monitoring & scaling dashboard"
+  description = "Direct Azure Portal URL for the live monitoring, scaling & security dashboard"
   value       = "https://portal.azure.com/#@${data.azurerm_client_config.current.tenant_id}/dashboard/arm${azurerm_portal_dashboard.monitoring.id}"
 }
 
