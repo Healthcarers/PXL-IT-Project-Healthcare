@@ -1,9 +1,8 @@
-name: SonarQube Ephemeral Scan
+name: SonarQube Azure Scan
 
 on:
-  pull_request:
+  push:
     branches: [ main, dev ]
-    types: [ opened, synchronize, reopened ]
   workflow_dispatch:
 
 concurrency:
@@ -16,7 +15,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
 
     steps:
       - name: Checkout code
@@ -56,17 +54,22 @@ jobs:
         run: |
           npm ci
           npx vitest run --coverage.enabled=true --coverage.provider=v8 --coverage.reporter=lcov --coverage.reportsDirectory=coverage
-
-      - name: Run Ephemeral SonarQube Scan
-        uses: mammothb/sonarqube-ce@v1
+          # Zorg dat de paden in lcov.info kloppen met de repo root (Frontend/src/ i.p.v. src/)
+          sed -i 's|^SF:src/|SF:Frontend/src/|g' coverage/lcov.info
+      
+      - name: Run SonarQube Scan to Azure
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         with:
-          generate-pr-comment: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          reports-scopes: '["overall", "new"]'
-          sonar-options: >-
+          args: >-
+            -Dsonar.projectKey=pxl-healthcare
             -Dsonar.sources=Api/src/main/java,Frontend/src
-            -Dsonar.tests=Api/src/test/java
+            -Dsonar.tests=Api/src/test/java,Frontend/src
             -Dsonar.java.binaries=Api/target/classes
+            -Dsonar.java.test.binaries=Api/target/test-classes
             -Dsonar.coverage.jacoco.xmlReportPaths=Api/target/site/jacoco/jacoco.xml
             -Dsonar.javascript.lcov.reportPaths=Frontend/coverage/lcov.info
-            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/target/**,**/coverage/**,**/*.min.js
+            -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/target/**,**/coverage/**,**/*.min.js,Frontend/src/**/*.test.ts,Frontend/src/**/*.spec.ts
+            -Dsonar.test.inclusions=Api/src/test/java/**,Frontend/src/**/*.test.ts,Frontend/src/**/*.spec.ts

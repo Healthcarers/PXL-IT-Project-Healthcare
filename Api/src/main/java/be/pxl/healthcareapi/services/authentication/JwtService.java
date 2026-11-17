@@ -1,0 +1,45 @@
+package be.pxl.healthcareapi.services.authentication;
+
+import be.pxl.healthcareapi.domein.enums.Role;
+import org.springframework.security.oauth2.jose.jws.MacAlgorithm;
+import org.springframework.security.oauth2.jwt.*;
+import org.springframework.stereotype.Service;
+
+import java.time.Instant;
+import java.util.UUID;
+
+@Service
+public class JwtService {
+    private final JwtEncoder jwtEncoder;
+    private final JwtDecoder jwtDecoder;
+
+    public JwtService(JwtEncoder jwtEncoder, JwtDecoder jwtDecoder) {
+        this.jwtEncoder = jwtEncoder;
+        this.jwtDecoder = jwtDecoder;
+    }
+
+    public String generateToken(UUID userId, Role role) {
+        Instant now = Instant.now();
+
+        JwtClaimsSet claims = JwtClaimsSet.builder()
+                .issuer("healthcare-api")
+                .issuedAt(now)
+                .expiresAt(now.plusSeconds(900))
+                .subject(userId.toString())
+                .claim("role", role.name())
+                .build();
+
+        JwsHeader header = JwsHeader
+                .with(MacAlgorithm.HS256)
+                .build();
+
+        return jwtEncoder.encode(
+                JwtEncoderParameters.from(header, claims)
+        ).getTokenValue();
+    }
+
+    public UUID extractUserId(String token) {
+        Jwt jwt = jwtDecoder.decode(token);
+        return UUID.fromString(jwt.getSubject());
+    }
+}

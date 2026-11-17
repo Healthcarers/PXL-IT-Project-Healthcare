@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.UniqueElements;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Entity
@@ -31,6 +32,10 @@ public class Person {
 
     private Role role;
 
+    @Column(updatable = false)
+    @Setter(AccessLevel.NONE)
+    private LocalDate createdAt = LocalDate.now();
+
     public Person(String firstname, String lastname, String email, String password) {
         this.firstname = firstname;
         this.lastname = lastname;
@@ -39,4 +44,8 @@ public class Person {
     }
 
     public Person(){}
+
+    public void changeRole(Role role){
+        this.role = role;
+    }
 }

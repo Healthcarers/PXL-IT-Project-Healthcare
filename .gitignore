@@ -8,7 +8,6 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-Frontend/dist
 dist-ssr
 *.local
 
@@ -31,7 +30,11 @@ dist-ssr
 coverage/
 .nyc_output/
 
+Frontend/dist
+Frontend/dev-dist/
+Frontend/dev-dist/sw.js
 dev-dist/
+
 # Terraform
 **/.terraform/*
 *.tfstate
