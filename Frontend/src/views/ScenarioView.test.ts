@@ -13,7 +13,7 @@ const draft: Scenario = {
   description: 'Oefenen met de trainingsmonitor.',
   initialVitals: {
     heartRate: 105, spo2: 98, etco2: 38, respRate: 15, ampScale: 1,
-    sysBloodPressure: 120, diasBloodPressure: 80,
+    sysIbp: 120, diasIbp: 80,
   },
   feedbackItems: ['Monitor gecontroleerd'],
   status: 'DRAFT',

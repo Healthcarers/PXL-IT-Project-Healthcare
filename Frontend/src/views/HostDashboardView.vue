@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import LectorConfirmModal from '../components/lector/LectorConfirmModal.vue'
 import { useRoom } from '../composables/useRoom'
 import { roomService } from '../services/roomService'
 import { scenarioService } from '../services/scenarioService'
@@ -20,6 +21,8 @@ const loadingScenarios = ref(false)
 const saving = ref(false)
 const copyMessage = ref('')
 const returningToCreate = ref(false)
+const startModalOpen = ref(false)
+const startingRoom = ref(false)
 let returnTimer: ReturnType<typeof setTimeout> | undefined
 let version = 0
 let latestParticipantRequest = 0
@@ -31,7 +34,7 @@ const host = computed(() => participants.value.find(p => p.userId === room.value
 const learners = computed(() => participants.value.filter(p => p.userId !== room.value?.ownerId))
 const hasLearners = computed(() => learners.value.length > 0)
 const values = computed(() => selected.value?.initialVitals)
-const busy = computed(() => loading.value || saving.value || loadingScenarios.value)
+const busy = computed(() => loading.value || saving.value || loadingScenarios.value || startingRoom.value)
 const labels = {
   OPEN: 'Wacht op cursisten',
   STARTED: 'Simulatie gestart',
@@ -111,12 +114,21 @@ async function chooseScenario(event: Event) {
 }
 
 async function handleStart() {
-  if (!window.confirm('Wil je de simulatie starten?')) return
+  if (!startModalOpen.value || busy.value || !isHost.value || room.value?.status !== 'OPEN') return
+  const request = version
+  startingRoom.value = true
   try {
-    await startRoom()
-    await refreshDashboard()
+    const started = await startRoom()
+    if (started?.status !== 'STARTED' || request !== version) return
+    const failure = await router.replace({ name: 'lector-dashboard', params: { code: started.code } })
+    if (failure && request === version) error.value = 'Het lectordashboard kon niet worden geopend.'
   } catch {
-    // useRoom toont de fout via error.
+    if (request === version && !error.value) error.value = 'De simulatie kon niet worden gestart of het lectordashboard kon niet worden geopend.'
+  } finally {
+    if (request === version) {
+      startingRoom.value = false
+      startModalOpen.value = false
+    }
   }
 }
 
@@ -138,6 +150,8 @@ async function handleClose() {
 
 function cancelPending() {
   version++
+  startModalOpen.value = false
+  startingRoom.value = false
   clearTimeout(returnTimer)
   returningToCreate.value = false
   selected.value = undefined
@@ -251,7 +265,7 @@ onUnmounted(cancelPending)
               </select>
               <ul v-if="values" class="mt-3 flex flex-wrap gap-2 text-sm font-semibold" aria-label="Basiswaarden">
                 <li class="rounded-full bg-green-100 px-2 py-0.5 text-green-800">HF {{ values.heartRate }}</li>
-                <li class="rounded-full bg-red-100 px-2 py-0.5 text-red-800">BD {{ values.sysBloodPressure }}/{{ values.diasBloodPressure }}</li>
+                <li class="rounded-full bg-red-100 px-2 py-0.5 text-red-800">BD {{ values.sysIbp }}/{{ values.diasIbp }}</li>
                 <li class="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">SpO₂ {{ values.spo2 }} %</li>
                 <li class="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">etCO₂ {{ values.etco2 }}</li>
               </ul>
@@ -302,7 +316,7 @@ onUnmounted(cancelPending)
               @click="handleClose">Room sluiten</button>
             <button v-if="room.status === 'OPEN'" type="button" :disabled="busy"
               class="min-h-12 min-w-40 flex-1 rounded-lg bg-black px-6 py-3 text-base font-bold text-white hover:bg-gray-800 disabled:opacity-50"
-              @click="handleStart">Simulatie starten</button>
+              @click="startModalOpen = true">Simulatie starten</button>
           </div>
         </div>
       </template>
@@ -310,5 +324,9 @@ onUnmounted(cancelPending)
       <h1 v-else class="py-8 text-2xl font-bold">Room niet beschikbaar</h1>
       <p v-if="error" role="alert" class="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ error }}</p>
     </section>
+    <LectorConfirmModal :open="startModalOpen" title="Simulatie starten?"
+      message="Wil je de simulatie starten? De verbonden cursisten gaan naar de monitor en jij opent het lectordashboard."
+      confirm-label="Simulatie starten" :loading="startingRoom"
+      @cancel="startModalOpen = false" @confirm="handleStart" />
   </main>
 </template>

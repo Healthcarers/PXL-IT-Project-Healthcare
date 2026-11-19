@@ -27,6 +27,64 @@ beforeEach(() => {
   vi.mocked(roomService.getParticipants).mockResolvedValue([])
 })
 
+it.each([true, false])('opent het lectordashboard alleen na een geslaagde start (geslaagd: %s)', async (succeeds) => {
+  const nativeConfirm = vi.fn()
+  vi.stubGlobal('confirm', nativeConfirm)
+  const room: Room = {
+    id: 'room-1', code: 'ABC123', name: 'Testroom', description: null, status: 'OPEN',
+    ownerId: 'host-1', createdAt: '2026-11-13T10:00:00', participantCount: 2,
+  }
+  const currentRoom = ref<Room | null>(room)
+  const error = ref<string | null>(null)
+  const startRoom = vi.fn(async () => {
+    if (!succeeds) {
+      error.value = 'De room kon niet worden gestart.'
+      throw new Error('Start mislukt')
+    }
+    const started: Room = { ...room, status: 'STARTED' }
+    currentRoom.value = started
+    return started
+  })
+  vi.mocked(scenarioService.list).mockResolvedValue([])
+  vi.mocked(useRoom).mockReturnValue({
+    currentRoom, participants: ref([]), loading: ref(false), error,
+    loadRoom: vi.fn(), loadParticipants: vi.fn(), closeRoom: vi.fn(), clearRoom: vi.fn(),
+    createRoom: vi.fn(), joinRoom: vi.fn(), startRoom,
+  })
+  const wrapper = mount(HostDashboardView, { props: { code: room.code } })
+  try {
+    await flushPromises()
+    const button = wrapper.findAll('button').find(button => button.text() === 'Simulatie starten')
+    expect(button).toBeDefined()
+    await button?.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.get('[role="dialog"]').text()).toContain('Simulatie starten?')
+    expect(startRoom).not.toHaveBeenCalled()
+    await wrapper.get('[role="dialog"]').findAll('button')
+      .find(button => button.text() === 'Annuleren')!.trigger('click')
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    expect(startRoom).not.toHaveBeenCalled()
+    await button?.trigger('click')
+    await wrapper.get('[role="dialog"]').findAll('button')
+      .find(button => button.text() === 'Simulatie starten')!.trigger('click')
+    await flushPromises()
+
+    expect(nativeConfirm).not.toHaveBeenCalled()
+    expect(startRoom).toHaveBeenCalledOnce()
+    expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    if (succeeds) {
+      expect(replace).toHaveBeenCalledExactlyOnceWith({ name: 'lector-dashboard', params: { code: room.code } })
+    } else {
+      expect(replace).not.toHaveBeenCalled()
+      expect(wrapper.get('[role="alert"]').text()).toBe('De room kon niet worden gestart.')
+    }
+  } finally {
+    wrapper.unmount()
+    vi.unstubAllGlobals()
+  }
+})
+
 it('sluit een gestarte room en keert na vijf seconden terug naar Room aanmaken', async () => {
   vi.useFakeTimers()
   vi.stubGlobal('confirm', vi.fn().mockReturnValue(true))
@@ -84,7 +142,7 @@ it('toont alleen gepubliceerde opties en bewaart de gekozen startwaarden bij de 
     id: 'published', name: 'Monitorsimulatie', description: 'Oefening', feedbackItems: ['Evaluatiepunt'],
     status: 'PUBLISHED' as const,
     initialVitals: { heartRate: 102, spo2: 98, etco2: 38, respRate: 15, ampScale: 1,
-      sysBloodPressure: 120, diasBloodPressure: 80 },
+      sysIbp: 120, diasIbp: 80 },
   }
   vi.mocked(scenarioService.list).mockResolvedValue([published, { ...published, id: 'draft', status: 'DRAFT' }])
   vi.mocked(roomService.getScenario).mockResolvedValueOnce(undefined).mockResolvedValueOnce(published)

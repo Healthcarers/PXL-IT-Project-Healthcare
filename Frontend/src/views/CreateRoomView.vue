@@ -20,7 +20,12 @@ async function checkActiveRoom() {
     const activeRoom = await roomService.getActive(lookup.signal)
     if (lookup.signal.aborted) return
     if (activeRoom) {
-      const failure = await router.replace({ name: 'host-dashboard', params: { code: activeRoom.code } })
+      const room = await roomService.getByCode(activeRoom.code)
+      if (lookup.signal.aborted) return
+      const failure = await router.replace({
+        name: room.status === 'STARTED' ? 'lector-dashboard' : 'host-dashboard',
+        params: { code: room.code },
+      })
       if (!lookup.signal.aborted) activeRoomError.value = Boolean(failure)
     }
   } catch {

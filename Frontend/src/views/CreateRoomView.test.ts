@@ -6,10 +6,11 @@ import { ref } from 'vue'
 import CreateRoomView from './CreateRoomView.vue'
 import { useRoom } from '../composables/useRoom'
 
-const { replaceMock, createRoomMock, getActiveMock } = vi.hoisted(() => ({
+const { replaceMock, createRoomMock, getActiveMock, getByCodeMock } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
   createRoomMock: vi.fn(),
   getActiveMock: vi.fn(),
+  getByCodeMock: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
@@ -23,7 +24,7 @@ vi.mock('../composables/useRoom', () => ({
 }))
 
 vi.mock('../services/roomService', () => ({
-  roomService: { getActive: getActiveMock },
+  roomService: { getActive: getActiveMock, getByCode: getByCodeMock },
 }))
 
 describe('CreateRoomView', () => {
@@ -58,6 +59,21 @@ describe('CreateRoomView', () => {
     expect(wrapper.find('#name').exists()).toBe(true)
     expect(wrapper.find('#description').exists()).toBe(true)
     expect(wrapper.find('button[type="submit"]').text()).toBe('Room aanmaken')
+  })
+
+  it.each([
+    ['OPEN', 'host-dashboard'],
+    ['STARTED', 'lector-dashboard'],
+  ])('hervat een room met status %s op %s', async (status, routeName) => {
+    getActiveMock.mockResolvedValue({ code: 'ABC123' })
+    getByCodeMock.mockResolvedValue({ code: 'ABC123', status })
+    const wrapper = await mountView()
+
+    expect(replaceMock).toHaveBeenCalledExactlyOnceWith({
+      name: routeName, params: { code: 'ABC123' },
+    })
+    expect(createRoomMock).not.toHaveBeenCalled()
+    wrapper.unmount()
   })
 
   it('toont geen aanmaakformulier bij een fout en laat opnieuw proberen', async () => {

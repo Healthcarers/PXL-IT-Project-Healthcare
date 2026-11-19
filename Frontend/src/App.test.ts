@@ -8,11 +8,11 @@ const auth = vi.hoisted(() => ({
   person: null as { role: 'LECTOR' | 'CURSIST' } | null,
   isAuthenticated: vi.fn(),
 }))
-const rooms = vi.hoisted(() => ({ getActive: vi.fn(), create: vi.fn() }))
+const rooms = vi.hoisted(() => ({ getActive: vi.fn(), getByCode: vi.fn(), create: vi.fn() }))
 const scenarios = vi.hoisted(() => ({ list: vi.fn(), remove: vi.fn() }))
 const published = {
   id: 'scenario-1', name: 'Monitorsimulatie', status: 'PUBLISHED',
-  initialVitals: { heartRate: 105, spo2: 98, respRate: 15, sysBloodPressure: 120, diasBloodPressure: 80 },
+  initialVitals: { heartRate: 105, spo2: 98, respRate: 15, sysIbp: 120, diasIbp: 80 },
 }
 
 vi.mock('./stores/Authstore', () => ({ useAuthStore: () => auth }))
@@ -23,6 +23,58 @@ vi.mock('./views/HostDashboardView.vue', () => ({
 }))
 
 describe('Scenario navigation', () => {
+  it('opent de uitlogbevestiging via Lector in de bovenste navbar', async () => {
+    auth.person = { role: 'LECTOR' }
+    auth.isAuthenticated.mockResolvedValue(auth.person)
+    await router.push('/host/rooms/ABC123')
+    const wrapper = mount(App, { global: { plugins: [router], stubs: { RouterView: true } } })
+    try {
+      expect(wrapper.findAll('header')).toHaveLength(1)
+      const profile = wrapper.get('header button[aria-controls="lector-profile-menu"]')
+      expect(profile.text()).toBe('Lector')
+      expect(profile.attributes('aria-expanded')).toBe('false')
+      await profile.trigger('click')
+      expect(profile.attributes('aria-expanded')).toBe('true')
+      await wrapper.get('#lector-profile-menu button').trigger('click')
+      expect(wrapper.find('#lector-profile-menu').exists()).toBe(false)
+      const dialog = wrapper.get('[role="dialog"]')
+      expect(dialog.text()).toContain('Weet je zeker dat je wilt uitloggen?')
+      await dialog.findAll('button').find(button => button.text() === 'Annuleren')!.trigger('click')
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+
+      await profile.trigger('click')
+      await wrapper.get('#lector-profile-menu button').trigger('click')
+      await wrapper.get('[role="dialog"]').findAll('button')
+        .find(button => button.text() === 'Uitloggen')!.trigger('click')
+      expect(wrapper.get('[role="status"]').text()).toContain('Uitlogfunctionaliteit')
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
+  it('sluit de lector-dropdown bij Escape, klikken buiten het menu en navigatie', async () => {
+    auth.person = { role: 'LECTOR' }
+    auth.isAuthenticated.mockResolvedValue(auth.person)
+    await router.push('/host/rooms/ABC123')
+    const wrapper = mount(App, { global: { plugins: [router], stubs: { RouterView: true } } })
+    try {
+      const profile = wrapper.get('header button[aria-controls="lector-profile-menu"]')
+      await profile.trigger('click')
+      document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+      await flushPromises()
+      expect(profile.attributes('aria-expanded')).toBe('false')
+      await profile.trigger('click')
+      document.body.click()
+      await flushPromises()
+      expect(profile.attributes('aria-expanded')).toBe('false')
+      await profile.trigger('click')
+      await router.push('/scenarios')
+      expect(profile.attributes('aria-expanded')).toBe('false')
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
   it('opent eerst het overzicht en pas na Scenario toevoegen het formulier', async () => {
     auth.person = { role: 'LECTOR' }
     auth.isAuthenticated.mockResolvedValue(auth.person)
@@ -107,6 +159,7 @@ describe('Scenario navigation', () => {
     auth.person = { role: 'LECTOR' }
     auth.isAuthenticated.mockResolvedValue(auth.person)
     rooms.getActive.mockResolvedValue({ code: 'ABC123' })
+    rooms.getByCode.mockResolvedValue({ code: 'ABC123', status: 'OPEN' })
     await router.push('/host/rooms/ABC123')
     const wrapper = mount(App, { global: { plugins: [createPinia(), router] } })
 
