@@ -24,8 +24,8 @@ public class VitalsService {
                 req.respRate() != null ? checkRange("respRate", req.respRate(), 0, 60) : current.respRate(),
                 req.etco2() != null ? checkRange("etco2", req.etco2(), 0, 100) : current.etco2(),
                 req.ampScale()  != null ? checkRange("ampScale",  req.ampScale(),  0.1, 3)  : current.ampScale(),
-                req.sysBloodPressure() != null ? checkRange("sysBloodPressure", req.sysBloodPressure(), 0, 300) : current.sysBloodPressure(),
-                req.diasBloodPressure() != null ? checkRange("diasBloodPressure", req.diasBloodPressure(), 0, 300) : current.diasBloodPressure()
+                req.sysIbp() != null ? checkRange("sysIbp", req.sysIbp(), 0, 200) : current.sysIbp(),
+                req.diasIbp() != null ? checkRange("diasIbp", req.diasIbp(), 0, 200) : current.diasIbp()
         ));
     }
 

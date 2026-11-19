@@ -1,4 +1,4 @@
-package be.pxl.healthcareapi.domain.waveform;
+package be.pxl.healthcareapi.domain.waveforms;
 
 import be.pxl.healthcareapi.domein.waveforms.EcgSource;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;

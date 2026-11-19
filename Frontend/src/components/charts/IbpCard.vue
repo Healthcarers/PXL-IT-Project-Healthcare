@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed } from "vue";
 import {useVitals} from "../../composables/useVitals.ts";
+import {useChannelActive} from "../../composables/useChannelActive.ts";
 import MonitorCard from "./MonitorCard.vue";
 
 const props = withDefaults(defineProps<{
@@ -10,12 +11,12 @@ const props = withDefaults(defineProps<{
 });
 
 const { vitals } = useVitals();
-const active = ref<boolean>(false);
+const { active, toggle } = useChannelActive('ibp');
 const isActive = computed(() => props.preview || active.value);
 
-function toggle(): void {
+function handleToggle(): void {
   if (props.preview) return;
-  active.value = !active.value;
+  toggle();
 }
 </script>
 
@@ -27,14 +28,14 @@ function toggle(): void {
       :class="{ 'cursor-pointer': !preview }"
       :aria-pressed="preview ? undefined : isActive"
       :aria-label="preview ? undefined : (isActive ? 'Stop IBP' : 'Start IBP')"
-      @click="toggle"
+      @click="handleToggle"
     >
       <span class="font-extrabold text-[#ff0707] leading-none tabular-nums transition-opacity"
       :class="[
         preview ? 'text-[46px]' : 'text-[clamp(40px,5vw,72px)]',
         { 'opacity-[0.35]': !isActive },
       ]">
-      {{ !isActive || vitals?.sysBloodPressure == null ? '--' : `${vitals.sysBloodPressure}/${vitals.diasBloodPressure}` }}
+        {{ !isActive || vitals?.sysIbp == null || vitals?.diasIbp == null ? '--' : `${vitals.sysIbp}/${vitals.diasIbp}` }}
       </span>
     </div>
   </MonitorCard>

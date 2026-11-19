@@ -157,8 +157,8 @@ describe('LectorDashboardView.vue', () => {
             etco2: 38,
             respRate: 15,
             ampScale: 1.0,
-            sysBloodPressure: 120,
-            diasBloodPressure: 80,
+            sysIbp: 120,
+            diasIbp: 80,
           },
         })
       }
@@ -190,7 +190,7 @@ describe('LectorDashboardView.vue', () => {
 
     expect(wrapper.text()).toContain('Wat de cursist ziet')
     expect(wrapper.text()).toContain('LIVE')
-    expect(wrapper.findAll('[data-testid="mock-waveform-canvas"]')).toHaveLength(3)
+    expect(wrapper.findAll('[data-testid="mock-waveform-canvas"]')).toHaveLength(4)
     expect(useHeartbeatSound).not.toHaveBeenCalled()
 
     expect(wrapper.text()).not.toContain('PROTOTYPE: TOON FOUTMELDING')
