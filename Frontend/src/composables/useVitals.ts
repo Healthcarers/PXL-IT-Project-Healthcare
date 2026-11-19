@@ -7,8 +7,8 @@ export interface VitalsResponse {
     etco2: number;
     respRate: number;
     ampScale: number;
-    sysBloodPressure: number;
-    diasBloodPressure: number;
+    sysIbp: number;
+    diasIbp: number;
 }
 
 const VITALS_URL = "/vitals";
@@ -32,9 +32,10 @@ async function refresh(): Promise<void> {
                 etco2: Math.round(res.data.etco2),
                 respRate: Math.round(res.data.respRate),
                 ampScale: res.data.ampScale,
-                sysBloodPressure: Math.round(res.data.sysBloodPressure),
-                diasBloodPressure: Math.round(res.data.diasBloodPressure),
+                sysIbp: Math.round(res.data.sysIbp),
+                diasIbp: Math.round(res.data.diasIbp),
             };
+            console.log(res.data)
         } catch {
             vitals.value = null;
         } finally {

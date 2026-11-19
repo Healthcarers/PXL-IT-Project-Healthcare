@@ -1,14 +1,10 @@
 <script setup lang="ts">
 import {useVitals} from "../../composables/useVitals.ts";
 import MonitorCard from "./MonitorCard.vue";
-import {ref} from "vue";
+import {useChannelActive} from "../../composables/useChannelActive.ts";
 
 const { vitals } = useVitals();
-const active = ref<boolean>(false);
-
-function toggle(): void {
-  active.value = !active.value;
-}
+const { active, toggle } = useChannelActive('ibp');
 </script>
 
 <template>
@@ -22,7 +18,7 @@ function toggle(): void {
     >
       <span class="font-extrabold text-[#ff0707] leading-none tabular-nums text-[clamp(40px,5vw,72px)] transition-opacity"
       :class="{ 'opacity-[0.35]': !active }">
-      {{ !active || vitals?.sysBloodPressure == null ? '--' : `${vitals.sysBloodPressure}/${vitals.diasBloodPressure}` }}
+      {{ !active? '--' : `${vitals?.sysIbp}/${vitals?.diasIbp}` }}
       </span>
     </div>
   </MonitorCard>
