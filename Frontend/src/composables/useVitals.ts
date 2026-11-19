@@ -35,7 +35,6 @@ async function refresh(): Promise<void> {
                 sysIbp: Math.round(res.data.sysIbp),
                 diasIbp: Math.round(res.data.diasIbp),
             };
-            console.log(res.data)
         } catch {
             vitals.value = null;
         } finally {

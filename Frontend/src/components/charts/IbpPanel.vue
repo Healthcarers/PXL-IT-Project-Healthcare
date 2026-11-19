@@ -5,8 +5,8 @@ import SweepChart from "./SweepChart.vue";
 import {useChannelActive} from "../../composables/useChannelActive.ts";
 import {useSweepWaveform} from "../../composables/useSweepWaveform.ts";
 
-const WINDOW_MS = 10000;
-const SAMPLE_RATE = 50;
+const WINDOW_MS = 4000;
+const SAMPLE_RATE = 125;
 
 const { active } = useChannelActive('ibp');
 const { points, cursorX } = useSweepWaveform('ibp', WINDOW_MS, SAMPLE_RATE);

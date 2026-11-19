@@ -18,7 +18,7 @@ const { active, toggle } = useChannelActive('ibp');
     >
       <span class="font-extrabold text-[#ff0707] leading-none tabular-nums text-[clamp(40px,5vw,72px)] transition-opacity"
       :class="{ 'opacity-[0.35]': !active }">
-      {{ !active? '--' : `${vitals?.sysIbp}/${vitals?.diasIbp}` }}
+        {{ !active || vitals?.sysIbp == null || vitals?.diasIbp == null ? '--' : `${vitals.sysIbp}/${vitals.diasIbp}` }}
       </span>
     </div>
   </MonitorCard>
