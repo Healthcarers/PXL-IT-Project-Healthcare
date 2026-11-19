@@ -20,6 +20,7 @@ const props = withDefaults(defineProps<{
   gridStepX?: number
   gridStepY?: number
   showCursor?: boolean
+  interactive?: boolean
 }>(), {
   color: '#22c55e',
   cursorColor: 'rgba(255, 255, 255, 0.6)',
@@ -27,12 +28,14 @@ const props = withDefaults(defineProps<{
   gridColor: 'transparent',
   gridStepX: 200,
   gridStepY: 0.5,
-  showCursor: true
+  showCursor: true,
+  interactive: true,
 });
 
 const active = defineModel<boolean>('active', { default: false });
 
 function toggleActive() {
+  if (!props.interactive) return;
   active.value = !active.value;
 }
 
@@ -94,11 +97,12 @@ const chartOptions = computed<ChartOptions<'line'>>(() => ({
 
 <template>
   <div
-      class="relative h-full w-full cursor-pointer outline-none focus-visible:rounded-md focus-visible:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)]"
-      role="button"
-      tabindex="0"
-      :aria-pressed="active"
-      :aria-label="active ? 'Stop display' : 'Start display'"
+      class="relative h-full w-full outline-none focus-visible:rounded-md focus-visible:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.3)]"
+      :class="{ 'cursor-pointer': interactive }"
+      :role="interactive ? 'button' : undefined"
+      :tabindex="interactive ? 0 : undefined"
+      :aria-pressed="interactive ? active : undefined"
+      :aria-label="interactive ? (active ? 'Stop display' : 'Start display') : undefined"
       @click="toggleActive"
       @keydown.enter.prevent="toggleActive"
       @keydown.space.prevent="toggleActive"

@@ -7,7 +7,6 @@ import RoomView from '../views/RoomView.vue'
 import HostDashboardView from '../views/HostDashboardView.vue'
 import RegistrationView from '../views/registration/RegistrationView.vue'
 import LoginView from '../views/login/LoginView.vue'
-import DashboardView from '../views/DashboardView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
 import AdminDashboardView from "../views/admin/AdminDashboardView.vue";
 import CursistDashboard from "../views/CursistDashboard.vue";
@@ -56,13 +55,20 @@ const router = createRouter({
     {
       path: '/dashboard',
       name: 'dashboard',
-      component: DashboardView,
+      redirect: { name: 'create-room' },
       meta: { requiresAuth: true, role: 'LECTOR' },
     },
     {
       path: '/host/rooms/:code',
       name: 'host-dashboard',
       component: HostDashboardView,
+      props: true,
+      meta: { requiresAuth: true, role: 'LECTOR' },
+    },
+    {
+      path: '/host/rooms/:code/dashboard',
+      name: 'lector-dashboard',
+      component: () => import('../views/lector/LectorDashboardView.vue'),
       props: true,
       meta: { requiresAuth: true, role: 'LECTOR' },
     },

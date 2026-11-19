@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { useRoom } from '../composables/useRoom'
 import { useAuthStore } from '../stores/Authstore'
 
@@ -7,6 +8,7 @@ const props = defineProps<{
     code: string
 }>()
 
+const router = useRouter()
 const authStore = useAuthStore()
 
 const {
@@ -49,11 +51,12 @@ async function refreshDashboard() {
         await loadRoom(props.code)
         await loadParticipants(props.code)
 
-        console.log('HOST DEBUG:', {
-            currentUserId: currentUserId.value,
-            ownerId: currentRoom.value?.ownerId,
-            isHost: isHost.value,
-        })
+        if (isHost.value && currentRoom.value?.status === 'STARTED') {
+            await router.replace({
+                name: 'lector-dashboard',
+                params: { code: currentRoom.value.code },
+            })
+        }
     } catch {
         // Fout wordt weergegeven via useRoom().
     }
@@ -63,8 +66,11 @@ async function handleStart() {
     if (!window.confirm('Wil je de simulatie starten?')) return
 
     try {
-        await startRoom()
-        await refreshDashboard()
+        const startedRoom = await startRoom()
+        await router.push({
+            name: 'lector-dashboard',
+            params: { code: startedRoom?.code ?? props.code },
+        })
     } catch {
         // Fout wordt weergegeven via useRoom().
     }
