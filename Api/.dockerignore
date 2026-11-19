@@ -1,0 +1,9 @@
+target/
+.git/
+.idea/
+*.md
+.gitignore
+.gitattributes
+compose.yaml
+.env
+.env.*
