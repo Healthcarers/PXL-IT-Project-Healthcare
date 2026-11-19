@@ -5,6 +5,8 @@ import be.pxl.healthcareapi.dto.VitalsUpdateRequest;
 import be.pxl.healthcareapi.repos.VitalsRepository;
 import org.springframework.stereotype.Service;
 
+import java.util.function.ToDoubleFunction;
+
 @Service
 public class VitalsService {
     private final VitalsRepository vitalsRepository;
@@ -18,19 +20,34 @@ public class VitalsService {
     }
 
     public VitalsSnapshot update(VitalsUpdateRequest req) {
-        return vitalsRepository.update(current -> new VitalsSnapshot(
-                req.heartRate() != null ? checkRange("heartRate", req.heartRate(), 0, 220) : current.heartRate(),
-                req.spo2() != null ? checkRange("spo2", req.spo2(), 50, 100) : current.spo2(),
-                req.respRate() != null ? checkRange("respRate", req.respRate(), 0, 60) : current.respRate(),
-                req.etco2() != null ? checkRange("etco2", req.etco2(), 0, 100) : current.etco2(),
-                req.ampScale()  != null ? checkRange("ampScale",  req.ampScale(),  0.1, 3)  : current.ampScale(),
-                req.sysBloodPressure() != null ? checkRange("sysBloodPressure", req.sysBloodPressure(), 0, 300) : current.sysBloodPressure(),
-                req.diasBloodPressure() != null ? checkRange("diasBloodPressure", req.diasBloodPressure(), 0, 300) : current.diasBloodPressure()
-        ));
+        return vitalsRepository.update(current -> applyValues(req, current));
     }
 
-    private static double checkRange(String name, double value, double min, double max) {
-        if (value < min || value > max) {
+    static VitalsSnapshot initialSnapshot(VitalsUpdateRequest req) {
+        return applyValues(req, null);
+    }
+
+    private static VitalsSnapshot applyValues(VitalsUpdateRequest req, VitalsSnapshot current) {
+        return new VitalsSnapshot(
+                resolveValue("heartRate", req.heartRate(), current, VitalsSnapshot::heartRate, 0, 220),
+                resolveValue("spo2", req.spo2(), current, VitalsSnapshot::spo2, 50, 100),
+                resolveValue("respRate", req.respRate(), current, VitalsSnapshot::respRate, 0, 60),
+                resolveValue("etco2", req.etco2(), current, VitalsSnapshot::etco2, 0, 100),
+                resolveValue("ampScale", req.ampScale(), current, VitalsSnapshot::ampScale, 0.1, 3),
+                resolveValue("sysBloodPressure", req.sysBloodPressure(), current, VitalsSnapshot::sysBloodPressure, 0, 300),
+                resolveValue("diasBloodPressure", req.diasBloodPressure(), current, VitalsSnapshot::diasBloodPressure, 0, 300)
+        );
+    }
+
+    private static double resolveValue(String name, Double value, VitalsSnapshot current,
+                                       ToDoubleFunction<VitalsSnapshot> existingValue, double min, double max) {
+        if (value == null) {
+            if (current == null) {
+                throw new IllegalArgumentException(name + " is verplicht");
+            }
+            return existingValue.applyAsDouble(current);
+        }
+        if (!Double.isFinite(value) || value < min || value > max) {
             throw new IllegalArgumentException(
                     name + " moet liggen tussen " + min + " en " + max
             );

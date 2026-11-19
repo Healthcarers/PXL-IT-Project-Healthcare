@@ -3,10 +3,15 @@ import { apiRequest } from './api'
 import type {
   Room,
   RoomParticipant,
+  RoomScenario,
   CreateRoomRequest,
 } from '../types/room'
 
 export const roomService = {
+  getActive(signal: AbortSignal): Promise<Pick<Room, 'code'> | undefined> {
+    return apiRequest<Pick<Room, 'code'> | undefined>('/rooms/mine/active', { signal })
+  },
+
   async create(data: CreateRoomRequest): Promise<Room> {
     const createdRoom = await apiRequest<{ code: string }>('/rooms', {
       method: 'POST',
@@ -18,6 +23,17 @@ export const roomService = {
 
   getByCode(code: string): Promise<Room> {
     return apiRequest<Room>(`/rooms/${encodeURIComponent(code)}`)
+  },
+
+  getScenario(code: string): Promise<RoomScenario | undefined> {
+    return apiRequest<RoomScenario | undefined>(`/rooms/${encodeURIComponent(code)}/scenario`)
+  },
+
+  assignScenario(code: string, scenarioId: string | null): Promise<RoomScenario | undefined> {
+    return apiRequest<RoomScenario | undefined>(`/rooms/${encodeURIComponent(code)}/scenario`, {
+      method: 'PUT',
+      body: JSON.stringify({ scenarioId }),
+    })
   },
 
   async close(code: string): Promise<Room> {

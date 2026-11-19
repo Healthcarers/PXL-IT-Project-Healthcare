@@ -61,9 +61,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/rooms/*/close")
                         .hasRole("LECTOR")
 
+                        .requestMatchers(HttpMethod.GET, "/api/rooms/mine/active")
+                        .hasRole("LECTOR")
+
+                        .requestMatchers("/api/rooms/*/scenario")
+                        .hasRole("LECTOR")
+
                         // Roomgegevens bekijken
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**")
                         .permitAll()
+
+                        .requestMatchers("/api/scenarios", "/api/scenarios/**")
+                        .hasRole("LECTOR")
 
                         //TODO: replace permitAll() with the commented methods. Kept like this so bruno/postman still works
                         .requestMatchers(HttpMethod.GET, "/api/vitals", "/api/channels").permitAll()//.hasAnyRole("CURSIST", "LECTOR")

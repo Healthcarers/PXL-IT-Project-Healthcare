@@ -22,7 +22,7 @@ export default defineComponent({
 
 <template>
   <div
-      class="flex h-screen flex-col box-border bg-[#050506] text-white"
+      class="flex min-h-0 flex-col box-border bg-[#050506] text-white"
   >
     <header
         class="flex h-13 shrink-0 items-center gap-4 border-b border-[#1a1a1d] px-5"

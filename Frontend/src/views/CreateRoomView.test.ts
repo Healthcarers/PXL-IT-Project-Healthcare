@@ -6,9 +6,10 @@ import { ref } from 'vue'
 import CreateRoomView from './CreateRoomView.vue'
 import { useRoom } from '../composables/useRoom'
 
-const { replaceMock, createRoomMock } = vi.hoisted(() => ({
+const { replaceMock, createRoomMock, getActiveMock } = vi.hoisted(() => ({
   replaceMock: vi.fn(),
   createRoomMock: vi.fn(),
+  getActiveMock: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
@@ -21,6 +22,10 @@ vi.mock('../composables/useRoom', () => ({
   useRoom: vi.fn(),
 }))
 
+vi.mock('../services/roomService', () => ({
+  roomService: { getActive: getActiveMock },
+}))
+
 describe('CreateRoomView', () => {
   let loading: ReturnType<typeof ref<boolean>>
   let error: ReturnType<typeof ref<string | null>>
@@ -28,6 +33,7 @@ describe('CreateRoomView', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.clearAllMocks()
+    getActiveMock.mockResolvedValue(undefined)
 
     loading = ref(false)
     error = ref<string | null>(null)
@@ -39,12 +45,14 @@ describe('CreateRoomView', () => {
     } as unknown as ReturnType<typeof useRoom>)
   })
 
-  function mountView() {
-    return mount(CreateRoomView)
+  async function mountView() {
+    const wrapper = mount(CreateRoomView)
+    await flushPromises()
+    return wrapper
   }
 
-  it('toont het formulier om een room aan te maken', () => {
-    const wrapper = mountView()
+  it('toont het formulier als er geen actieve room is', async () => {
+    const wrapper = await mountView()
 
     expect(wrapper.find('h1').text()).toBe('Room aanmaken')
     expect(wrapper.find('#name').exists()).toBe(true)
@@ -52,8 +60,21 @@ describe('CreateRoomView', () => {
     expect(wrapper.find('button[type="submit"]').text()).toBe('Room aanmaken')
   })
 
+  it('toont geen aanmaakformulier bij een fout en laat opnieuw proberen', async () => {
+    getActiveMock.mockRejectedValueOnce(new Error('API niet bereikbaar'))
+    const wrapper = await mountView()
+
+    expect(wrapper.find('form').exists()).toBe(false)
+    expect(wrapper.get('[role="alert"]').text()).toContain('kon niet worden geopend')
+    await wrapper.get('button[type="button"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.find('form').exists()).toBe(true)
+    expect(createRoomMock).not.toHaveBeenCalled()
+  })
+
   it('maakt geen room aan wanneer de naam leeg is', async () => {
-    const wrapper = mountView()
+    const wrapper = await mountView()
 
     await wrapper.find('form').trigger('submit')
     await flushPromises()
@@ -63,7 +84,7 @@ describe('CreateRoomView', () => {
   })
 
   it('maakt geen room aan wanneer de naam alleen spaties bevat', async () => {
-    const wrapper = mountView()
+    const wrapper = await mountView()
 
     await wrapper.find('#name').setValue('   ')
     await wrapper.find('form').trigger('submit')
@@ -74,7 +95,7 @@ describe('CreateRoomView', () => {
   it('maakt een room aan met getrimde invoer', async () => {
     createRoomMock.mockResolvedValue({ code: 'ABC123' })
 
-    const wrapper = mountView()
+    const wrapper = await mountView()
 
     await wrapper.find('#name').setValue('  Testroom  ')
     await wrapper.find('#description').setValue('  Testbeschrijving  ')
@@ -95,7 +116,7 @@ describe('CreateRoomView', () => {
   it('stuurt null als beschrijving wanneer deze leeg is', async () => {
     createRoomMock.mockResolvedValue({ code: 'XYZ789' })
 
-    const wrapper = mountView()
+    const wrapper = await mountView()
 
     await wrapper.find('#name').setValue('Testroom')
     await wrapper.find('form').trigger('submit')
@@ -107,19 +128,19 @@ describe('CreateRoomView', () => {
     })
   })
 
-  it('toont een foutmelding wanneer er een fout is', () => {
+  it('toont een foutmelding wanneer er een fout is', async () => {
     error.value = 'De room kon niet worden aangemaakt.'
 
-    const wrapper = mountView()
+    const wrapper = await mountView()
 
     expect(wrapper.find('[role="alert"]').text())
       .toBe('De room kon niet worden aangemaakt.')
   })
 
-  it('toont de loading-status en schakelt de knop uit', () => {
+  it('toont de loading-status en schakelt de knop uit', async () => {
     loading.value = true
 
-    const wrapper = mountView()
+    const wrapper = await mountView()
     const button = wrapper.find('button[type="submit"]')
 
     expect(button.text()).toBe('Room wordt aangemaakt...')
