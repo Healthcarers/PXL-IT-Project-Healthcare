@@ -39,6 +39,7 @@ public class IbpSource implements WaveformSource {
 
     @Override
     public double valueAt(double cycleMs, VitalsSnapshot v) {
+        if (v.heartRate() <= 0) return 0;
         double p = cycleMs / periodMs(v);
 
         double sysOffset = wrap(p - SYS_CENTER);
