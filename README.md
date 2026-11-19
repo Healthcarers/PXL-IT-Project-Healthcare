@@ -92,8 +92,9 @@ Voorbeeld voor `POST /api/scenarios`:
 }
 ```
 
-Alle zeven startwaarden zijn verplicht en moeten binnen de grenzen van de
-bestaande vitals-API vallen. Een scenario moet minstens één feedbackitem hebben,
+Alle zeven startwaarden zijn verplicht. Scenariostartwaarden laten bloeddrukken
+van 0 tot 300 mmHg toe; live-updates gebruiken 0 tot 200 mmHg. De overige grenzen
+zijn gelijk aan die van de vitals-API. Een scenario moet minstens één feedbackitem hebben,
 ook als het als concept wordt opgeslagen.
 
 Lectoren openen via **Scenario's** in de bovenste navigatie eerst het overzicht.

@@ -26,29 +26,25 @@ public class VitalsService {
     }
 
     public VitalsSnapshot update(VitalsUpdateRequest req) {
-        VitalsSnapshot updated = vitalsRepository.update(current -> new VitalsSnapshot(
-                req.heartRate() != null ? checkRange("heartRate", req.heartRate(), 0, 220) : current.heartRate(),
-                req.spo2() != null ? checkRange("spo2", req.spo2(), 50, 100) : current.spo2(),
-                req.respRate() != null ? checkRange("respRate", req.respRate(), 0, 60) : current.respRate(),
-                req.etco2() != null ? checkRange("etco2", req.etco2(), 0, 100) : current.etco2(),
-                req.ampScale()  != null ? checkRange("ampScale",  req.ampScale(),  0.1, 3)  : current.ampScale(),
-                req.sysIbp() != null ? checkRange("sysIbp", req.sysIbp(), 0, 200) : current.sysIbp(),
-                req.diasIbp() != null ? checkRange("diasIbp", req.diasIbp(), 0, 200) : current.diasIbp()
-        ));
+        VitalsSnapshot updated = vitalsRepository.update(current -> applyValues(req, current, 200));
 
         messaging.convertAndSend(VITALS_TOPIC, VitalsResponse.from(updated));
         return updated;
     }
 
-    private static VitalsSnapshot applyValues(VitalsUpdateRequest req, VitalsSnapshot current) {
+    static VitalsSnapshot initialSnapshot(VitalsUpdateRequest req) {
+        return applyValues(req, null, 300);
+    }
+
+    private static VitalsSnapshot applyValues(VitalsUpdateRequest req, VitalsSnapshot current, double maxBloodPressure) {
         return new VitalsSnapshot(
                 resolveValue("heartRate", req.heartRate(), current, VitalsSnapshot::heartRate, 0, 220),
                 resolveValue("spo2", req.spo2(), current, VitalsSnapshot::spo2, 50, 100),
                 resolveValue("respRate", req.respRate(), current, VitalsSnapshot::respRate, 0, 60),
                 resolveValue("etco2", req.etco2(), current, VitalsSnapshot::etco2, 0, 100),
                 resolveValue("ampScale", req.ampScale(), current, VitalsSnapshot::ampScale, 0.1, 3),
-                resolveValue("sysIbp", req.sysIbp(), current, VitalsSnapshot::sysIbp, 0, 300),
-                resolveValue("diasIbp", req.diasIbp(), current, VitalsSnapshot::diasIbp, 0, 300)
+                resolveValue("sysIbp", req.sysIbp(), current, VitalsSnapshot::sysIbp, 0, maxBloodPressure),
+                resolveValue("diasIbp", req.diasIbp(), current, VitalsSnapshot::diasIbp, 0, maxBloodPressure)
         );
     }
 
