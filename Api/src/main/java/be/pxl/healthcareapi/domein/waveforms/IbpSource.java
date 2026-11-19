@@ -34,7 +34,7 @@ public class IbpSource implements WaveformSource {
 
     @Override
     public double periodMs(VitalsSnapshot v) {
-        return 60000.0 / v.heartRate();
+        return v.heartRate() > 0 ? 60000.0 / v.heartRate() : 1000;
     }
 
     @Override
