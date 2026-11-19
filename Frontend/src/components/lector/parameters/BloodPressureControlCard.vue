@@ -1,57 +1,63 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { PARAMETER_BOUNDS, type BloodPressureTarget } from '../../../types/lector'
-import RotaryDialGauge from '../RotaryDialGauge.vue'
+import { computed, ref } from "vue";
+import {
+  PARAMETER_BOUNDS,
+  type BloodPressureTarget,
+} from "../../../types/lector";
+import RotaryDialGauge from "../RotaryDialGauge.vue";
 
-const props = withDefaults(defineProps<{
-  systolic: number
-  diastolic: number
-  horizontal?: boolean
-  outOfRange?: boolean
-}>(), {
-  horizontal: false,
-  outOfRange: false,
-})
+const props = withDefaults(
+  defineProps<{
+    sysIbp: number;
+    diasIbp: number;
+    horizontal?: boolean;
+    outOfRange?: boolean;
+  }>(),
+  {
+    horizontal: false,
+    outOfRange: false,
+  },
+);
 
 const emit = defineEmits<{
-  'update:systolic': [value: number]
-  'update:diastolic': [value: number]
-  'out-of-range': []
-}>()
+  "update:sysIbp": [value: number];
+  "update:diasIbp": [value: number];
+  "out-of-range": [target: BloodPressureTarget];
+}>();
 
-const bounds = PARAMETER_BOUNDS.bloodPressure
-const COLOR = '#ef4444'
+const bounds = PARAMETER_BOUNDS.sysIbp;
+const COLOR = "#ef4444";
 
-const activeTarget = ref<BloodPressureTarget>('systolic')
+const activeTarget = ref<BloodPressureTarget>("sysIbp");
 
 const activeValue = computed(() =>
-  activeTarget.value === 'systolic' ? props.systolic : props.diastolic,
-)
+  activeTarget.value === "sysIbp" ? props.sysIbp : props.diasIbp,
+);
 
 const isOutOfRange = computed(
   () =>
     props.outOfRange ||
-    props.systolic < bounds.min ||
-    props.systolic > bounds.max ||
-    props.diastolic < bounds.min ||
-    props.diastolic > bounds.max,
-)
+    props.sysIbp < bounds.min ||
+    props.sysIbp > bounds.max ||
+    props.diasIbp < bounds.min ||
+    props.diasIbp > bounds.max,
+);
 
 function updateActiveValue(nextValue: number) {
-  if (activeTarget.value === 'systolic') {
-    emit('update:systolic', nextValue)
+  if (activeTarget.value === "sysIbp") {
+    emit("update:sysIbp", nextValue);
   } else {
-    emit('update:diastolic', nextValue)
+    emit("update:diasIbp", nextValue);
   }
 }
 
 function stepBy(delta: number) {
-  const next = activeValue.value + delta
+  const next = activeValue.value + delta;
   if (next < bounds.min || next > bounds.max) {
-    emit('out-of-range')
-    return
+    emit("out-of-range", activeTarget.value);
+    return;
   }
-  updateActiveValue(next)
+  updateActiveValue(next);
 }
 </script>
 
@@ -74,12 +80,12 @@ function stepBy(delta: number) {
           :color="COLOR"
           :size="horizontal ? 'lg' : 'sm'"
           :label="
-            activeTarget === 'systolic'
+            activeTarget === 'sysIbp'
               ? 'Systolische bloeddruk regelaar'
               : 'Diastolische bloeddruk regelaar'
           "
           @update:model-value="updateActiveValue"
-          @out-of-range="emit('out-of-range')"
+          @out-of-range="emit('out-of-range', activeTarget)"
         />
       </div>
 
@@ -97,17 +103,17 @@ function stepBy(delta: number) {
             <button
               type="button"
               data-testid="bp-systolic"
-              :aria-pressed="activeTarget === 'systolic'"
+              :aria-pressed="activeTarget === 'sysIbp'"
               aria-label="Selecteer systolische bloeddruk"
               class="rounded-lg px-2 py-0.5 text-2xl font-extrabold leading-none tabular-nums transition sm:text-3xl"
               :class="
-                activeTarget === 'systolic'
+                activeTarget === 'sysIbp'
                   ? 'border border-[#ef4444] bg-[#ef4444]/10 text-[#ef4444]'
                   : 'border border-transparent text-[#9ca3af] hover:text-white'
               "
-              @click="activeTarget = 'systolic'"
+              @click="activeTarget = 'sysIbp'"
             >
-              {{ systolic }}
+              {{ sysIbp }}
             </button>
 
             <span class="text-2xl font-bold text-[#71717a]" aria-hidden="true">/</span>
@@ -115,17 +121,17 @@ function stepBy(delta: number) {
             <button
               type="button"
               data-testid="bp-diastolic"
-              :aria-pressed="activeTarget === 'diastolic'"
+              :aria-pressed="activeTarget === 'diasIbp'"
               aria-label="Selecteer diastolische bloeddruk"
               class="rounded-lg px-2 py-0.5 text-2xl font-extrabold leading-none tabular-nums transition sm:text-3xl"
               :class="
-                activeTarget === 'diastolic'
+                activeTarget === 'diasIbp'
                   ? 'border border-[#ef4444] bg-[#ef4444]/10 text-[#ef4444]'
                   : 'border border-transparent text-[#9ca3af] hover:text-white'
               "
-              @click="activeTarget = 'diastolic'"
+              @click="activeTarget = 'diasIbp'"
             >
-              {{ diastolic }}
+              {{ diasIbp }}
             </button>
           </div>
 

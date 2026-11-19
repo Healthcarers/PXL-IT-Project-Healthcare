@@ -1,36 +1,42 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { PARAMETER_BOUNDS } from '../../../types/lector'
-import RotaryDialGauge from '../RotaryDialGauge.vue'
+import { computed } from "vue";
+import { PARAMETER_BOUNDS } from "../../../types/lector";
+import RotaryDialGauge from "../RotaryDialGauge.vue";
 
-const props = withDefaults(defineProps<{
-  modelValue: number
-  horizontal?: boolean
-  outOfRange?: boolean
-}>(), {
-  horizontal: false,
-  outOfRange: false,
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: number;
+    horizontal?: boolean;
+    outOfRange?: boolean;
+  }>(),
+  {
+    horizontal: false,
+    outOfRange: false,
+  },
+);
 
 const emit = defineEmits<{
-  'update:modelValue': [value: number]
-  'out-of-range': []
-}>()
+  "update:modelValue": [value: number];
+  "out-of-range": [];
+}>();
 
-const bounds = PARAMETER_BOUNDS.spo2
-const COLOR = '#38bdf8'
+const bounds = PARAMETER_BOUNDS.spo2;
+const COLOR = "#38bdf8";
 
 const isOutOfRange = computed(
-  () => props.outOfRange || props.modelValue < bounds.min || props.modelValue > bounds.max,
-)
+  () =>
+    props.outOfRange ||
+    props.modelValue < bounds.min ||
+    props.modelValue > bounds.max,
+);
 
 function stepBy(delta: number) {
-  const next = props.modelValue + delta
+  const next = props.modelValue + delta;
   if (next < bounds.min || next > bounds.max) {
-    emit('out-of-range')
-    return
+    emit("out-of-range");
+    return;
   }
-  emit('update:modelValue', next)
+  emit("update:modelValue", next);
 }
 </script>
 

@@ -1,87 +1,96 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from "vue";
 import {
   ECG_RHYTHMS,
   PARAMETER_BOUNDS,
+  type CapnoRespMode,
   type EcgRhythm,
   type LectorParameters,
   type ParameterKey,
-} from '../../types/lector'
-import BloodPressureControlCard from './parameters/BloodPressureControlCard.vue'
-import CapnoRespControlCard from './parameters/CapnoRespControlCard.vue'
-import HeartRateControlCard from './parameters/HeartRateControlCard.vue'
-import Spo2ControlCard from './parameters/Spo2ControlCard.vue'
-import TemperatureControlCard from './parameters/TemperatureControlCard.vue'
+} from "../../types/lector";
+import BloodPressureControlCard from "./parameters/BloodPressureControlCard.vue";
+import CapnoRespControlCard from "./parameters/CapnoRespControlCard.vue";
+import HeartRateControlCard from "./parameters/HeartRateControlCard.vue";
+import Spo2ControlCard from "./parameters/Spo2ControlCard.vue";
+import TemperatureControlCard from "./parameters/TemperatureControlCard.vue";
 
-const props = withDefaults(defineProps<{
-  parameters: LectorParameters
-  expanded?: boolean
-}>(), {
-  expanded: false,
-})
+const props = withDefaults(
+  defineProps<{
+    parameters: LectorParameters;
+    expanded?: boolean;
+  }>(),
+  {
+    expanded: false,
+  },
+);
 
 const emit = defineEmits<{
-  'update:parameters': [value: LectorParameters]
-}>()
+  "update:parameters": [value: LectorParameters];
+}>();
 
-const rhythmOpen = ref(false)
-const rhythmMenuRef = ref<HTMLElement | null>(null)
-const outOfRangeKey = ref<ParameterKey | null>(null)
+const rhythmOpen = ref(false);
+const rhythmMenuRef = ref<HTMLElement | null>(null);
+const outOfRangeKey = ref<ParameterKey | null>(null);
 
 const activeErrorMessage = computed<string | null>(() => {
-  if (!outOfRangeKey.value) return null
-  return PARAMETER_BOUNDS[outOfRangeKey.value].errorMessage
-})
+  if (!outOfRangeKey.value) return null;
+  return PARAMETER_BOUNDS[outOfRangeKey.value].errorMessage;
+});
 
-const capnoOutOfRangeMode = computed(() => {
-  if (outOfRangeKey.value === 'etco2') return 'etco2'
-  if (outOfRangeKey.value === 'respRate') return 'af'
-  return null
-})
+const capnoOutOfRangeMode = computed<CapnoRespMode | null>(() => {
+  if (outOfRangeKey.value === "etco2") return "etco2";
+  if (outOfRangeKey.value === "respRate") return "respRate";
+  return null;
+});
+
+const bpOutOfRange = computed(
+  () =>
+    outOfRangeKey.value === "sysIbp" || outOfRangeKey.value === "diasIbp",
+);
 
 function handleOutOfRange(key: ParameterKey) {
-  outOfRangeKey.value = key
+  outOfRangeKey.value = key;
 }
 
 function updateParam<K extends keyof LectorParameters>(
   field: K,
   value: LectorParameters[K],
 ) {
-  outOfRangeKey.value = null
-  emit('update:parameters', {
+  outOfRangeKey.value = null;
+  emit("update:parameters", {
     ...props.parameters,
     [field]: value,
-  })
+  });
 }
 
 function selectRhythm(rhythm: EcgRhythm) {
-  updateParam('rhythm', rhythm)
-  rhythmOpen.value = false
+  updateParam("rhythm", rhythm);
+  rhythmOpen.value = false;
 }
 
 function handleDocumentClick(event: MouseEvent) {
-  if (!rhythmOpen.value) return
-  const target = event.target as Node | null
+  if (!rhythmOpen.value) return;
+  const target = event.target as Node | null;
   if (rhythmMenuRef.value && target && !rhythmMenuRef.value.contains(target)) {
-    rhythmOpen.value = false
+    rhythmOpen.value = false;
   }
 }
 
 function handleDocumentKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && rhythmOpen.value) {
-    rhythmOpen.value = false
+  if (event.key === "Escape" && rhythmOpen.value) {
+    rhythmOpen.value = false;
   }
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
-  document.addEventListener('keydown', handleDocumentKeydown)
-})
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleDocumentClick)
-  document.removeEventListener('keydown', handleDocumentKeydown)
-})
+  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeydown);
+});
 </script>
 
 <template>
@@ -176,13 +185,13 @@ onUnmounted(() => {
       />
 
       <BloodPressureControlCard
-        :systolic="parameters.systolicBp"
-        :diastolic="parameters.diastolicBp"
+        :sys-ibp="parameters.sysIbp"
+        :dias-ibp="parameters.diasIbp"
         :horizontal="expanded"
-        :out-of-range="outOfRangeKey === 'bloodPressure'"
-        @update:systolic="updateParam('systolicBp', $event)"
-        @update:diastolic="updateParam('diastolicBp', $event)"
-        @out-of-range="handleOutOfRange('bloodPressure')"
+        :out-of-range="bpOutOfRange"
+        @update:sys-ibp="updateParam('sysIbp', $event)"
+        @update:dias-ibp="updateParam('diasIbp', $event)"
+        @out-of-range="handleOutOfRange($event)"
       />
 
       <CapnoRespControlCard
@@ -192,7 +201,7 @@ onUnmounted(() => {
         :out-of-range-mode="capnoOutOfRangeMode"
         @update:etco2="updateParam('etco2', $event)"
         @update:resp-rate="updateParam('respRate', $event)"
-        @out-of-range="handleOutOfRange($event === 'etco2' ? 'etco2' : 'respRate')"
+        @out-of-range="handleOutOfRange($event)"
       />
     </div>
 

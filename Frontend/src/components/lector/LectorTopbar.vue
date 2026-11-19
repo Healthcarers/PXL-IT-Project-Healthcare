@@ -1,61 +1,64 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
-const props = withDefaults(defineProps<{
-  roomCode: string
-  lectorName: string
-  cursistCount: number
-  closing?: boolean
-}>(), {
-  closing: false,
-})
+const props = withDefaults(
+  defineProps<{
+    roomCode: string;
+    lectorName: string;
+    cursistCount: number;
+    closing?: boolean;
+  }>(),
+  {
+    closing: false,
+  },
+);
 
 const emit = defineEmits<{
-  'close-room': []
-  'request-logout': []
-}>()
+  "close-room": [];
+  "request-logout": [];
+}>();
 
-const profileOpen = ref(false)
-const profileMenuRef = ref<HTMLElement | null>(null)
+const profileOpen = ref(false);
+const profileMenuRef = ref<HTMLElement | null>(null);
 
 const cursistCountLabel = computed(() =>
   props.cursistCount === 1
-    ? '1 cursist verbonden'
+    ? "1 cursist verbonden"
     : `${props.cursistCount} cursisten verbonden`,
-)
+);
 
 function toggleProfileMenu() {
-  profileOpen.value = !profileOpen.value
+  profileOpen.value = !profileOpen.value;
 }
 
 function handleLogoutClick() {
-  profileOpen.value = false
-  emit('request-logout')
+  profileOpen.value = false;
+  emit("request-logout");
 }
 
 function handleDocumentClick(event: MouseEvent) {
-  if (!profileOpen.value) return
-  const target = event.target as Node | null
+  if (!profileOpen.value) return;
+  const target = event.target as Node | null;
   if (profileMenuRef.value && target && !profileMenuRef.value.contains(target)) {
-    profileOpen.value = false
+    profileOpen.value = false;
   }
 }
 
 function handleDocumentKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && profileOpen.value) {
-    profileOpen.value = false
+  if (event.key === "Escape" && profileOpen.value) {
+    profileOpen.value = false;
   }
 }
 
 onMounted(() => {
-  document.addEventListener('click', handleDocumentClick)
-  document.addEventListener('keydown', handleDocumentKeydown)
-})
+  document.addEventListener("click", handleDocumentClick);
+  document.addEventListener("keydown", handleDocumentKeydown);
+});
 
 onUnmounted(() => {
-  document.removeEventListener('click', handleDocumentClick)
-  document.removeEventListener('keydown', handleDocumentKeydown)
-})
+  document.removeEventListener("click", handleDocumentClick);
+  document.removeEventListener("keydown", handleDocumentKeydown);
+});
 </script>
 
 <template>

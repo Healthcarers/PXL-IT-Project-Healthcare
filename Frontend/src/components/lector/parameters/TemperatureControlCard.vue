@@ -1,36 +1,42 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { PARAMETER_BOUNDS } from '../../../types/lector'
+import { computed } from "vue";
+import { PARAMETER_BOUNDS } from "../../../types/lector";
 
-const props = withDefaults(defineProps<{
-  modelValue: number
-  outOfRange?: boolean
-}>(), {
-  outOfRange: false,
-})
+const props = withDefaults(
+  defineProps<{
+    modelValue: number;
+    outOfRange?: boolean;
+  }>(),
+  {
+    outOfRange: false,
+  },
+);
 
 const emit = defineEmits<{
-  'update:modelValue': [value: number]
-  'out-of-range': []
-}>()
+  "update:modelValue": [value: number];
+  "out-of-range": [];
+}>();
 
-const bounds = PARAMETER_BOUNDS.temperature
+const bounds = PARAMETER_BOUNDS.temperature;
 
 const isOutOfRange = computed(
-  () => props.outOfRange || props.modelValue < bounds.min || props.modelValue > bounds.max,
-)
+  () =>
+    props.outOfRange ||
+    props.modelValue < bounds.min ||
+    props.modelValue > bounds.max,
+);
 
 const formattedValue = computed(() =>
-  props.modelValue.toFixed(1).replace('.', ','),
-)
+  props.modelValue.toFixed(1).replace(".", ","),
+);
 
 function stepBy(delta: number) {
-  const next = Number((props.modelValue + delta).toFixed(1))
+  const next = Number((props.modelValue + delta).toFixed(1));
   if (next < bounds.min || next > bounds.max) {
-    emit('out-of-range')
-    return
+    emit("out-of-range");
+    return;
   }
-  emit('update:modelValue', next)
+  emit("update:modelValue", next);
 }
 </script>
 

@@ -1,63 +1,66 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { PARAMETER_BOUNDS, type CapnoRespMode } from '../../../types/lector'
-import RotaryDialGauge from '../RotaryDialGauge.vue'
+import { computed, ref } from "vue";
+import { PARAMETER_BOUNDS, type CapnoRespMode } from "../../../types/lector";
+import RotaryDialGauge from "../RotaryDialGauge.vue";
 
-const props = withDefaults(defineProps<{
-  etco2: number
-  respRate: number
-  horizontal?: boolean
-  outOfRangeMode?: CapnoRespMode | null
-}>(), {
-  horizontal: false,
-  outOfRangeMode: null,
-})
+const props = withDefaults(
+  defineProps<{
+    etco2: number;
+    respRate: number;
+    horizontal?: boolean;
+    outOfRangeMode?: CapnoRespMode | null;
+  }>(),
+  {
+    horizontal: false,
+    outOfRangeMode: null,
+  },
+);
 
 const emit = defineEmits<{
-  'update:etco2': [value: number]
-  'update:respRate': [value: number]
-  'out-of-range': [mode: CapnoRespMode]
-}>()
+  "update:etco2": [value: number];
+  "update:respRate": [value: number];
+  "out-of-range": [mode: CapnoRespMode];
+}>();
 
-const mode = ref<CapnoRespMode>('etco2')
+const mode = ref<CapnoRespMode>("etco2");
 
 const currentBounds = computed(() =>
-  mode.value === 'etco2' ? PARAMETER_BOUNDS.etco2 : PARAMETER_BOUNDS.respRate,
-)
+  mode.value === "etco2" ? PARAMETER_BOUNDS.etco2 : PARAMETER_BOUNDS.respRate,
+);
 
 const currentValue = computed(() =>
-  mode.value === 'etco2' ? props.etco2 : props.respRate,
-)
+  mode.value === "etco2" ? props.etco2 : props.respRate,
+);
 
 const currentColor = computed(() =>
-  mode.value === 'etco2' ? '#facc15' : '#ffffff',
-)
+  mode.value === "etco2" ? "#facc15" : "#ffffff",
+);
 
 const isOutOfRange = computed(() => {
-  const b = currentBounds.value
+  const b = currentBounds.value;
   return (
     props.outOfRangeMode === mode.value ||
     currentValue.value < b.min ||
     currentValue.value > b.max
-  )
-})
+  );
+});
 
 function updateCurrentValue(nextValue: number) {
-  if (mode.value === 'etco2') {
-    emit('update:etco2', nextValue)
+  if (mode.value === "etco2") {
+    emit("update:etco2", nextValue);
   } else {
-    emit('update:respRate', nextValue)
+    emit("update:respRate", nextValue);
   }
 }
 
 function stepBy(delta: number) {
-  const b = currentBounds.value
-  const next = currentValue.value + delta
+  const b = currentBounds.value;
+  const next = currentValue.value + delta;
   if (next < b.min || next > b.max) {
-    emit('out-of-range', mode.value)
-    return
+    emit("out-of-range", mode.value);
+    return;
   }
-  updateCurrentValue(next)
+  updateCurrentValue(next);
 }
 </script>
 
@@ -108,14 +111,14 @@ function stepBy(delta: number) {
           <button
             type="button"
             role="radio"
-            :aria-checked="mode === 'af'"
+            :aria-checked="mode === 'respRate'"
             class="inline-flex items-center gap-1.5 text-sm transition"
-            :class="mode === 'af' ? 'font-bold text-white' : 'font-medium text-[#8e8e99] hover:text-white'"
-            @click="mode = 'af'"
+            :class="mode === 'respRate' ? 'font-bold text-white' : 'font-medium text-[#8e8e99] hover:text-white'"
+            @click="mode = 'respRate'"
           >
             <span
               class="h-2.5 w-2.5 rounded-full"
-              :class="mode === 'af' ? 'bg-white' : 'border border-[#8e8e99]'"
+              :class="mode === 'respRate' ? 'bg-white' : 'border border-[#8e8e99]'"
               aria-hidden="true"
             />
             <span>AF</span>

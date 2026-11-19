@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import CursistPreviewCard from '../../components/lector/CursistPreviewCard.vue'
-import LectorConfirmModal from '../../components/lector/LectorConfirmModal.vue'
-import LectorTopbar from '../../components/lector/LectorTopbar.vue'
-import ParametersPanel from '../../components/lector/ParametersPanel.vue'
-import ScenarioControlCard from '../../components/lector/ScenarioControlCard.vue'
-import { useRoom } from '../../composables/useRoom'
-import { useAuthStore } from '../../stores/Authstore'
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { useRouter } from "vue-router";
+import CursistPreviewCard from "../../components/lector/CursistPreviewCard.vue";
+import LectorConfirmModal from "../../components/lector/LectorConfirmModal.vue";
+import LectorTopbar from "../../components/lector/LectorTopbar.vue";
+import ParametersPanel from "../../components/lector/ParametersPanel.vue";
+import ScenarioControlCard from "../../components/lector/ScenarioControlCard.vue";
+import { useRoom } from "../../composables/useRoom";
+import { useAuthStore } from "../../stores/Authstore";
 import {
   createDefaultLectorParameters,
   type LectorParameters,
-} from '../../types/lector'
+} from "../../types/lector";
 
-const PARTICIPANTS_POLL_MS = 5000
+const PARTICIPANTS_POLL_MS = 5000;
 
 const props = defineProps<{
-  code: string
-}>()
+  code: string;
+}>();
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
 const {
   currentRoom,
@@ -29,111 +29,128 @@ const {
   loadRoom,
   loadParticipants,
   closeRoom,
-} = useRoom()
+} = useRoom();
 
-const previewCollapsed = ref(false)
-const parameters = ref<LectorParameters>(createDefaultLectorParameters())
-const logoutModalOpen = ref(false)
-const closeRoomModalOpen = ref(false)
-const closingRoom = ref(false)
-const statusNotice = ref<string | null>(null)
+const previewCollapsed = ref(false);
+const parameters = ref<LectorParameters>(createDefaultLectorParameters());
+const logoutModalOpen = ref(false);
+const closeRoomModalOpen = ref(false);
+const closingRoom = ref(false);
+const statusNotice = ref<string | null>(null);
 
-let participantsPollInterval: ReturnType<typeof setInterval> | null = null
-let pollingParticipants = false
+let participantsPollInterval: ReturnType<typeof setInterval> | null = null;
+let pollingParticipants = false;
 
 const displayRoomCode = computed(
   () => currentRoom.value?.code ?? props.code.toUpperCase(),
-)
+);
 
 const lectorName = computed(() => {
-  const person = authStore.person
-  if (!person) return 'Lector'
-  const fullName = [person.firstname, person.lastname].filter(Boolean).join(' ').trim()
-  return fullName || 'Lector'
-})
+  const person = authStore.person;
+  if (!person) return "Lector";
+  const fullName = [person.firstname, person.lastname]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  return fullName || "Lector";
+});
 
 const cursistCount = computed(() => {
-  const ownerId = currentRoom.value?.ownerId
-  if (!ownerId) return participants.value.length
-  return participants.value.filter((p) => p.userId !== ownerId).length
-})
+  const ownerId = currentRoom.value?.ownerId;
+  if (!ownerId) return participants.value.length;
+  return participants.value.filter((p) => p.userId !== ownerId).length;
+});
 
 function stopParticipantsPolling() {
   if (participantsPollInterval !== null) {
-    clearInterval(participantsPollInterval)
-    participantsPollInterval = null
+    clearInterval(participantsPollInterval);
+    participantsPollInterval = null;
   }
 }
 
 async function pollParticipants() {
-  if (pollingParticipants) return
-  pollingParticipants = true
+  if (pollingParticipants) return;
+  pollingParticipants = true;
   try {
-    await loadParticipants(props.code)
+    await loadParticipants(props.code);
   } catch {
     // Error wordt weergegeven via useRoom().
   } finally {
-    pollingParticipants = false
+    pollingParticipants = false;
   }
 }
 
 function startParticipantsPolling() {
-  stopParticipantsPolling()
+  stopParticipantsPolling();
   participantsPollInterval = setInterval(() => {
-    void pollParticipants()
-  }, PARTICIPANTS_POLL_MS)
+    void pollParticipants();
+  }, PARTICIPANTS_POLL_MS);
 }
 
 async function initializeDashboard() {
-  stopParticipantsPolling()
+  stopParticipantsPolling();
 
   try {
     if (!authStore.person) {
-      await authStore.isAuthenticated()
+      await authStore.isAuthenticated();
     }
 
-    await loadRoom(props.code)
-    await loadParticipants(props.code)
-    startParticipantsPolling()
+    const room = await loadRoom(props.code);
+    const currentUserId = authStore.person?.id ?? null;
+
+    if (
+      !currentUserId ||
+      room.ownerId !== currentUserId ||
+      room.status !== "STARTED"
+    ) {
+      await router.replace({
+        name: "host-dashboard",
+        params: { code: room.code ?? props.code },
+      });
+      return;
+    }
+
+    await loadParticipants(props.code);
+    startParticipantsPolling();
   } catch {
     // Foutmelding wordt beheerd door useRoom().
   }
 }
 
 function handleConfirmLogout() {
-  logoutModalOpen.value = false
+  logoutModalOpen.value = false;
   statusNotice.value =
-    'Uitlogfunctionaliteit wordt gekoppeld zodra de logout-branch is gemerged.'
+    "Uitlogfunctionaliteit wordt gekoppeld zodra de logout-branch is gemerged.";
 }
 
 async function handleConfirmCloseRoom() {
-  closingRoom.value = true
+  closingRoom.value = true;
   try {
-    await closeRoom()
-    closeRoomModalOpen.value = false
-    stopParticipantsPolling()
-    await router.push({ name: 'create-room' })
+    await closeRoom();
+    closeRoomModalOpen.value = false;
+    stopParticipantsPolling();
+    await router.push({ name: "create-room" });
   } catch {
-    closeRoomModalOpen.value = false
+    closeRoomModalOpen.value = false;
   } finally {
-    closingRoom.value = false
+    closingRoom.value = false;
   }
 }
 
 onMounted(() => {
-  void initializeDashboard()
-})
+  void initializeDashboard();
+});
 
 watch(
   () => props.code,
   () => {
-    void initializeDashboard()
+    void initializeDashboard();
   },
-)
+);
 
 onUnmounted(() => {
-  stopParticipantsPolling()
-})
+  stopParticipantsPolling();
+});
 </script>
 
 <template>

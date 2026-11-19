@@ -1,26 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { Line } from 'vue-chartjs'
-import { Chart as ChartJS, LineElement, PointElement, LinearScale } from 'chart.js'
-import type { ChartData, ChartOptions } from 'chart.js'
-import type { SweepPoint } from '../../composables/useSweepWaveform'
+import { computed } from 'vue';
+import { Line } from 'vue-chartjs';
+import { Chart as ChartJS, LineElement, PointElement, LinearScale } from 'chart.js';
+import type { ChartData, ChartOptions } from 'chart.js';
+import type { SweepPoint } from '../../composables/useSweepWaveform';
 
 ChartJS.register(LineElement, PointElement, LinearScale);
 
 const props = withDefaults(defineProps<{
-  points: SweepPoint[]
-  cursorX: number
-  windowMs: number
-  yMin: number
-  yMax: number
-  color?: string
-  cursorColor?: string
-  lineWidth?: number
-  gridColor?: string
-  gridStepX?: number
-  gridStepY?: number
-  showCursor?: boolean
-  interactive?: boolean
+  points: SweepPoint[];
+  cursorX: number;
+  windowMs: number;
+  yMin: number;
+  yMax: number;
+  color?: string;
+  cursorColor?: string;
+  lineWidth?: number;
+  gridColor?: string;
+  gridStepX?: number;
+  gridStepY?: number;
+  showCursor?: boolean;
+  interactive?: boolean;
 }>(), {
   color: '#22c55e',
   cursorColor: 'rgba(255, 255, 255, 0.6)',
@@ -60,7 +60,7 @@ const chartData = computed<ChartData<'line', SweepPoint[]>>(() => {
       borderColor: props.cursorColor,
       borderWidth: 1,
       pointRadius: 0
-    })
+    });
   }
 
   return { datasets };

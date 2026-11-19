@@ -1,72 +1,72 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
-import { connected } from '../../services/stompClient'
-import PatientMonitorGrid from '../charts/PatientMonitorGrid.vue'
+import { nextTick, onMounted, onUnmounted, ref, watch } from "vue";
+import { connected } from "../../services/stompClient";
+import PatientMonitorGrid from "../charts/PatientMonitorGrid.vue";
 
-const STAGE_WIDTH = 1120
-const STAGE_HEIGHT = 700
+const STAGE_WIDTH = 1120;
+const STAGE_HEIGHT = 700;
 
 const props = defineProps<{
-  collapsed: boolean
-}>()
+  collapsed: boolean;
+}>();
 
 const emit = defineEmits<{
-  'toggle-collapse': []
-}>()
+  "toggle-collapse": [];
+}>();
 
-const viewportRef = ref<HTMLElement | null>(null)
-const scale = ref(0.5)
-let resizeObserver: ResizeObserver | null = null
+const viewportRef = ref<HTMLElement | null>(null);
+const scale = ref(0.5);
+let resizeObserver: ResizeObserver | null = null;
 
 function updateScale() {
-  const el = viewportRef.value
-  if (!el) return
-  const width = el.clientWidth
+  const el = viewportRef.value;
+  if (!el) return;
+  const width = el.clientWidth;
   if (width > 0) {
-    scale.value = width / STAGE_WIDTH
+    scale.value = width / STAGE_WIDTH;
   }
 }
 
 function attachObserver() {
-  disconnectObserver()
-  if (typeof ResizeObserver === 'undefined' || !viewportRef.value) {
-    updateScale()
-    return
+  disconnectObserver();
+  if (typeof ResizeObserver === "undefined" || !viewportRef.value) {
+    updateScale();
+    return;
   }
   resizeObserver = new ResizeObserver(() => {
-    updateScale()
-  })
-  resizeObserver.observe(viewportRef.value)
-  updateScale()
+    updateScale();
+  });
+  resizeObserver.observe(viewportRef.value);
+  updateScale();
 }
 
 function disconnectObserver() {
   if (resizeObserver) {
-    resizeObserver.disconnect()
-    resizeObserver = null
+    resizeObserver.disconnect();
+    resizeObserver = null;
   }
 }
 
 onMounted(() => {
   if (!props.collapsed) {
-    attachObserver()
+    attachObserver();
   }
-})
+});
 
 watch(
   () => props.collapsed,
   (isCollapsed) => {
     if (isCollapsed) {
-      disconnectObserver()
+      disconnectObserver();
     } else {
-      requestAnimationFrame(() => attachObserver())
+      void nextTick(() => attachObserver());
     }
   },
-)
+);
 
 onUnmounted(() => {
-  disconnectObserver()
-})
+  disconnectObserver();
+});
 </script>
 
 <template>
@@ -81,7 +81,7 @@ onUnmounted(() => {
   </button>
 
   <section
-    v-else
+    v-show="!collapsed"
     aria-label="Wat de cursist ziet"
     class="rounded-2xl border border-[#222228] bg-[#0e0e11] p-4 sm:p-5"
   >

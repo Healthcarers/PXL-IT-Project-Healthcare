@@ -1,27 +1,30 @@
 <script setup lang="ts">
-import { onUnmounted, watch } from 'vue'
+import { onUnmounted, watch } from "vue";
 
-const props = withDefaults(defineProps<{
-  open: boolean
-  title: string
-  message: string
-  cancelLabel?: string
-  confirmLabel?: string
-  loading?: boolean
-}>(), {
-  cancelLabel: 'Annuleren',
-  confirmLabel: 'Bevestigen',
-  loading: false,
-})
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    title: string;
+    message: string;
+    cancelLabel?: string;
+    confirmLabel?: string;
+    loading?: boolean;
+  }>(),
+  {
+    cancelLabel: "Annuleren",
+    confirmLabel: "Bevestigen",
+    loading: false,
+  },
+);
 
 const emit = defineEmits<{
-  cancel: []
-  confirm: []
-}>()
+  cancel: [];
+  confirm: [];
+}>();
 
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && props.open && !props.loading) {
-    emit('cancel')
+  if (event.key === "Escape" && props.open && !props.loading) {
+    emit("cancel");
   }
 }
 
@@ -29,17 +32,17 @@ watch(
   () => props.open,
   (isOpen) => {
     if (isOpen) {
-      window.addEventListener('keydown', onKeydown)
+      window.addEventListener("keydown", onKeydown);
     } else {
-      window.removeEventListener('keydown', onKeydown)
+      window.removeEventListener("keydown", onKeydown);
     }
   },
   { immediate: true },
-)
+);
 
 onUnmounted(() => {
-  window.removeEventListener('keydown', onKeydown)
-})
+  window.removeEventListener("keydown", onKeydown);
+});
 </script>
 
 <template>
@@ -76,7 +79,7 @@ onUnmounted(() => {
           class="rounded-full bg-[#0b0b0d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#232329] disabled:opacity-50"
           @click="emit('confirm')"
         >
-          {{ loading ? 'Bezig...' : confirmLabel }}
+          {{ loading ? "Bezig..." : confirmLabel }}
         </button>
       </div>
     </div>

@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
-import { useRoom } from '../composables/useRoom'
-import { useAuthStore } from '../stores/Authstore'
+import { computed, onMounted, watch } from "vue";
+import { useRouter } from "vue-router";
+import { useRoom } from "../composables/useRoom";
+import { useAuthStore } from "../stores/Authstore";
 
 const props = defineProps<{
-    code: string
-}>()
+    code: string;
+}>();
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
 const {
     currentRoom,
@@ -20,42 +20,42 @@ const {
     loadParticipants,
     startRoom,
     closeRoom,
-} = useRoom()
+} = useRoom();
 
-const currentUserId = computed(() => authStore.person?.id ?? null)
+const currentUserId = computed(() => authStore.person?.id ?? null);
 
 const isHost = computed(
     () => !!currentUserId.value &&
         currentRoom.value?.ownerId === currentUserId.value,
-)
+);
 
 const statusLabel = computed(() => {
     switch (currentRoom.value?.status) {
-        case 'OPEN':
-            return 'Wacht op deelnemers'
-        case 'STARTED':
-            return 'Simulatie gestart'
-        case 'CLOSED':
-            return 'Room gesloten'
+        case "OPEN":
+            return "Wacht op deelnemers";
+        case "STARTED":
+            return "Simulatie gestart";
+        case "CLOSED":
+            return "Room gesloten";
         default:
-            return 'Laden...'
+            return "Laden...";
     }
-})
+});
 
 async function refreshDashboard() {
     try {
         if (!authStore.person) {
-            await authStore.isAuthenticated()
+            await authStore.isAuthenticated();
         }
 
-        await loadRoom(props.code)
-        await loadParticipants(props.code)
+        await loadRoom(props.code);
+        await loadParticipants(props.code);
 
-        if (isHost.value && currentRoom.value?.status === 'STARTED') {
+        if (isHost.value && currentRoom.value?.status === "STARTED") {
             await router.replace({
-                name: 'lector-dashboard',
+                name: "lector-dashboard",
                 params: { code: currentRoom.value.code },
-            })
+            });
         }
     } catch {
         // Fout wordt weergegeven via useRoom().
@@ -63,42 +63,42 @@ async function refreshDashboard() {
 }
 
 async function handleStart() {
-    if (!window.confirm('Wil je de simulatie starten?')) return
+    if (!window.confirm("Wil je de simulatie starten?")) return;
 
     try {
-        const startedRoom = await startRoom()
+        const startedRoom = await startRoom();
         await router.push({
-            name: 'lector-dashboard',
+            name: "lector-dashboard",
             params: { code: startedRoom?.code ?? props.code },
-        })
+        });
     } catch {
         // Fout wordt weergegeven via useRoom().
     }
 }
 
 async function handleClose() {
-    if (!window.confirm('Wil je deze room sluiten?')) return
+    if (!window.confirm("Wil je deze room sluiten?")) return;
 
     try {
-        await closeRoom()
-        await refreshDashboard()
+        await closeRoom();
+        await refreshDashboard();
     } catch {
         // Fout wordt weergegeven via useRoom().
     }
 }
 
 async function copyRoomCode() {
-    if (!currentRoom.value) return
+    if (!currentRoom.value) return;
 
     try {
-        await navigator.clipboard.writeText(currentRoom.value.code)
+        await navigator.clipboard.writeText(currentRoom.value.code);
     } catch {
         // Kopiëren niet beschikbaar.
     }
 }
 
-onMounted(refreshDashboard)
-watch(() => props.code, refreshDashboard)
+onMounted(refreshDashboard);
+watch(() => props.code, refreshDashboard);
 </script>
 
 

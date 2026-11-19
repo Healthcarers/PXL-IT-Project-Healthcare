@@ -1,24 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import type { ScenarioPlaybackState } from '../../types/lector'
+import { ref } from "vue";
+import type { ScenarioPlaybackState } from "../../types/lector";
 
-withDefaults(defineProps<{
-  compact?: boolean
-}>(), {
-  compact: false,
-})
+withDefaults(
+  defineProps<{
+    compact?: boolean;
+  }>(),
+  {
+    compact: false,
+  },
+);
 
-const playbackState = ref<ScenarioPlaybackState>('running')
-const scenarioTitle = ref('Ventrikelfibrillatie na collaps')
-const elapsedLabel = ref('04:12 / 12:00')
+const playbackState = ref<ScenarioPlaybackState>("running");
+const scenarioTitle = ref("Ventrikelfibrillatie na collaps");
+const elapsedLabel = ref("04:12 / 12:00");
 
 function setPlayback(state: ScenarioPlaybackState) {
-  playbackState.value = state
+  playbackState.value = state;
 }
 
 function handleRestart() {
-  playbackState.value = 'running'
-  elapsedLabel.value = '00:00 / 12:00'
+  playbackState.value = "running";
+  elapsedLabel.value = "00:00 / 12:00";
 }
 </script>
 
