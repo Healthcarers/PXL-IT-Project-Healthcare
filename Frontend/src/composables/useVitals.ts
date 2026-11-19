@@ -1,5 +1,6 @@
-import { onUnmounted, ref } from "vue";
+import { ref, watch } from "vue";
 import api from "../services/refreshService.ts";
+import { connected, subscribeTopic } from "../services/stompClient.ts";
 
 export interface VitalsResponse {
     heartRate: number;
@@ -12,58 +13,44 @@ export interface VitalsResponse {
 }
 
 const VITALS_URL = "/vitals";
-const POLL_INTERVAL_MS = 1000;
+const VITALS_TOPIC = "/topic/vitals";
 
 const vitals = ref<VitalsResponse | null>(null);
+let started = false;
 
-let timer: number | undefined;
-let subscribers = 0;
-let inFlight: Promise<void> | null = null;
+function normalize(v: VitalsResponse): VitalsResponse {
+    return {
+        heartRate: Math.round(v.heartRate),
+        spo2: Math.round(v.spo2),
+        etco2: Math.round(v.etco2),
+        respRate: Math.round(v.respRate),
+        ampScale: v.ampScale,
+        sysIbp: Math.round(v.sysIbp),
+        diasIbp: Math.round(v.diasIbp),
+    };
+}
 
-async function refresh(): Promise<void> {
-    if (inFlight) return inFlight;
+function start(): void {
+    if (started) return;
+    started = true;
 
-    inFlight = (async () =>  {
+    subscribeTopic<VitalsResponse>(VITALS_TOPIC, msg => {
+       vitals.value = normalize(msg);
+    });
+
+    watch(connected, async isConnected => {
+        if (!isConnected) return;
+        let previous = vitals.value;
         try {
             const res = await api.get<VitalsResponse>(VITALS_URL);
-            vitals.value = {
-                heartRate: Math.round(res.data.heartRate),
-                spo2: Math.round(res.data.spo2),
-                etco2: Math.round(res.data.etco2),
-                respRate: Math.round(res.data.respRate),
-                ampScale: res.data.ampScale,
-                sysIbp: Math.round(res.data.sysIbp),
-                diasIbp: Math.round(res.data.diasIbp),
-            };
+            vitals.value = normalize(res.data);
         } catch {
-            vitals.value = null;
-        } finally {
-            inFlight = null;
+            vitals.value = previous;
         }
-    })();
-
-    return inFlight;
-}
-
-function acquire() {
-    subscribers++;
-    if (subscribers === 1) {
-        void refresh();
-        timer = window.setInterval(() => void refresh(), POLL_INTERVAL_MS);
-    }
-}
-
-function release() {
-    subscribers--;
-    if (subscribers === 0 && timer !== undefined) {
-        window.clearInterval(timer);
-        timer = undefined;
-    }
+    }, { immediate: true });
 }
 
 export function useVitals() {
-    acquire();
-    onUnmounted(release);
-
+    start();
     return { vitals };
 }

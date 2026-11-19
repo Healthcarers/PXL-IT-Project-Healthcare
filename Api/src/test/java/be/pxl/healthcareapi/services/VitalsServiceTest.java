@@ -1,18 +1,22 @@
 package be.pxl.healthcareapi.services;
 
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
+import be.pxl.healthcareapi.dto.VitalsResponse;
 import be.pxl.healthcareapi.dto.VitalsUpdateRequest;
 import be.pxl.healthcareapi.repos.VitalsRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 
 import java.util.function.UnaryOperator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -20,10 +24,13 @@ public class VitalsServiceTest {
     @Mock
     VitalsRepository repository;
 
+    @Mock
+    SimpMessagingTemplate messaging;
+
     private final VitalsSnapshot current = new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80);
 
     private VitalsService service() {
-        return new VitalsService(repository);
+        return new VitalsService(repository, messaging);
     }
 
     private void applyUpdatesTo(VitalsSnapshot base) {
@@ -117,5 +124,14 @@ public class VitalsServiceTest {
 
         assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(null, null,  null, null, null, null, 500.0)))
                 .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    void successfulUpdatePublishesVitals() {
+        applyUpdatesTo(current);
+
+        service().update(new VitalsUpdateRequest(90.0, null, null, null, null, null, null));
+
+        verify(messaging).convertAndSend(eq("/topic/vitals"), any(VitalsResponse.class));
     }
 }
