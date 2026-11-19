@@ -20,7 +20,7 @@ const { points, cursorX } = useSweepWaveform('ibp', WINDOW_MS, SAMPLE_RATE);
       :cursor-x="cursorX"
       :window-ms="WINDOW_MS"
       :y-min="-10"
-      :y-max="310"
+      :y-max="210"
       :show-cursor="true"
       color="#ff0707"
     />

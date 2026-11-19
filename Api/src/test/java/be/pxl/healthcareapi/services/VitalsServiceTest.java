@@ -104,7 +104,7 @@ public class VitalsServiceTest {
     }
 
     @Test
-    void sysBloodPressureOutOfRange() {
+    void rejectsSysBloodPressureOutOfRange() {
         applyUpdatesTo(current);
 
         assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(null, null,  null, null, null, 500.0, null)))
@@ -112,7 +112,7 @@ public class VitalsServiceTest {
     }
 
     @Test
-    void diasBloodPressureOutOfRange() {
+    void rejectsDiasBloodPressureOutOfRange() {
         applyUpdatesTo(current);
 
         assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(null, null,  null, null, null, null, 500.0)))

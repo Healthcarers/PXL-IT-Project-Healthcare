@@ -22,7 +22,7 @@ class IbpSourceTest {
         assertThat(src.sampleRate()).isEqualTo(125);
         assertThat(src.unit()).isEqualTo("mmHg");
         assertThat(src.yMin()).isEqualTo(0);
-        assertThat(src.yMax()).isEqualTo(300);
+        assertThat(src.yMax()).isEqualTo(200);
     }
 
     @Test
