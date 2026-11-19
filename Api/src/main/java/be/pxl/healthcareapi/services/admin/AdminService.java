@@ -6,8 +6,8 @@ import be.pxl.healthcareapi.dto.AdminAccountResponse;
 import be.pxl.healthcareapi.dto.AdminStatsResponse;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
 import be.pxl.healthcareapi.exception.BadRequestException;
-import be.pxl.healthcareapi.repos.PersonRepo;
-import be.pxl.healthcareapi.repos.RefreshTokenRepo;
+import be.pxl.healthcareapi.repositories.PersonRepository;
+import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import be.pxl.healthcareapi.services.person.PersonService;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,11 +17,11 @@ import java.util.List;
 
 @Service
 public class AdminService {
-    private final PersonRepo personRepo;
-    private final RefreshTokenRepo refreshTokenRepo;
+    private final PersonRepository personRepo;
+    private final RefreshTokenRepository refreshTokenRepo;
     private final PersonService personService;
 
-    public AdminService(PersonRepo personRepo, RefreshTokenRepo refreshTokenRepo, PersonService personService) {
+    public AdminService(PersonRepository personRepo, RefreshTokenRepository refreshTokenRepo, PersonService personService) {
         this.personRepo = personRepo;
         this.refreshTokenRepo = refreshTokenRepo;
         this.personService = personService;

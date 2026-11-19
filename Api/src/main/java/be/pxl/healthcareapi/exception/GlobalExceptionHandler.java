@@ -1,6 +1,7 @@
 
 package be.pxl.healthcareapi.exception;
 
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -76,6 +77,8 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.CONFLICT)
                 .body(exception.getMessage());
     }
+
+
 
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<Map<String, String>> handleDataIntegrityViolation(DataIntegrityViolationException ex) {

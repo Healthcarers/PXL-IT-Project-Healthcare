@@ -2,7 +2,7 @@ package be.pxl.healthcareapi.services;
 
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import be.pxl.healthcareapi.dto.VitalsUpdateRequest;
-import be.pxl.healthcareapi.repos.VitalsRepository;
+import be.pxl.healthcareapi.repositories.VitalsRepository;
 import org.springframework.stereotype.Service;
 
 @Service

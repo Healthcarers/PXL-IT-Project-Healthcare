@@ -4,6 +4,7 @@ import be.pxl.healthcareapi.domein.Room;
 import be.pxl.healthcareapi.domein.RoomStatus;
 import be.pxl.healthcareapi.dto.RoomParticipantResponse;
 import be.pxl.healthcareapi.dto.RoomResponse;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.repositories.RoomRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
@@ -12,7 +13,7 @@ import be.pxl.healthcareapi.repositories.RoomParticipantRepository;
 import java.util.UUID;
 import java.util.List;
 import be.pxl.healthcareapi.domein.Person;
-import be.pxl.healthcareapi.repositories.PersonRepository;
+
 import java.util.Map;
 import java.util.function.Function;
 import java.util.stream.Collectors;
