@@ -34,8 +34,8 @@ public class VitalsService {
                 resolveValue("respRate", req.respRate(), current, VitalsSnapshot::respRate, 0, 60),
                 resolveValue("etco2", req.etco2(), current, VitalsSnapshot::etco2, 0, 100),
                 resolveValue("ampScale", req.ampScale(), current, VitalsSnapshot::ampScale, 0.1, 3),
-                resolveValue("sysBloodPressure", req.sysBloodPressure(), current, VitalsSnapshot::sysBloodPressure, 0, 300),
-                resolveValue("diasBloodPressure", req.diasBloodPressure(), current, VitalsSnapshot::diasBloodPressure, 0, 300)
+                resolveValue("sysIbp", req.sysIbp(), current, VitalsSnapshot::sysIbp, 0, 300),
+                resolveValue("diasIbp", req.diasIbp(), current, VitalsSnapshot::diasIbp, 0, 300)
         );
     }
 

@@ -25,6 +25,14 @@ rechts. De link opent het scherm om een roomcode in te geven.
 Via **Room aanmaken** keert een lector terug naar de meest recente eigen room
 die nog open is of al gestart is. Alleen als er geen actieve room is, verschijnt
 het aanmaakformulier. De frontend controleert dit met `GET /api/rooms/mine/active`.
+**Simulatie starten** vraagt eerst om bevestiging in een venster in de huisstijl.
+Na bevestiging en een geslaagde start opent het lectordashboard voor dezelfde room.
+Bij hervatten opent een open room het hostdashboard en een gestarte room
+het lectordashboard.
+Het lectordashboard gebruikt één compacte header in plaats van de algemene navbar.
+Links staan de roomcode, lectornaam en cursistenteller; rechts staan **Room sluiten**
+en **Lector**. **Lector** opent de account-dropdown met **Uitloggen** en een bevestiging;
+de daadwerkelijke uitlogactie is nog niet gekoppeld. Ook sluiten vraagt om bevestiging.
 
 Bij een open room krijgt het hostdashboard na elke geslaagde deelname een
 WebSocket-signaal en haalt het meteen de deelnemerslijst opnieuw op. Het
@@ -76,8 +84,8 @@ Voorbeeld voor `POST /api/scenarios`:
     "respRate": 20,
     "etco2": 36,
     "ampScale": 1.2,
-    "sysBloodPressure": 118,
-    "diasBloodPressure": 76
+    "sysIbp": 118,
+    "diasIbp": 76
   },
   "feedbackItems": ["Monitor gecontroleerd", "Observaties gerapporteerd"],
   "status": "DRAFT"

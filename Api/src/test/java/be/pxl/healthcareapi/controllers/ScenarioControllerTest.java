@@ -34,7 +34,7 @@ class ScenarioControllerTest {
                 "description": "Oefenen met de trainingsmonitor.",
                 "initialVitals": {
                     "heartRate": 105, "spo2": 94, "respRate": 20, "etco2": 36,
-                    "ampScale": 1.2, "sysBloodPressure": 118, "diasBloodPressure": 76
+                    "ampScale": 1.2, "sysIbp": 118, "diasIbp": 76
                 },
                 "feedbackItems": ["Monitor gecontroleerd", "Observaties gerapporteerd"]
             }
@@ -65,8 +65,8 @@ class ScenarioControllerTest {
                 .andExpect(jsonPath("$.initialVitals.respRate").value(20))
                 .andExpect(jsonPath("$.initialVitals.etco2").value(36))
                 .andExpect(jsonPath("$.initialVitals.ampScale").value(1.2))
-                .andExpect(jsonPath("$.initialVitals.sysBloodPressure").value(118))
-                .andExpect(jsonPath("$.initialVitals.diasBloodPressure").value(76))
+                .andExpect(jsonPath("$.initialVitals.sysIbp").value(118))
+                .andExpect(jsonPath("$.initialVitals.diasIbp").value(76))
                 .andExpect(jsonPath("$.feedbackItems[0]").value("Monitor gecontroleerd"))
                 .andExpect(jsonPath("$.feedbackItems[1]").value("Observaties gerapporteerd"));
 
