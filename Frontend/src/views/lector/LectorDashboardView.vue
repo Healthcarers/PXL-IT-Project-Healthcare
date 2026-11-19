@@ -4,14 +4,8 @@ import { useRouter } from "vue-router";
 import CursistPreviewCard from "../../components/lector/CursistPreviewCard.vue";
 import LectorConfirmModal from "../../components/lector/LectorConfirmModal.vue";
 import LectorTopbar from "../../components/lector/LectorTopbar.vue";
-import ParametersPanel from "../../components/lector/ParametersPanel.vue";
-import ScenarioControlCard from "../../components/lector/ScenarioControlCard.vue";
 import { useRoom } from "../../composables/useRoom";
 import { useAuthStore } from "../../stores/Authstore";
-import {
-  createDefaultLectorParameters,
-  type LectorParameters,
-} from "../../types/lector";
 
 const PARTICIPANTS_POLL_MS = 5000;
 
@@ -32,7 +26,6 @@ const {
 } = useRoom();
 
 const previewCollapsed = ref(false);
-const parameters = ref<LectorParameters>(createDefaultLectorParameters());
 const logoutModalOpen = ref(false);
 const closeRoomModalOpen = ref(false);
 const closingRoom = ref(false);
@@ -210,13 +203,33 @@ onUnmounted(() => {
             @toggle-collapse="previewCollapsed = !previewCollapsed"
           />
 
-          <ScenarioControlCard :compact="previewCollapsed" />
+          <section
+            aria-label="Scenario"
+            class="rounded-2xl border border-[#222228] bg-[#0e0e11] p-4 sm:p-5"
+          >
+            <p class="!m-0 text-xs font-medium text-[#8e8e99]">Scenario</p>
+            <p class="!m-0 mt-2 text-sm text-[#71717a]">
+              Scenario-bediening wordt in een aparte feature toegevoegd.
+            </p>
+          </section>
         </div>
 
-        <ParametersPanel
-          v-model:parameters="parameters"
-          :expanded="previewCollapsed"
-        />
+        <section
+          aria-label="Parameters (realtime)"
+          class="flex min-h-[420px] flex-col rounded-2xl border border-[#222228] bg-[#0e0e11] p-4 sm:p-5"
+        >
+          <h2 class="!m-0 text-base font-bold text-white">
+            Parameters (realtime)
+          </h2>
+
+          <div
+            class="mt-4 flex flex-1 items-center justify-center rounded-xl border border-dashed border-[#2c2c35] bg-[#141418]/60 p-8 text-center"
+          >
+            <p class="!m-0 max-w-sm text-sm text-[#8e8e99]">
+              De bedieningselementen voor parameters worden per parameter in een aparte feature toegevoegd.
+            </p>
+          </div>
+        </section>
       </div>
     </main>
 

@@ -179,7 +179,7 @@ describe("LectorDashboardView.vue", () => {
     });
   }
 
-  it("toont roomcode, lector, cursistenaantal, live preview zonder audio en geen prototype-knop", async () => {
+  it("toont roomcode, lector, cursistenaantal, live preview zonder audio en sectieplaceholders", async () => {
     const wrapper = mountDashboard();
     await flushPromises();
 
@@ -193,11 +193,10 @@ describe("LectorDashboardView.vue", () => {
 
     expect(wrapper.text()).toContain("Wat de cursist ziet");
     expect(wrapper.text()).toContain("LIVE");
+    expect(wrapper.text()).toContain("Parameters (realtime)");
+    expect(wrapper.text()).toContain("Scenario");
     expect(wrapper.findAll('[data-testid="mock-waveform-canvas"]')).toHaveLength(4);
     expect(useHeartbeatSound).not.toHaveBeenCalled();
-
-    expect(wrapper.text()).not.toContain("PROTOTYPE: TOON FOUTMELDING");
-    expect(wrapper.text()).not.toContain("Waarde buiten bereik");
 
     wrapper.unmount();
   });
@@ -258,94 +257,6 @@ describe("LectorDashboardView.vue", () => {
       params: { code: "48K7QX" },
     });
     wrapperOtherOwner.unmount();
-  });
-
-  it("ondersteunt lokale parameterinteractie zonder PATCH /vitals te sturen", async () => {
-    const patchSpy = vi.spyOn(api, "patch");
-    const wrapper = mountDashboard();
-    await flushPromises();
-
-    // HF +1
-    expect(wrapper.get('[data-testid="hf-value"]').text()).toBe("75");
-    await wrapper.get('button[aria-label="Hartfrequentie verhogen"]').trigger("click");
-    expect(wrapper.get('[data-testid="hf-value"]').text()).toBe("76");
-
-    // Bloeddruk wisselen tussen systolisch en diastolisch
-    expect(wrapper.get('[data-testid="bp-systolic"]').text()).toBe("120");
-    expect(wrapper.get('[data-testid="bp-diastolic"]').text()).toBe("80");
-    await wrapper.get('[data-testid="bp-diastolic"]').trigger("click");
-    await wrapper.get('button[aria-label="Bloeddruk verhogen"]').trigger("click");
-    expect(wrapper.get('[data-testid="bp-diastolic"]').text()).toBe("81");
-
-    // etCO2 -> AF schakelaar
-    expect(wrapper.get('[data-testid="capno-resp-value"]').text()).toBe("38");
-    const afRadio = wrapper
-      .findAll('button[role="radio"]')
-      .find((btn) => btn.text().includes("AF"));
-    await afRadio!.trigger("click");
-    expect(wrapper.get('[data-testid="capno-resp-value"]').text()).toBe("16");
-    expect(wrapper.text()).toContain("bereik 0–60 /min");
-
-    // Temperatuur +0,1 °C
-    expect(wrapper.get('[data-testid="temp-value"]').text()).toBe("36,8");
-    await wrapper.get('button[aria-label="Temperatuur verhogen"]').trigger("click");
-    expect(wrapper.get('[data-testid="temp-value"]').text()).toBe("36,9");
-
-    // Ritme dropdown
-    const rhythmBtn = wrapper
-      .findAll("button")
-      .find((btn) => btn.text().includes("Ritme: Sinusritme"));
-    await rhythmBtn!.trigger("click");
-    const afibOption = wrapper
-      .findAll('button[role="option"]')
-      .find((btn) => btn.text().includes("Atriumfibrillatie"));
-    await afibOption!.trigger("click");
-    expect(wrapper.text()).toContain("Ritme: Atriumfibrillatie");
-
-    expect(patchSpy).not.toHaveBeenCalled();
-
-    wrapper.unmount();
-  });
-
-  it("toont de foutmelding en rode rand zonder de limiet te overschrijden en wist die bij een geldige aanpassing", async () => {
-    const wrapper = mountDashboard();
-    await flushPromises();
-
-    expect(wrapper.find('[data-testid="parameter-range-alert"]').exists()).toBe(false);
-
-    // Zet HF eerst via de slider op 220 (End-toets) en klik daarna op + -> blijft op 220 maar toont waarschuwing
-    const hfSlider = wrapper.get('[aria-label="Hartfrequentie regelaar"]');
-    await hfSlider.trigger("keydown", { key: "End" });
-    expect(wrapper.get('[data-testid="hf-value"]').text()).toBe("220");
-    expect(wrapper.find('[data-testid="parameter-range-alert"]').exists()).toBe(false);
-
-    await wrapper.get('button[aria-label="Hartfrequentie verhogen"]').trigger("click");
-    expect(wrapper.get('[data-testid="hf-value"]').text()).toBe("220");
-
-    const alert = wrapper.get('[data-testid="parameter-range-alert"]');
-    expect(alert.text()).toContain(
-      "De hartslag moet tussen 0 en 220 bpm liggen. De waarde is niet doorgestuurd naar de cursisten.",
-    );
-
-    const hfCard = wrapper.get('article[aria-label="Hartfrequentie"]');
-    expect(hfCard.classes()).toContain("border-[#ef4444]");
-    expect(hfCard.text()).toContain("buiten bereik 0–220");
-
-    // Geldige verlaging naar 219 -> foutmelding en rode rand verdwijnen
-    await wrapper.get('button[aria-label="Hartfrequentie verlagen"]').trigger("click");
-    expect(wrapper.get('[data-testid="hf-value"]').text()).toBe("219");
-    expect(wrapper.find('[data-testid="parameter-range-alert"]').exists()).toBe(false);
-    expect(hfCard.classes()).not.toContain("border-[#ef4444]");
-    expect(hfCard.text()).toContain("bereik 0–220 bpm");
-
-    // Ondergrens testen: zet op 0 (Home) en klik - -> blijft op 0 en toont waarschuwing
-    await hfSlider.trigger("keydown", { key: "Home" });
-    expect(wrapper.get('[data-testid="hf-value"]').text()).toBe("0");
-    await wrapper.get('button[aria-label="Hartfrequentie verlagen"]').trigger("click");
-    expect(wrapper.get('[data-testid="hf-value"]').text()).toBe("0");
-    expect(wrapper.find('[data-testid="parameter-range-alert"]').exists()).toBe(true);
-
-    wrapper.unmount();
   });
 
   it("opent het Profiel-menu en de Uitloggen-bevestigingsmodal", async () => {
