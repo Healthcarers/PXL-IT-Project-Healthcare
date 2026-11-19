@@ -8,14 +8,14 @@ const props = defineProps<{ scenarioId?: string }>()
 
 const defaults: VitalsResponse = {
   heartRate: 75, spo2: 98, etco2: 38, respRate: 15, ampScale: 1,
-  sysBloodPressure: 120, diasBloodPressure: 80,
+  sysIbp: 120, diasIbp: 80,
 }
 const fields = [
   { key: 'heartRate', label: 'HF (bpm)', min: 0, max: 220 },
   { key: 'spo2', label: 'SpO₂ (%)', min: 50, max: 100 },
   { key: 'etco2', label: 'etCO₂ (mmHg)', min: 0, max: 100 },
-  { key: 'sysBloodPressure', label: 'Systolische bloeddruk (mmHg)', min: 0, max: 300 },
-  { key: 'diasBloodPressure', label: 'Diastolische bloeddruk (mmHg)', min: 0, max: 300 },
+  { key: 'sysIbp', label: 'Systolische bloeddruk (mmHg)', min: 0, max: 300 },
+  { key: 'diasIbp', label: 'Diastolische bloeddruk (mmHg)', min: 0, max: 300 },
   { key: 'respRate', label: 'AF (/min)', min: 0, max: 60 },
   { key: 'ampScale', label: 'Amplitude', min: 0.1, max: 3 },
 ] as const
@@ -72,10 +72,10 @@ async function save(event: SubmitEvent) {
     error.value = 'Voeg minstens één feedbackitem toe.'
     return
   }
-  const { heartRate, spo2, etco2, respRate, ampScale, sysBloodPressure, diasBloodPressure } = vitals
+  const { heartRate, spo2, etco2, respRate, ampScale, sysIbp, diasIbp } = vitals
   if (typeof heartRate !== 'number' || typeof spo2 !== 'number' || typeof etco2 !== 'number' ||
       typeof respRate !== 'number' || typeof ampScale !== 'number' ||
-      typeof sysBloodPressure !== 'number' || typeof diasBloodPressure !== 'number') {
+      typeof sysIbp !== 'number' || typeof diasIbp !== 'number') {
     error.value = 'Vul alle basiswaarden in.'
     return
   }
@@ -85,7 +85,7 @@ async function save(event: SubmitEvent) {
   try {
     const scenario = await scenarioService.save({
       name: name.value.trim(), description: description.value.trim(),
-      initialVitals: { heartRate, spo2, etco2, respRate, ampScale, sysBloodPressure, diasBloodPressure },
+      initialVitals: { heartRate, spo2, etco2, respRate, ampScale, sysIbp, diasIbp },
       feedbackItems: [...feedbackItems.value], status,
     }, savedScenario.value?.id)
     if (request !== version) return
