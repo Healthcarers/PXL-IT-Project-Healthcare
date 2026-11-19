@@ -1,0 +1,27 @@
+services:
+  scalability-test:
+    image: grafana/k6:0.55.0
+    command: run /scripts/k6-scalability-test.js
+    environment:
+      TARGET_URL: ${TARGET_URL:-http://host.docker.internal:8080}
+      SUMMARY_FILE: /results/scalability-summary.json
+    volumes:
+      - ./:/scripts:ro
+      - ./results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  ddos-test:
+    image: grafana/k6:0.55.0
+    command: run /scripts/k6-ddos-test.js
+    depends_on:
+      scalability-test:
+        condition: service_completed_successfully
+    environment:
+      TARGET_URL: ${TARGET_URL:-http://host.docker.internal:8080}
+      SUMMARY_FILE: /results/ddos-summary.json
+    volumes:
+      - ./:/scripts:ro
+      - ./results:/results
+    extra_hosts:
+      - "host.docker.internal:host-gateway"

@@ -7,8 +7,23 @@
 # DO NOT commit real secrets or the final `terraform.tfvars` to git!
 # ==============================================================================
 
-db_user      = "pgadmin"
-db_password  = "CHANGE_ME_SecretPassword2026!"
-db_name      = "PXL_Healthcare_DB"
+# Core & Location
+project_name = "pxl-healthcare"
 location     = "switzerlandnorth"
-project_name = "cheap-pg"
+
+# Database Configuration
+db_user     = "pgadmin"
+db_password = "CHANGE_ME_SecretPassword2026!"
+db_name     = "PXL_Healthcare_DB"
+
+# Developer Whitelist IP Addresses (Optional)
+# allowed_ip_addresses = {
+#   "developer-home" = "203.0.113.10"
+# }
+
+# Monitoring & Alerting
+alert_email = "student@pxl.be"
+
+# Container Registry (default: provisions ACR Basic + Managed Identity AcrPull)
+use_acr   = true
+image_tag = "latest"

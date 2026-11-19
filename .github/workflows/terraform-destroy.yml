@@ -1,10 +1,10 @@
-name: "Terraform - Destroy Database (Thu & Fri)"
+name: "Terraform - Destroy Healthcare Cloud (Thu & Fri)"
 
 on:
   schedule:
     # Elke donderdag en vrijdag om 17:00 UTC (18:00 CET wintertijd / 19:00 CEST zomertijd).
     - cron: '0 17 * * 4,5'
-  workflow_dispatch: # Hiermee kun je de database handmatig afbreken met 1 klik in GitHub
+  workflow_dispatch: # Hiermee kun je de resources handmatig afbreken met 1 klik in GitHub
 
 permissions:
   contents: read
@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   destroy:
-    name: "Destroy Azure PostgreSQL"
+    name: "Destroy Azure Infrastructure"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -50,5 +50,5 @@ jobs:
       - name: Publish Teardown Summary
         if: success()
         run: |
-          echo "### 🛑 Azure Database Successfully Destroyed!" >> $GITHUB_STEP_SUMMARY
-          echo "All resources have been deleted. Ongoing Azure cost: **\$0.00/hour**." >> $GITHUB_STEP_SUMMARY
+          echo "### 🛑 Azure Infrastructure Successfully Destroyed!" >> $GITHUB_STEP_SUMMARY
+          echo "All resources (Container App, Key Vault, Database, Monitoring) have been deleted. Ongoing Azure cost: **\$0.00/hour**." >> $GITHUB_STEP_SUMMARY

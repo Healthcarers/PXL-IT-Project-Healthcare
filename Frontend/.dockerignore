@@ -1,0 +1,11 @@
+node_modules/
+dist/
+dev-dist/
+coverage/
+.git/
+.idea/
+.vscode/
+.env
+.env.*
+*.log
+*.md
