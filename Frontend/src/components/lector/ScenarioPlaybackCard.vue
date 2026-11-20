@@ -4,7 +4,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { connected, subscribeTopic } from '../../services/stompClient'
 import { scenarioService, type Scenario } from '../../services/scenarioService'
 import { roomSimulationService, type RoomSimulation, type SimulationAction } from '../../services/roomSimulationService'
-import LectorConfirmModal from './LectorConfirmModal.vue'
+import ConfirmModal from '../ConfirmModal.vue'
 
 const props = defineProps<{ code: string; disabled?: boolean }>()
 const state = ref<RoomSimulation>()
@@ -170,7 +170,7 @@ onUnmounted(() => clearInterval(clockTimer))
       <p role="alert">{{ error }}</p>
       <button type="button" class="mt-1 underline" :disabled="busy || disabled" @click="refresh">Opnieuw proberen</button>
     </div>
-    <LectorConfirmModal :open="pickerOpen" title="Nieuw scenario laden" message="Kies een gepubliceerd scenario. Klik daarna op Start om de waarden toe te passen."
+    <ConfirmModal :open="pickerOpen" title="Nieuw scenario laden" message="Kies een gepubliceerd scenario. Klik daarna op Start om de waarden toe te passen."
       confirm-label="Laden" :loading="busy || loadingCatalogue" @cancel="pickerOpen = false" @confirm="loadScenario">
       <div class="mt-4">
         <label for="live-scenario" class="mb-2 block text-sm font-semibold">Scenario</label>
@@ -181,8 +181,8 @@ onUnmounted(() => clearInterval(clockTimer))
         <p v-if="!loadingCatalogue && !catalogue.length && !pickerError" class="mt-2 text-sm">Er zijn geen gepubliceerde scenario’s.</p>
         <p v-if="pickerError" role="alert" class="mt-2 text-sm text-red-700">{{ pickerError }}</p>
       </div>
-    </LectorConfirmModal>
-    <LectorConfirmModal :open="restartModalOpen" title="Scenario herstarten?"
+    </ConfirmModal>
+    <ConfirmModal :open="restartModalOpen" title="Scenario herstarten?"
       message="Wil je het scenario herstarten? De startwaarden worden opnieuw toegepast en de timer begint weer op nul."
       confirm-label="Ja, herstarten" :loading="busy" @cancel="restartModalOpen = false" @confirm="confirmRestart" />
   </section>

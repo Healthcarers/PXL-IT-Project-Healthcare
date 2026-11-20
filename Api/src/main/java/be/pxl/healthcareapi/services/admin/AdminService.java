@@ -25,12 +25,6 @@ public class AdminService {
     private final PersonService personService;
     private final AccessTokenRepository accessTokenRepository;
 
-    public AdminService(PersonRepository personRepo, RefreshTokenRepository refreshTokenRepo, PersonService personService) {
-        this.personRepo = personRepo;
-        this.refreshTokenRepo = refreshTokenRepo;
-        this.personService = personService;
-    }
-
     @PreAuthorize("hasRole('ADMIN')")
     public AdminStatsResponse getStats() {
         long totalAccounts = personRepo.count();

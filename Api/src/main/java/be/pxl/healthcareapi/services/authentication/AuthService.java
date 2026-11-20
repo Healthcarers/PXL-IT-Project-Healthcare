@@ -30,15 +30,6 @@ public class AuthService {
     private final AccessTokenService accessTokenService;
     private final JwtDecoder jwtDecoder;
 
-    private PasswordEncoder passwordEncoder;
-
-    public AuthService(PersonRepository userRepo, PasswordEncoder passwordEncoder, JwtService jwtService, RefreshTokenService refreshTokenService){
-        this.personRepo = userRepo;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtService = jwtService;
-        this.refreshTokenService = refreshTokenService;
-    }
-
     public RegisterResponse registerUser(RegisterRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
 

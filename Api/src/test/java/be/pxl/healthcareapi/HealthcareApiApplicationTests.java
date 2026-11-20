@@ -12,9 +12,7 @@ import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.services.RoomService;
 import be.pxl.healthcareapi.services.ScenarioService;
 import be.pxl.healthcareapi.services.authentication.JwtService;
-import be.pxl.healthcareapi.services.person.PersonService;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -30,7 +28,6 @@ import org.springframework.messaging.simp.stomp.StompSession;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -53,8 +50,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -87,9 +82,6 @@ class HealthcareApiApplicationTests {
     private PersonRepository personRepository;
 
     @Autowired
-    private PersonService personService;
-
-    @Autowired
     private ObjectMapper objectMapper;
 
     @Autowired
@@ -102,14 +94,14 @@ class HealthcareApiApplicationTests {
     @Test
     void successfulJoinSendsRoomSignalOverWebSocket() throws Exception {
         var room = roomService.createRoom("Realtime room", null, UUID.randomUUID());
-        Person learner = personRepository.save(new Person("Test", "Learner", "learner@example.com","password"));
+        var learner = createPerson(Role.CURSIST);
         var destination = "/topic/rooms/" + room.getId() + "/members-changed";
         var received = new LinkedBlockingQueue<String>();
         var stomp = new WebSocketStompClient(new StandardWebSocketClient());
 
         stomp.setMessageConverter(new SimpleMessageConverter());
         var join = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/rooms/" + room.getCode() + "/join"))
-                .header("Cookie", "access_token=" + jwtService.generateToken(learner.getId(), Role.CURSIST))
+                .header("Cookie", "access_token=" + jwtService.generateToken(learner, Role.CURSIST))
                 .timeout(Duration.ofSeconds(5))
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
@@ -136,9 +128,9 @@ class HealthcareApiApplicationTests {
 
     @Test
     void scenarioPlaybackDeliversRoomValuesAndWaveformsOverRealHttpAndWebSocket() throws Exception {
-        var owner = UUID.randomUUID();
-        var otherOwner = UUID.randomUUID();
-        var learner = UUID.randomUUID();
+        var owner = createPerson(Role.LECTOR);
+        var otherOwner = createPerson(Role.LECTOR);
+        var learner = createPerson(Role.CURSIST);
         var initial = new VitalsUpdateRequest(132.0, 89.0, 26.0, 48.0, 1.4, 275.0, 160.0);
         var scenario = scenarioService.create(new ScenarioDto.Create("Live oefening", "Roomisolatie",
                 initial, List.of("Evaluatie"), ScenarioStatus.PUBLISHED));
@@ -240,6 +232,12 @@ class HealthcareApiApplicationTests {
                 .andExpect(status().isBadRequest());
         roomService.closeRoom(room.getCode());
         mockMvc.perform(get(path).with(lector)).andExpect(status().isConflict());
+    }
+
+    private UUID createPerson(Role role) {
+        var person = new Person("Test", role.name(), UUID.randomUUID() + "@example.com", "password");
+        person.setRole(role);
+        return personRepository.save(person).getId();
     }
 
     private HttpRequest.Builder request(String path, UUID user, Role role) {
