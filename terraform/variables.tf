@@ -14,6 +14,12 @@ variable "location" {
   default     = "switzerlandnorth"
 }
 
+variable "db_location" {
+  description = "Azure region for PostgreSQL Flexible Server (polandcentral has unrestricted B_Standard_B1ms capacity for Azure for Students)"
+  type        = string
+  default     = "polandcentral"
+}
+
 # ------------------------------------------------------------------------------
 # Database
 # ------------------------------------------------------------------------------
@@ -191,4 +197,16 @@ variable "monthly_budget_amount" {
   description = "Monthly budget cap in USD if enable_budget_alert is true"
   type        = number
   default     = 20
+}
+
+variable "team_monitoring_reader_object_ids" {
+  description = "PXL Entra ID Object IDs of project teammates granted read-only Monitoring Reader access to the Azure Portal dashboard and metrics"
+  type        = list(string)
+  default = [
+    "35f236ba-30c8-49de-b686-86082e3e5f67", # Brent Caes (Brent.Caes@student.pxl.be)
+    "2f12a647-122f-4046-b0e2-3e07826efe2b", # Filip Belien (Filip.Belien@student.pxl.be)
+    "c5a9b929-8207-4c74-b6d9-79ca7ac970bf", # Jonas Van Houdt Sperber (Jonas.VanHoudtSperber@student.pxl.be)
+    "55e51263-e6ea-4b1a-b2e5-334798d11dcc", # Wout Verhemeldonck (Wout.Verhemeldonck@student.pxl.be)
+    "04702328-87cb-42f4-a8fb-f12a0ce0a200"  # Rube Stifter (Rube.Stifter@student.pxl.be)
+  ]
 }
