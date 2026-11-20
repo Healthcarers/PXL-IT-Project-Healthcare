@@ -9,7 +9,7 @@ import RegistrationView from '../views/registration/RegistrationView.vue';
 import LoginView from '../views/login/LoginView.vue';
 import UnauthorizedView from '../views/UnauthorizedView.vue';
 import AdminDashboardView from "../views/admin/AdminDashboardView.vue";
-import CursistDashboard from "../views/CursistDashboard.vue";
+import RoomMonitorView from "../views/RoomMonitorView.vue";
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -40,6 +40,15 @@ const router = createRouter({
       meta: { requiresAuth: true, role: 'LECTOR' },
     },
     {
+      path: '/scenarios',
+      meta: { requiresAuth: true, role: 'LECTOR' },
+      children: [
+        { path: '', name: 'scenarios', component: () => import('../views/ScenarioOverviewView.vue') },
+        { path: 'new', name: 'scenario-new', component: () => import('../views/ScenarioView.vue') },
+        { path: ':scenarioId', name: 'scenario-detail', component: () => import('../views/ScenarioView.vue'), props: true },
+      ],
+    },
+    {
       path: '/rooms/:code',
       name: 'room',
       component: RoomView,
@@ -49,7 +58,8 @@ const router = createRouter({
     {
       path: "/monitor",
       name: "monitor",
-      component: CursistDashboard,
+      component: RoomMonitorView,
+      props: route => ({ code: typeof route.query.code === 'string' ? route.query.code : '' }),
       meta: { requiresAuth: true, role: "CURSIST" },
     },
     {

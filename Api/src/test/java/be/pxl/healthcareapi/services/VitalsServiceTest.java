@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -133,5 +134,20 @@ public class VitalsServiceTest {
         service().update(new VitalsUpdateRequest(90.0, null, null, null, null, null, null));
 
         verify(messaging).convertAndSend(eq("/topic/vitals"), any(VitalsResponse.class));
+    }
+
+    @Test
+    void scenarioInvasiveBloodPressureRangeDoesNotRelaxLiveUpdateLimits() {
+        var request = new VitalsUpdateRequest(75.0, 98.0, 15.0, 38.0, 1.0, 250.0, 80.0);
+
+        assertThat(VitalsService.initialSnapshot(request))
+                .isEqualTo(new VitalsSnapshot(75, 98, 15, 38, 1.0, 250, 80));
+        verifyNoInteractions(repository, messaging);
+
+        applyUpdatesTo(current);
+        assertThatThrownBy(() -> service().update(request))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("sysIbp");
+        verifyNoInteractions(messaging);
     }
 }

@@ -1,8 +1,11 @@
 
 package be.pxl.healthcareapi.domein;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -35,6 +38,12 @@ public class Room {
     @Column(nullable = false)
     private UUID ownerId;
 
+    @JsonIgnore
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "scenario_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
+    private Scenario scenario;
+
     protected Room() {
         // Vereist door JPA
     }
@@ -58,5 +67,9 @@ public class Room {
 
     public void start() {
         this.status = RoomStatus.STARTED;
+    }
+
+    public void assignScenario(Scenario scenario) {
+        this.scenario = scenario;
     }
 }

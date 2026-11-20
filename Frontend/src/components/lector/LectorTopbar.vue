@@ -63,17 +63,17 @@ onUnmounted(() => {
 
 <template>
   <header class="w-full border-b border-[#18181f] bg-[#050506] text-white">
-    <div class="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3.5 sm:px-6">
+    <div class="mx-auto flex min-h-[54px] w-full max-w-[1360px] flex-wrap items-center justify-between gap-3 px-4 py-2 sm:px-6">
       <div class="flex min-w-0 items-center gap-3.5">
         <img
           src="../../assets/pxl_logo.png"
           alt="PXL"
-          class="h-7 w-auto shrink-0 object-contain"
+          class="h-6 w-auto shrink-0 object-contain"
         />
 
         <span class="h-5 w-px shrink-0 bg-white/30" aria-hidden="true"></span>
 
-        <p class="!m-0 truncate text-xs font-medium text-[#e4e4e7] sm:text-sm">
+        <p class="!m-0 text-xs font-semibold text-[#e4e4e7]">
           <span>Room {{ roomCode }}</span>
           <span class="mx-2 text-[#71717a]" aria-hidden="true">·</span>
           <span>Lector: {{ lectorName }}</span>
@@ -86,7 +86,7 @@ onUnmounted(() => {
         <button
           type="button"
           :disabled="closing"
-          class="rounded-xl border border-white/75 bg-[#0b0b0e] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-50 sm:text-sm"
+          class="rounded-xl border border-white/75 bg-[#0b0b0e] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 disabled:opacity-50"
           @click="emit('close-room')"
         >
           Room sluiten
@@ -95,12 +95,13 @@ onUnmounted(() => {
         <div ref="profileMenuRef" class="relative">
           <button
             type="button"
-            class="inline-flex items-center gap-1.5 rounded-full border border-white/75 bg-[#0b0b0e] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10 sm:text-sm"
+            class="inline-flex items-center gap-1.5 rounded-full border border-white/75 bg-[#0b0b0e] px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/10"
             aria-haspopup="menu"
+            aria-controls="lector-profile-menu"
             :aria-expanded="profileOpen"
             @click.stop="toggleProfileMenu"
           >
-            <span>Profiel</span>
+            <span>Lector</span>
             <svg
               class="h-3 w-3 transition-transform"
               :class="{ 'rotate-180': profileOpen }"
@@ -114,6 +115,7 @@ onUnmounted(() => {
 
           <div
             v-if="profileOpen"
+            id="lector-profile-menu"
             role="menu"
             class="absolute right-0 z-40 mt-2.5 w-52 overflow-hidden rounded-2xl border border-gray-200 bg-white text-[#0b0b0d] shadow-2xl"
           >
