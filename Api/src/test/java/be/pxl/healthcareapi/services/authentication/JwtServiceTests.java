@@ -1,6 +1,8 @@
 package be.pxl.healthcareapi.services.authentication;
 
 import be.pxl.healthcareapi.domein.enums.Role;
+import be.pxl.healthcareapi.repositories.AccessTokenRepository;
+import be.pxl.healthcareapi.services.person.PersonService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,11 +26,17 @@ class JwtServiceTests {
     @Mock
     private JwtDecoder jwtDecoder;
 
+    @Mock
+    private AccessTokenRepository accessTokenRepository;
+
+    @Mock
+    private PersonService personService;
+
     private JwtService jwtService;
 
     @BeforeEach
     void setUp() {
-        jwtService = new JwtService(jwtEncoder, jwtDecoder);
+        jwtService = new JwtService(jwtEncoder, jwtDecoder, accessTokenRepository, personService);
     }
 
     @Test

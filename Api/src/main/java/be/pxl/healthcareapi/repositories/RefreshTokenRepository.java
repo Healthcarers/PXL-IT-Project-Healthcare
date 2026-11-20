@@ -1,7 +1,7 @@
 package be.pxl.healthcareapi.repositories;
 
 import be.pxl.healthcareapi.domein.Person;
-import be.pxl.healthcareapi.domein.RefreshToken;
+import be.pxl.healthcareapi.domein.tokens.RefreshToken;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;

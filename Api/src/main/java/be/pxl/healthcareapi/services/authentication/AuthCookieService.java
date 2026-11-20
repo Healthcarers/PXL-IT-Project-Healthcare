@@ -27,4 +27,23 @@ public class AuthCookieService {
                 .maxAge(Duration.ofDays(30))
                 .build();
     }
+    public ResponseCookie createEmptyAccesCookie(){
+        return ResponseCookie.from("access_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+    }
+
+    public ResponseCookie createEmptyRefreshCookie(){
+        return ResponseCookie.from("refresh_token", "")
+                .httpOnly(true)
+                .secure(true)
+                .sameSite("Strict")
+                .path("/")
+                .maxAge(0)
+                .build();
+    }
 }

@@ -7,6 +7,7 @@ import be.pxl.healthcareapi.domein.ScenarioStatus;
 import be.pxl.healthcareapi.dto.RoomParticipantResponse;
 import be.pxl.healthcareapi.dto.RoomResponse;
 import be.pxl.healthcareapi.dto.RoomScenarioResponse;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.repositories.RoomRepository;
 import be.pxl.healthcareapi.repositories.ScenarioRepository;
 import org.springframework.security.access.AccessDeniedException;

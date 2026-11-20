@@ -13,9 +13,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseCookie;
+import org.springframework.http.*;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -24,7 +23,12 @@ import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.oauth2.jwt.Jwt.withTokenValue;
@@ -193,5 +197,57 @@ public class AuthControllerTests {
                 .andExpect(jsonPath("$.lastname").value("user"))
                 .andExpect(jsonPath("$.role").value("CURSIST"));
         verify(authService).getPersonFromUUID(accessToken);
+    }
+
+    @Test
+    void logoutUser_shouldReturnNoContentAndClearCookies() throws Exception {
+        // Arrange
+        ResponseCookie accessCookie = ResponseCookie
+                .from("access_token", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        ResponseCookie refreshCookie = ResponseCookie
+                .from("refresh_token", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        Jwt jwt = Jwt.withTokenValue("test-access-token")
+                .header("alg", "none")
+                .claim("sub", UUID.randomUUID().toString())
+                .claim("role", "LECTOR")
+                .build();
+
+        when(authCookieService.createEmptyAccesCookie())
+                .thenReturn(accessCookie);
+
+        when(authCookieService.createEmptyRefreshCookie())
+                .thenReturn(refreshCookie);
+
+        when(jwtDecoder.decode(anyString())).thenReturn(jwt);
+
+        // Act & Assert
+        mockMvc.perform(post("/api/auth/logout")
+                        .cookie(
+                                new Cookie("access_token", "test-access-token"),
+                                new Cookie("refresh_token", "test-refresh-token")
+                        ))
+                .andExpect(status().isNoContent())
+                .andExpect(header().stringValues(
+                        HttpHeaders.SET_COOKIE,
+                        hasItem(containsString("access_token="))
+                ));
+
+        verify(authService).logout(
+                "test-access-token",
+                "test-refresh-token"
+        );
+
+        verify(authCookieService).createEmptyAccesCookie();
+        verify(authCookieService).createEmptyRefreshCookie();
     }
 }
