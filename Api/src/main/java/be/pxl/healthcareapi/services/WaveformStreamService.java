@@ -10,7 +10,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
@@ -24,20 +26,24 @@ public class WaveformStreamService {
     private final List<ChannelStream> streams;
     private final LongSupplier nanoClock;
     private final long startNanos;
+    private final RoomSimulationService simulations;
+    private final Map<String, List<ChannelStream>> roomStreams = new HashMap<>();
 
     @Autowired
     public WaveformStreamService(List<WaveformSource> sources,
                                  VitalsRepository vitalsRepository,
-                                 SimpMessagingTemplate messaging) {
-        this(sources, vitalsRepository, messaging, System::nanoTime);
+                                 SimpMessagingTemplate messaging, RoomSimulationService simulations) {
+        this(sources, vitalsRepository, messaging, simulations, System::nanoTime);
     }
 
     public WaveformStreamService(List<WaveformSource> sources,
                                  VitalsRepository vitalsRepository,
                                  SimpMessagingTemplate messaging,
+                                 RoomSimulationService simulations,
                                  LongSupplier nanoClock) {
         this.vitalsRepository = vitalsRepository;
         this.messaging = messaging;
+        this.simulations = simulations;
         this.nanoClock = nanoClock;
         this.startNanos = nanoClock.getAsLong();
 
@@ -54,8 +60,22 @@ public class WaveformStreamService {
     public void publishTick() {
         VitalsSnapshot vitals = vitalsRepository.current();
         double elapsedSec = (nanoClock.getAsLong() - startNanos) / 1e9;
+        publishStreams(streams, vitals, elapsedSec, "/topic/waveform/");
 
-        for (ChannelStream stream : streams) {
+        var roomVitals = simulations.snapshots();
+        roomStreams.keySet().retainAll(roomVitals.keySet());
+        roomVitals.forEach((code, snapshot) -> {
+            var channels = roomStreams.computeIfAbsent(code, ignored -> streams.stream().map(stream -> {
+                var channel = new ChannelStream(stream.source);
+                channel.nextIndex = (long) (elapsedSec * stream.source.sampleRate());
+                return channel;
+            }).toList());
+            publishStreams(channels, snapshot, elapsedSec, "/topic/rooms/" + code + "/waveform/");
+        });
+    }
+
+    private void publishStreams(List<ChannelStream> channels, VitalsSnapshot vitals, double elapsedSec, String topic) {
+        for (ChannelStream stream : channels) {
             long due = (long)(elapsedSec * stream.source.sampleRate()) - stream.nextIndex;
             int count = (int)Math.min(due, MAX_BATCH);
 
@@ -68,7 +88,7 @@ public class WaveformStreamService {
             }
 
              messaging.convertAndSend(
-                    "/topic/waveform/" + stream.source.channel(),
+                    topic + stream.source.channel(),
                     new WaveformChunk(stream.source.channel(), start, stream.source.sampleRate(), samples)
             );
 

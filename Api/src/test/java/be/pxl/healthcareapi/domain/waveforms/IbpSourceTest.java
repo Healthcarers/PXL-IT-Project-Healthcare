@@ -22,7 +22,7 @@ class IbpSourceTest {
         assertThat(src.sampleRate()).isEqualTo(125);
         assertThat(src.unit()).isEqualTo("mmHg");
         assertThat(src.yMin()).isEqualTo(0);
-        assertThat(src.yMax()).isEqualTo(200);
+        assertThat(src.yMax()).isEqualTo(300);
     }
 
     @Test
@@ -96,9 +96,10 @@ class IbpSourceTest {
     }
 
     @Test
-    void pressureClampsToDisplayMaximum() {
-        VitalsSnapshot extreme = withBp(60, 260, 80);
+    void scenarioPressureAboveLiveUpdateLimitIsNotClipped() {
+        VitalsSnapshot extreme = withBp(60, 275, 160);
 
-        assertThat(src.valueAt(0.15 * src.periodMs(extreme), extreme)).isEqualTo(src.yMax());
+        assertThat(src.valueAt(0.15 * src.periodMs(extreme), extreme)).isCloseTo(275, within(0.5));
+        assertThat(src.valueAt(0.87 * src.periodMs(extreme), extreme)).isCloseTo(160, within(0.5));
     }
 }
