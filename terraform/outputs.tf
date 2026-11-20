@@ -108,3 +108,8 @@ output "availability_test_name" {
   description = "Name of the Application Insights Availability Ping Test"
   value       = azurerm_application_insights_standard_web_test.api_availability.name
 }
+
+output "resource_group_name" {
+  description = "Name of the deployed Azure Resource Group"
+  value       = azurerm_resource_group.rg.name
+}

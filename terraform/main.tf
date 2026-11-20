@@ -390,7 +390,7 @@ resource "azurerm_consumption_budget_resource_group" "student_budget" {
 resource "azurerm_postgresql_flexible_server" "db" {
   name                   = "${var.project_name}-db-${random_string.suffix.result}"
   resource_group_name    = azurerm_resource_group.rg.name
-  location               = azurerm_resource_group.rg.location
+  location               = var.db_location
   version                = "16"
   administrator_login    = var.db_user
   administrator_password = var.db_password
@@ -1040,4 +1040,13 @@ resource "azurerm_portal_dashboard" "monitoring" {
   tags = merge(local.common_tags, {
     "hidden-title" = "PXL Healthcare - Live Scaling, Security & Monitoring"
   })
+}
+
+# Grant teammates read-only Monitoring Reader access to view the shared Azure Portal Dashboard & metrics
+resource "azurerm_role_assignment" "team_monitoring_reader" {
+  for_each             = toset(var.team_monitoring_reader_object_ids)
+  scope                = azurerm_resource_group.rg.id
+  role_definition_name = "Monitoring Reader"
+  principal_id         = each.value
+  principal_type       = "User"
 }
