@@ -10,6 +10,7 @@ const auth = useAuthStore();
 const showLectorNav = computed(() => auth.person?.role === 'LECTOR' && route.meta.role === 'LECTOR');
 const isLectorDashboard = computed(() => showLectorNav.value && route.name === 'lector-dashboard');
 const showCursistNav = computed(() => auth.person?.role === 'CURSIST' && route.meta.role === 'CURSIST');
+const isCursistMonitor = computed(() => showCursistNav.value && route.name === 'monitor');
 const profileOpen = ref(false);
 const profileMenuRef = ref<HTMLElement | null>(null);
 const profileButton = ref<HTMLButtonElement | null>(null);
@@ -56,7 +57,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div :class="showCursistNav ? 'grid min-h-dvh grid-rows-[auto_1fr]' : 'contents'">
+  <div :class="showCursistNav ? (isCursistMonitor ? 'grid h-dvh grid-rows-[auto_minmax(0,1fr)] overflow-hidden' : 'grid min-h-dvh grid-rows-[auto_1fr]') : 'contents'">
     <header v-if="(showLectorNav && !isLectorDashboard) || showCursistNav" class="bg-pxl-black text-pxl-white">
       <div class="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-4 sm:px-8
         md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]">
