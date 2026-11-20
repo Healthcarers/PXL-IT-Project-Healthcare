@@ -30,7 +30,6 @@ public class AuthService {
     private final AccessTokenService accessTokenService;
     private final JwtDecoder jwtDecoder;
 
-
     public RegisterResponse registerUser(RegisterRequest request) {
         String hashedPassword = passwordEncoder.encode(request.password());
 

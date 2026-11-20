@@ -11,7 +11,6 @@ const auth = useAuthStore();
 const showLectorNav = computed(() => auth.person?.role === 'LECTOR' && route.meta.role === 'LECTOR');
 const isLectorDashboard = computed(() => showLectorNav.value && route.name === 'lector-dashboard');
 const showCursistNav = computed(() => auth.person?.role === 'CURSIST' && route.meta.role === 'CURSIST');
-const isCursistMonitor = computed(() => showCursistNav.value && route.name === 'monitor');
 const profileOpen = ref(false);
 const profileMenuRef = ref<HTMLElement | null>(null);
 const profileButton = ref<HTMLButtonElement | null>(null);

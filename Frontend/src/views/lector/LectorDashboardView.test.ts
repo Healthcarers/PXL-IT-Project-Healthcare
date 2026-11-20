@@ -156,7 +156,7 @@ describe("LectorDashboardView.vue", () => {
     } as unknown as ReturnType<typeof useRoom>);
 
     vi.spyOn(api, "get").mockImplementation((url: string) => {
-      if (url === "/vitals") {
+      if (url === "/rooms/48K7QX/vitals" || url === "/rooms/NEW123/vitals") {
         return Promise.resolve({
           data: {
             heartRate: 75,
@@ -184,9 +184,12 @@ describe("LectorDashboardView.vue", () => {
   }
 
   it("toont roomcode, lector, cursistenaantal, live preview zonder audio en sectieplaceholders", async () => {
+    const consoleError = vi.spyOn(console, "error");
     const wrapper = mountDashboard();
     await flushPromises();
 
+    expect(api.get).toHaveBeenCalledWith("/rooms/48K7QX/vitals");
+    expect(consoleError).not.toHaveBeenCalled();
     const roomDetails = wrapper.get('header').text();
     expect(roomDetails).toContain("Room 48K7QX");
     expect(roomDetails).toContain("Lector: Inge Maes");

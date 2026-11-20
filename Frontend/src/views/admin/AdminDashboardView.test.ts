@@ -365,13 +365,13 @@ describe("AdminDashboardView.vue", () => {
 
     const store = useAuthStore();
 
-    vi.spyOn(store, "isAuthenticated").mockRejectedValueOnce(
+    const authenticate = vi.spyOn(store, "isAuthenticated").mockRejectedValue(
       new Error("Not authenticated"),
     );
     await router.push("/admin");
     expect(router.currentRoute.value.name).toBe("login");
 
-    vi.spyOn(store, "isAuthenticated").mockResolvedValueOnce({
+    authenticate.mockResolvedValue({
       id: "12345678-1234-1234-1234-123456789012",
       firstname: "Test",
       lastname: "Cursist",
@@ -380,7 +380,7 @@ describe("AdminDashboardView.vue", () => {
     await router.push("/admin");
     expect(router.currentRoute.value.name).toBe("unauthorized");
 
-    vi.spyOn(store, "isAuthenticated").mockResolvedValueOnce({
+    authenticate.mockResolvedValue({
       id: "12345678-1234-1234-1234-123456789012",
       firstname: "Sofie",
       lastname: "Peeters",

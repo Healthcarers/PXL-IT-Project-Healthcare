@@ -50,8 +50,15 @@ onUnmounted(() => window.removeEventListener("keydown", onKeydown));
     @click.self="!loading && emit('cancel')"
   >
     <div class="w-full max-w-[440px] rounded-3xl bg-white p-7 text-[#0b0b0d] shadow-2xl sm:p-8">
-      <h2 class="!m-0 text-2xl font-extrabold tracking-tight text-[#0b0b0d]">{{ title }}</h2>
-      <p class="mt-3 text-sm leading-relaxed text-[#52525b]">{{ message }}</p>
+      <h2 class="!m-0 text-2xl font-extrabold tracking-tight text-[#0b0b0d]">
+        {{ title }}
+      </h2>
+
+      <p class="mt-3 text-sm leading-relaxed text-[#52525b]">
+        {{ message }}
+      </p>
+
+      <slot />
       <div class="mt-7 flex items-center justify-end gap-3">
         <button
           type="button"

@@ -30,7 +30,7 @@ public class IbpSource implements WaveformSource {
     @Override public int sampleRate() { return 125; }
     @Override public String unit() { return "mmHg"; }
     @Override public double yMin() { return 0; }
-    @Override public double yMax() { return 200; }
+    @Override public double yMax() { return 300; }
 
     @Override
     public double periodMs(VitalsSnapshot v) {

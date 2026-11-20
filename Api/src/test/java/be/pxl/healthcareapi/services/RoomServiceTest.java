@@ -41,6 +41,9 @@ class RoomServiceTest {
     @InjectMocks
     private RoomService roomService;
 
+    @Mock
+    private RoomSimulationService simulations;
+
     @Test
     void createRoomSavesRoomWithCorrectDetails() {
         when(roomRepository.existsByCode(any(String.class)))

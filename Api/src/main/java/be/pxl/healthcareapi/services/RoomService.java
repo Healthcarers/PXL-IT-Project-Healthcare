@@ -34,13 +34,16 @@ public class RoomService {
 
     private final PersonRepository personRepository;
     private final ScenarioRepository scenarioRepository;
+    private final RoomSimulationService simulations;
 
     public RoomService(RoomRepository roomRepository, RoomParticipantRepository roomParticipantRepository,
-                       PersonRepository personRepository, ScenarioRepository scenarioRepository) {
+                       PersonRepository personRepository, ScenarioRepository scenarioRepository,
+                       RoomSimulationService simulations) {
         this.roomRepository = roomRepository;
         this.roomParticipantRepository = roomParticipantRepository;
         this.personRepository = personRepository;
         this.scenarioRepository = scenarioRepository;
+        this.simulations = simulations;
     }
 
     @Transactional
@@ -97,6 +100,7 @@ public class RoomService {
         }
 
         room.close();
+        simulations.endAfterCommit(room.getCode());
 
         return roomRepository.save(room);
     }
