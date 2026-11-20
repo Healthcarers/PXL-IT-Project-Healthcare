@@ -28,17 +28,29 @@ public class VitalsControllerTest {
 
     @Test
     void getReturnsVitalsAsJson() throws Exception {
-        when(vitalsService.get()).thenReturn(new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80));
+        when(vitalsService.get()).thenReturn(new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80, 36.5));
 
         mvc.perform(get("/api/vitals"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.heartRate").value(75.0))
-                .andExpect(jsonPath("$.ampScale").value(1.0));
+                .andExpect(jsonPath("$.ampScale").value(1.0))
+                .andExpect(jsonPath("$.temperature").value(36.5));
+    }
+
+    @Test
+    void patchAcceptsAndReturnsTemperature() throws Exception {
+        when(vitalsService.update(any())).thenReturn(new VitalsSnapshot(75, 98, 15, 38, 1, 120, 80, 38.2));
+
+        mvc.perform(patch("/api/vitals").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"temperature\":38.2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.temperature").value(38.2));
+        verify(vitalsService).update(argThat(req -> Double.valueOf(38.2).equals(req.temperature())));
     }
 
     @Test
     void patchPassesOnlyTheProvidedFields() throws Exception {
-        when(vitalsService.update(any())).thenReturn(new VitalsSnapshot(120, 98, 15, 38, 1.0, 120, 80));
+        when(vitalsService.update(any())).thenReturn(new VitalsSnapshot(120, 98, 15, 38, 1.0, 120, 80, 36.5));
 
         mvc.perform(patch("/api/vitals")
                 .contentType(MediaType.APPLICATION_JSON)

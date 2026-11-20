@@ -44,7 +44,10 @@ public class VitalsService {
                 resolveValue("etco2", req.etco2(), current, VitalsSnapshot::etco2, 0, 100),
                 resolveValue("ampScale", req.ampScale(), current, VitalsSnapshot::ampScale, 0.1, 3),
                 resolveValue("sysIbp", req.sysIbp(), current, VitalsSnapshot::sysIbp, 0, maxBloodPressure),
-                resolveValue("diasIbp", req.diasIbp(), current, VitalsSnapshot::diasIbp, 0, maxBloodPressure)
+                resolveValue("diasIbp", req.diasIbp(), current, VitalsSnapshot::diasIbp, 0, maxBloodPressure),
+                resolveValue("temperature",
+                        req.temperature() == null && current == null ? Double.valueOf(VitalsSnapshot.DEFAULT_TEMPERATURE) : req.temperature(),
+                        current, VitalsSnapshot::temperature, 20, 45)
         );
     }
 
