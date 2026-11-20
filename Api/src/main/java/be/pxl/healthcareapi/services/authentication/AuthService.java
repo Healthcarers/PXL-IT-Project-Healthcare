@@ -5,25 +5,30 @@ import be.pxl.healthcareapi.dto.LoginRequest;
 import be.pxl.healthcareapi.dto.RegisterRequest;
 import be.pxl.healthcareapi.dto.RegisterResponse;
 import be.pxl.healthcareapi.domein.Person;
-import be.pxl.healthcareapi.domein.RefreshToken;
+import be.pxl.healthcareapi.domein.tokens.RefreshToken;
 import be.pxl.healthcareapi.domein.TokenPair;
 import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.exception.BadRequestException;
 import be.pxl.healthcareapi.repositories.PersonRepository;
 import jakarta.transaction.Transactional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@RequiredArgsConstructor
 public class AuthService {
     private final JwtService jwtService;
-
     private final RefreshTokenService refreshTokenService;
-
     private final PersonRepository personRepo;
+    private final PasswordEncoder passwordEncoder;
+    private final AccessTokenService accessTokenService;
+    private final JwtDecoder jwtDecoder;
 
     private PasswordEncoder passwordEncoder;
 
@@ -60,6 +65,13 @@ public class AuthService {
         String refreshToken = refreshTokenService.createRefreshToken(person);
 
         return new TokenPair(accesToken, refreshToken);
+    }
+
+    public void logout (String accessToken, String refreshTokenString){
+        Jwt jwt = jwtDecoder.decode(accessToken);
+        accessTokenService.revoke(jwt.getId());
+        RefreshToken refreshToken = refreshTokenService.validateRefreshToken(refreshTokenString);
+        refreshTokenService.revokeToken(refreshToken);
     }
 
     @Transactional

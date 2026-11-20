@@ -28,5 +28,15 @@ public class PersonService {
         return personOptional.get();
     }
 
+    public Person getPersonByUUID(UUID uuid){
+        Optional<Person> personOptional = personRepo.findById(uuid);
+
+        if (personOptional.isEmpty()){
+            throw new NotFoundException("Deze gebruiker kon niet gevonden worden");
+        }
+
+        return personOptional.get();
+    }
+
 }
 

@@ -1,7 +1,7 @@
 package be.pxl.healthcareapi.services.authentication;
 
 import be.pxl.healthcareapi.domein.Person;
-import be.pxl.healthcareapi.domein.RefreshToken;
+import be.pxl.healthcareapi.domein.tokens.RefreshToken;
 import be.pxl.healthcareapi.domein.TokenPair;
 import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.dto.AuthResponse;
@@ -18,6 +18,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -38,6 +40,12 @@ class AuthServiceTests {
 
     @Mock
     private JwtService jwtService;
+
+    @Mock
+    private AccessTokenService accessTokenService;
+
+    @Mock
+    private JwtDecoder jwtDecoder;
 
     @InjectMocks
     private AuthService authService;
@@ -215,5 +223,32 @@ class AuthServiceTests {
 
         // Assert
         assertEquals("Deze persoon bestaat niet", exception.getMessage());
+    }
+
+    @Test
+    void logout_shouldRevokeAccessAndRefreshToken() {
+        // Arrange
+        String accessToken = "test-access-token";
+        String refreshTokenString = "test-refresh-token";
+        String jwtId = "test-jwt-id";
+
+        Jwt jwt = Jwt.withTokenValue(accessToken)
+                .header("alg", "none")
+                .jti(jwtId)
+                .build();
+
+        RefreshToken refreshToken = new RefreshToken();
+
+        when(jwtDecoder.decode(accessToken)).thenReturn(jwt);
+        when(refreshTokenService.validateRefreshToken(refreshTokenString))
+                .thenReturn(refreshToken);
+
+        // Act
+        authService.logout(accessToken, refreshTokenString);
+
+        // Assert
+        verify(accessTokenService).revoke(jwtId);
+        verify(refreshTokenService).validateRefreshToken(refreshTokenString);
+        verify(refreshTokenService).revokeToken(refreshToken);
     }
 }

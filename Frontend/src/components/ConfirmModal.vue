@@ -31,18 +31,13 @@ function onKeydown(event: KeyboardEvent) {
 watch(
   () => props.open,
   (isOpen) => {
-    if (isOpen) {
-      window.addEventListener("keydown", onKeydown);
-    } else {
-      window.removeEventListener("keydown", onKeydown);
-    }
+    if (isOpen) window.addEventListener("keydown", onKeydown);
+    else window.removeEventListener("keydown", onKeydown);
   },
   { immediate: true },
 );
 
-onUnmounted(() => {
-  window.removeEventListener("keydown", onKeydown);
-});
+onUnmounted(() => window.removeEventListener("keydown", onKeydown));
 </script>
 
 <template>
@@ -64,25 +59,19 @@ onUnmounted(() => {
       </p>
 
       <slot />
-
       <div class="mt-7 flex items-center justify-end gap-3">
         <button
           type="button"
           :disabled="loading"
           class="rounded-full border border-[#18181b] bg-white px-6 py-2.5 text-sm font-semibold text-[#0b0b0d] transition hover:bg-gray-100 disabled:opacity-50"
           @click="emit('cancel')"
-        >
-          {{ cancelLabel }}
-        </button>
-
+        >{{ cancelLabel }}</button>
         <button
           type="button"
           :disabled="loading"
           class="rounded-full bg-[#0b0b0d] px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-[#232329] disabled:opacity-50"
           @click="emit('confirm')"
-        >
-          {{ loading ? "Bezig..." : confirmLabel }}
-        </button>
+        >{{ loading ? "Bezig..." : confirmLabel }}</button>
       </div>
     </div>
   </div>

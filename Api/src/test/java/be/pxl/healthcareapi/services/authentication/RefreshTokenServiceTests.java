@@ -1,7 +1,7 @@
 package be.pxl.healthcareapi.services.authentication;
 
 import be.pxl.healthcareapi.domein.Person;
-import be.pxl.healthcareapi.domein.RefreshToken;
+import be.pxl.healthcareapi.domein.tokens.RefreshToken;
 import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

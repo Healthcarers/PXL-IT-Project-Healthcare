@@ -21,6 +21,7 @@ jobs:
   destroy:
     name: "Destroy Azure Infrastructure"
     runs-on: ubuntu-latest
+    environment: azure-deploy
     defaults:
       run:
         working-directory: ./terraform

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import LectorConfirmModal from '../components/lector/LectorConfirmModal.vue'
+import ConfirmModal from '../components/ConfirmModal.vue'
 import { useRoom } from '../composables/useRoom'
 import { roomService } from '../services/roomService'
 import { scenarioService } from '../services/scenarioService'
@@ -324,7 +324,7 @@ onUnmounted(cancelPending)
       <h1 v-else class="py-8 text-2xl font-bold">Room niet beschikbaar</h1>
       <p v-if="error" role="alert" class="mt-6 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-800">{{ error }}</p>
     </section>
-    <LectorConfirmModal :open="startModalOpen" title="Simulatie starten?"
+    <ConfirmModal :open="startModalOpen" title="Simulatie starten?"
       message="Wil je de simulatie starten? De verbonden cursisten gaan naar de monitor en jij opent het lectordashboard."
       confirm-label="Simulatie starten" :loading="startingRoom"
       @cancel="startModalOpen = false" @confirm="handleStart" />

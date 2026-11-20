@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import CursistPreviewCard from "../../components/lector/CursistPreviewCard.vue";
-import LectorConfirmModal from "../../components/lector/LectorConfirmModal.vue";
+import ConfirmModal from "../../components/ConfirmModal.vue";
 import LectorTopbar from "../../components/lector/LectorTopbar.vue";
 import { useRoom } from "../../composables/useRoom";
 import { useAuthStore } from "../../stores/Authstore";
@@ -227,7 +227,7 @@ onUnmounted(() => {
       </div>
     </main>
 
-    <LectorConfirmModal
+    <ConfirmModal
       :open="closeRoomModalOpen"
       title="Room sluiten?"
       message="Weet je zeker dat je deze room wilt sluiten? De simulatie wordt beëindigd voor alle verbonden cursisten."
