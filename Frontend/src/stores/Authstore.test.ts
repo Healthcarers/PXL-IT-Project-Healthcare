@@ -243,4 +243,68 @@ describe("Authstore", () => {
       expect(store.error).toBeNull();
     });
   });
+
+  describe("logout", () => {
+    it("roept de logout-endpoint aan en zet loading terug op false na succes", async () => {
+      // Arrange
+      const post = vi.spyOn(api, "post").mockResolvedValue({ data: {} });
+      const store = useAuthStore();
+
+      // Act
+      await expect(store.logout()).resolves.toBeUndefined();
+
+      // Assertx²
+      expect(post).toHaveBeenCalledWith("/auth/logout");
+      expect(store.error).toBeNull();
+      expect(store.loading).toBe(false);
+    });
+
+    it("gebruikt de backendfout bij een Axios-fout", async () => {
+      // Arrange
+      const message = "De sessie kon niet worden beëindigd.";
+      vi.spyOn(api, "post").mockRejectedValue({
+        isAxiosError: true,
+        response: { data: { message } },
+      });
+      const store = useAuthStore();
+
+      // Act
+      const result = store.logout();
+
+      // Assert
+      await expect(result).rejects.toThrow(message);
+      expect(store.error).toBe(message);
+      expect(store.loading).toBe(false);
+    });
+
+    it("gebruikt de foutmelding bij een gewone fout", async () => {
+      // Arrange
+      const message = "Network error";
+      vi.spyOn(api, "post").mockRejectedValue(new Error(message));
+      const store = useAuthStore();
+
+      // Act
+      const result = store.logout();
+
+      // Assert
+      await expect(result).rejects.toThrow(message);
+      expect(store.error).toBe(message);
+      expect(store.loading).toBe(false);
+    });
+
+    it("gebruikt de fallback bij een onbekende foutwaarde", async () => {
+      // Arrange
+      const fallback = "Uitloggen is mislukt. Probeer opnieuw.";
+      vi.spyOn(api, "post").mockRejectedValue("unexpected error");
+      const store = useAuthStore();
+
+      // Act
+      const result = store.logout();
+
+      // Assert
+      await expect(result).rejects.toThrow(fallback);
+      expect(store.error).toBe(fallback);
+      expect(store.loading).toBe(false);
+    });
+  });
 });

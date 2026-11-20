@@ -6,6 +6,7 @@ import be.pxl.healthcareapi.domein.RoomParticipant;
 import be.pxl.healthcareapi.domein.RoomStatus;
 import be.pxl.healthcareapi.dto.RoomResponse;
 import be.pxl.healthcareapi.exception.NotFoundException;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.repositories.RoomParticipantRepository;
 import be.pxl.healthcareapi.repositories.RoomRepository;
 import org.junit.jupiter.api.Test;
@@ -15,7 +16,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
-import be.pxl.healthcareapi.repositories.PersonRepository;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -153,7 +153,7 @@ class RoomServiceTest {
                 ownerId
         );
 
-        when(roomRepository.findByCode("ABC123"))
+        when(roomRepository.findForUpdate("ABC123"))
                 .thenReturn(Optional.of(room));
 
         when(roomRepository.save(any(Room.class)))
@@ -176,7 +176,7 @@ class RoomServiceTest {
 
         UUID otherUserId = UUID.randomUUID();
 
-        when(roomRepository.findByCode("ABC123"))
+        when(roomRepository.findForUpdate("ABC123"))
                 .thenReturn(Optional.of(room));
 
         IllegalStateException exception = assertThrows(
@@ -203,7 +203,7 @@ class RoomServiceTest {
 
         room.start();
 
-        when(roomRepository.findByCode("ABC123"))
+        when(roomRepository.findForUpdate("ABC123"))
                 .thenReturn(Optional.of(room));
 
         assertThrows(
@@ -312,7 +312,7 @@ class RoomServiceTest {
         ReflectionTestUtils.setField(room, "id", roomId);
         room.close();
 
-        when(roomRepository.findByCode("ABC123"))
+        when(roomRepository.findForUpdate("ABC123"))
                 .thenReturn(Optional.of(room));
 
         assertThrows(
@@ -331,7 +331,7 @@ class RoomServiceTest {
         Room room = new Room("ABC123", "Test room", ownerId);
         ReflectionTestUtils.setField(room, "id", roomId);
 
-        when(roomRepository.findByCode("ABC123"))
+        when(roomRepository.findForUpdate("ABC123"))
                 .thenReturn(Optional.of(room));
 
         assertThrows(
@@ -366,7 +366,7 @@ class RoomServiceTest {
     void closeRoom_openRoom_setsStatusToClosed() {
         Room room = new Room("ABC123", "Test room", ownerId);
 
-        when(roomRepository.findByCode("ABC123"))
+        when(roomRepository.findForUpdate("ABC123"))
                 .thenReturn(Optional.of(room));
 
         roomService.closeRoom("ABC123");

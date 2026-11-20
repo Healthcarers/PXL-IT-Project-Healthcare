@@ -5,9 +5,16 @@ on:
     # Elke donderdag en vrijdag om 17:00 UTC (18:00 CET wintertijd / 19:00 CEST zomertijd).
     - cron: '0 17 * * 4,5'
   workflow_dispatch: # Hiermee kun je de resources handmatig afbreken met 1 klik in GitHub
+    inputs:
+      full_destroy:
+        description: "Also destroy the $0/hr Container App Environment shell (WARNING: changes the permanent PWA domain)"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
+  pages: write
   id-token: write
 
 jobs:
@@ -44,11 +51,90 @@ jobs:
             -backend-config="use_oidc=true" \
             -backend-config="use_azuread_auth=true"
 
-      - name: Terraform Destroy
-        run: terraform destroy -auto-approve -input=false
+      - name: Terraform Destroy (Pause Billable Resources, Preserve $0/hr Fixed PWA Domain Shell)
+        run: |
+          if [ "${{ inputs.full_destroy }}" = "true" ]; then
+            terraform destroy -auto-approve -input=false
+          else
+            terraform destroy -auto-approve -input=false \
+              -target="azurerm_portal_dashboard.monitoring" \
+              -target="azurerm_monitor_metric_alert.availability_failed" \
+              -target="azurerm_monitor_metric_alert.alerts" \
+              -target="azurerm_application_insights_standard_web_test.api_availability" \
+              -target="azurerm_container_app.web" \
+              -target="azurerm_container_app.api" \
+              -target="azurerm_role_assignment.api_acr_pull" \
+              -target="azurerm_role_assignment.web_acr_pull" \
+              -target="azurerm_container_registry.acr" \
+              -target="azurerm_monitor_diagnostic_setting.db_diagnostics" \
+              -target="azurerm_postgresql_flexible_server_firewall_rule.allow_azure_services" \
+              -target="azurerm_postgresql_flexible_server_firewall_rule.allowed_ips" \
+              -target="azurerm_postgresql_flexible_server_database.appdb" \
+              -target="azurerm_postgresql_flexible_server.db"
+          fi
 
       - name: Publish Teardown Summary
         if: success()
         run: |
-          echo "### 🛑 Azure Infrastructure Successfully Destroyed!" >> $GITHUB_STEP_SUMMARY
-          echo "All resources (Container App, Key Vault, Database, Monitoring) have been deleted. Ongoing Azure cost: **\$0.00/hour**." >> $GITHUB_STEP_SUMMARY
+          echo "### 🛑 Billable Azure Resources Paused (\$0.00/hour Mode)!" >> $GITHUB_STEP_SUMMARY
+          echo "All billable resources (PostgreSQL Database, Container Apps, Container Registry, Availability Probes) have been destroyed. Ongoing Azure cost: **\$0.00/hour**." >> $GITHUB_STEP_SUMMARY
+          echo "- **Preserved \$0/hr Container App Environment Shell:** Keeps the fixed iPad PWA domain (\`https://pxl-healthcare-web.lemonmeadow-dc636ea7.switzerlandnorth.azurecontainerapps.io\`) permanent across restarts." >> $GITHUB_STEP_SUMMARY
+          echo "- **Permanent Status URL (GitHub Pages):** https://healthcarers.github.io/PXL-IT-Project-Healthcare/" >> $GITHUB_STEP_SUMMARY
+
+  publish-offline-page:
+    name: "Update GitHub Pages to Offline Status Page"
+    needs: destroy
+    if: success()
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Generate Offline Status Page
+        run: |
+          mkdir -p _site
+          cat <<'EOF' > _site/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>PXL Healthcare — Cloud Currently Paused ($0.00/hr Mode)</title>
+            <style>
+              body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
+              .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; max-width: 540px; width: 100%; padding: 2rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.4); }
+              .badge { display: inline-block; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(251, 191, 36, 0.3); font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; }
+              h1 { font-size: 1.35rem; margin: 0 0 0.75rem; }
+              p { color: #94a3b8; font-size: 0.95rem; line-height: 1.6; margin-bottom: 1.25rem; }
+              .schedule { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 1rem; text-align: left; font-size: 0.88rem; color: #cbd5e1; margin-bottom: 1.5rem; }
+              .schedule strong { color: #38bdf8; }
+              .btn { display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; padding: 0.75rem 1.25rem; border-radius: 8px; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <span class="badge">● Standby Mode ($0.00 / hour)</span>
+              <h1>PXL Healthcare Azure Cloud is Currently Offline</h1>
+              <p>To preserve our Azure for Students budget, the ephemeral cloud environment is automatically torn down outside class and demo hours.</p>
+              <div class="schedule">
+                <div><strong>Automatic Schedule:</strong> Every Thursday &amp; Friday (08:00 – 18:00 CET)</div>
+                <div style="margin-top: 0.5rem;"><strong>On-Demand Start:</strong> Run the <em>Terraform - Deploy Healthcare Cloud</em> workflow in GitHub Actions to bring the environment online in ~7 minutes.</div>
+              </div>
+              <a class="btn" href="https://github.com/Healthcarers/PXL-IT-Project-Healthcare/actions/workflows/terraform-deploy.yml">Start Cloud in GitHub Actions</a>
+            </div>
+          </body>
+          </html>
+          EOF
+          cp _site/index.html _site/404.html
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

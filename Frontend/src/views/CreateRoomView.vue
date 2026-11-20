@@ -1,16 +1,45 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoom } from '../composables/useRoom'
+import { roomService } from '../services/roomService'
 
 const router = useRouter()
 const { loading, error, createRoom } = useRoom()
 
 const name = ref('')
 const description = ref('')
+const checkingRoom = ref(true)
+const activeRoomError = ref(false)
+const lookup = new AbortController()
+
+async function checkActiveRoom() {
+  checkingRoom.value = true
+  activeRoomError.value = false
+  try {
+    const activeRoom = await roomService.getActive(lookup.signal)
+    if (lookup.signal.aborted) return
+    if (activeRoom) {
+      const room = await roomService.getByCode(activeRoom.code)
+      if (lookup.signal.aborted) return
+      const failure = await router.replace({
+        name: room.status === 'STARTED' ? 'lector-dashboard' : 'host-dashboard',
+        params: { code: room.code },
+      })
+      if (!lookup.signal.aborted) activeRoomError.value = Boolean(failure)
+    }
+  } catch {
+    if (!lookup.signal.aborted) activeRoomError.value = true
+  } finally {
+    if (!lookup.signal.aborted) checkingRoom.value = false
+  }
+}
+
+onMounted(checkActiveRoom)
+onUnmounted(() => lookup.abort())
 
 async function handleCreateRoom() {
-  if (!name.value.trim()) {
+  if (checkingRoom.value || activeRoomError.value || !name.value.trim()) {
     return
   }
 
@@ -40,12 +69,21 @@ async function handleCreateRoom() {
         Room aanmaken
       </h1>
 
-      <p class="mb-7 mt-3 text-[15px] leading-7 text-[#555555]">
+      <p v-if="checkingRoom" role="status" class="mt-3 text-sm text-[#555555]">
+        Actieve room zoeken...
+      </p>
+      <div v-else-if="activeRoomError" class="mt-3 space-y-3">
+        <p role="alert" class="text-sm text-red-800">De actieve room kon niet worden geopend.</p>
+        <button type="button" class="rounded-md border px-3 py-2 text-sm" @click="checkActiveRoom">
+          Opnieuw proberen
+        </button>
+      </div>
+      <p v-else class="mb-7 mt-3 text-[15px] leading-7 text-[#555555]">
         Maak een room aan en deel de code met je cursisten, zodat ze kunnen
         deelnemen.
       </p>
 
-      <form class="space-y-6" @submit.prevent="handleCreateRoom">
+      <form v-if="!checkingRoom && !activeRoomError" class="space-y-6" @submit.prevent="handleCreateRoom">
         <div>
           <label for="name" class="mb-2 block text-sm font-bold text-[#262626]">
             Naam van de room

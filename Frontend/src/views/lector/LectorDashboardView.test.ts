@@ -5,6 +5,7 @@ import { createPinia, setActivePinia } from "pinia";
 import { defineComponent, h, ref } from "vue";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import LectorDashboardView from "./LectorDashboardView.vue";
+import App from "../../App.vue";
 import router from "../../router/index.ts";
 import api from "../../services/refreshService.ts";
 import { useRoom } from "../../composables/useRoom";
@@ -18,6 +19,7 @@ const {
   loadRoomMock,
   loadParticipantsMock,
   closeRoomMock,
+  clearRoomMock,
   subscribeTopicMock,
   heartbeatSoundMock,
 } = vi.hoisted(() => ({
@@ -26,6 +28,7 @@ const {
   loadRoomMock: vi.fn(),
   loadParticipantsMock: vi.fn(),
   closeRoomMock: vi.fn(),
+  clearRoomMock: vi.fn(),
   subscribeTopicMock: vi.fn(() => vi.fn()),
   heartbeatSoundMock: vi.fn(),
 }));
@@ -149,6 +152,7 @@ describe("LectorDashboardView.vue", () => {
       loadRoom: loadRoomMock,
       loadParticipants: loadParticipantsMock,
       closeRoom: closeRoomMock,
+      clearRoom: clearRoomMock,
     } as unknown as ReturnType<typeof useRoom>);
 
     vi.spyOn(api, "get").mockImplementation((url: string) => {
@@ -183,13 +187,14 @@ describe("LectorDashboardView.vue", () => {
     const wrapper = mountDashboard();
     await flushPromises();
 
-    const headerText = wrapper.get("header").text();
-    expect(headerText).toContain("Room 48K7QX");
-    expect(headerText).toContain("Lector: Inge Maes");
-    expect(headerText).toContain("3 cursisten verbonden");
-    expect(headerText).not.toContain("Helderheid");
-    expect(headerText).toContain("Room sluiten");
-    expect(headerText).toContain("Profiel");
+    const roomDetails = wrapper.get('header').text();
+    expect(roomDetails).toContain("Room 48K7QX");
+    expect(roomDetails).toContain("Lector: Inge Maes");
+    expect(roomDetails).toContain("3 cursisten verbonden");
+    expect(roomDetails).toContain("Room sluiten");
+    expect(wrapper.findAll("header")).toHaveLength(1);
+    expect(wrapper.find('[aria-label="Roomgegevens"]').exists()).toBe(false);
+    expect(wrapper.find("nav").exists()).toBe(false);
 
     expect(wrapper.text()).toContain("Wat de cursist ziet");
     expect(wrapper.text()).toContain("LIVE");
@@ -199,6 +204,34 @@ describe("LectorDashboardView.vue", () => {
     expect(useHeartbeatSound).not.toHaveBeenCalled();
 
     wrapper.unmount();
+  });
+
+  it("toont in de volledige app één compacte roomheader met de uitlog-dropdown onder Lector", async () => {
+    const store = useAuthStore();
+    vi.spyOn(store, "isAuthenticated").mockResolvedValue(store.person!);
+    await router.push("/host/rooms/48K7QX/dashboard");
+    const wrapper = mount(App, { global: { plugins: [router] } });
+    try {
+      await flushPromises();
+      expect(wrapper.findAll("header")).toHaveLength(1);
+      expect(wrapper.find("nav").exists()).toBe(false);
+      const header = wrapper.get("header");
+      expect(header.text()).toContain("Room 48K7QX");
+      expect(header.text()).toContain("Lector: Inge Maes");
+      expect(header.text()).toContain("3 cursisten verbonden");
+      expect(wrapper.find('[aria-label="Roomgegevens"]').exists()).toBe(false);
+      const profile = header.get('button[aria-controls="lector-profile-menu"]');
+      expect(profile.text()).toBe("Lector");
+      await profile.trigger("click");
+      await header.get('[role="menuitem"]').trigger("click");
+      expect(wrapper.get('[role="dialog"]').text()).toContain("Uitloggen?");
+      await wrapper.get('[role="dialog"]').findAll("button")
+        .find(button => button.text() === "Annuleren")!.trigger("click");
+      await header.findAll("button").find(button => button.text() === "Room sluiten")!.trigger("click");
+      expect(wrapper.get('[role="dialog"]').text()).toContain("Room sluiten?");
+    } finally {
+      wrapper.unmount();
+    }
   });
 
   it("klapt het cursistscherm in en uit via Inklappen en Cursistscherm tonen zonder de grafieken te unmounten", async () => {
@@ -259,64 +292,77 @@ describe("LectorDashboardView.vue", () => {
     wrapperOtherOwner.unmount();
   });
 
-  it("opent het Profiel-menu en de Uitloggen-bevestigingsmodal", async () => {
+  it("sluit de room meteen en navigeert pas na vijf seconden terug naar /rooms/new", async () => {
+    vi.useFakeTimers();
     const wrapper = mountDashboard();
-    await flushPromises();
+    try {
+      await flushPromises();
+      const closeBtn = wrapper.findAll('header button')
+        .find((btn) => btn.text().trim() === "Room sluiten")!;
+      await closeBtn.trigger("click");
+      const dialog = wrapper.get('[role="dialog"]');
+      expect(dialog.text()).toContain("Room sluiten?");
+      await dialog.findAll("button")
+        .find((btn) => btn.text().trim() === "Room sluiten")!.trigger("click");
+      await flushPromises();
 
-    const profileBtn = wrapper
-      .findAll("header button")
-      .find((btn) => btn.text().includes("Profiel"));
-    await profileBtn!.trigger("click");
-    expect(wrapper.text()).toContain("Mijn account");
-
-    await wrapper.get('button[role="menuitem"]').trigger("click");
-    const dialog = wrapper.get('[role="dialog"]');
-    expect(dialog.text()).toContain("Uitloggen?");
-    expect(dialog.text()).toContain("Weet je zeker dat je wilt uitloggen?");
-
-    // Annuleren sluit de modal
-    await dialog
-      .findAll("button")
-      .find((btn) => btn.text().trim() === "Annuleren")!
-      .trigger("click");
-    expect(wrapper.find('[role="dialog"]').exists()).toBe(false);
-
-    // Bevestigen toont tijdelijke melding
-    await profileBtn!.trigger("click");
-    await wrapper.get('button[role="menuitem"]').trigger("click");
-    await wrapper
-      .get('[role="dialog"]')
-      .findAll("button")
-      .find((btn) => btn.text().trim() === "Uitloggen")!
-      .trigger("click");
-
-    expect(wrapper.get('[role="status"]').text()).toContain("Uitlogfunctionaliteit");
-
-    wrapper.unmount();
+      expect(closeRoomMock).toHaveBeenCalledOnce();
+      expect(wrapper.get('[role="status"]').text()).toContain("over 5 seconden");
+      expect(closeBtn.attributes("disabled")).toBeDefined();
+      await vi.advanceTimersByTimeAsync(4999);
+      expect(pushMock).not.toHaveBeenCalled();
+      expect(clearRoomMock).not.toHaveBeenCalled();
+      expect(loadParticipantsMock).toHaveBeenCalledOnce();
+      await vi.advanceTimersByTimeAsync(1);
+      expect(clearRoomMock).toHaveBeenCalledOnce();
+      expect(pushMock).toHaveBeenCalledExactlyOnceWith({ name: "create-room" });
+    } finally {
+      wrapper.unmount();
+      vi.useRealTimers();
+    }
   });
 
-  it("sluit de room na bevestiging en navigeert terug naar /rooms/new", async () => {
+  it.each([false, true])("annuleert de terugkeertimer bij verlaten of wisselen van room (wisselen: %s)", async (changeRoom) => {
+    vi.useFakeTimers();
     const wrapper = mountDashboard();
-    await flushPromises();
+    try {
+      await flushPromises();
+      await wrapper.findAll("header button").find(button => button.text() === "Room sluiten")!.trigger("click");
+      await wrapper.get('[role="dialog"]').findAll("button")
+        .find(button => button.text() === "Room sluiten")!.trigger("click");
+      await flushPromises();
+      if (changeRoom) await wrapper.setProps({ code: "NEW123" });
+      else wrapper.unmount();
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(pushMock).not.toHaveBeenCalled();
+      expect(clearRoomMock).not.toHaveBeenCalled();
+    } finally {
+      if (changeRoom) wrapper.unmount();
+      vi.useRealTimers();
+    }
+  });
 
-    const closeBtn = wrapper
-      .findAll("header button")
-      .find((btn) => btn.text().trim() === "Room sluiten");
-    await closeBtn!.trigger("click");
-
-    const dialog = wrapper.get('[role="dialog"]');
-    expect(dialog.text()).toContain("Room sluiten?");
-
-    await dialog
-      .findAll("button")
-      .find((btn) => btn.text().trim() === "Room sluiten")!
-      .trigger("click");
-    await flushPromises();
-
-    expect(closeRoomMock).toHaveBeenCalledOnce();
-    expect(pushMock).toHaveBeenCalledWith({ name: "create-room" });
-
-    wrapper.unmount();
+  it("navigeert niet terug wanneer het sluiten mislukt", async () => {
+    vi.useFakeTimers();
+    closeRoomMock.mockImplementationOnce(async () => {
+      error.value = "De room kon niet worden gesloten.";
+      throw new Error(error.value);
+    });
+    const wrapper = mountDashboard();
+    try {
+      await flushPromises();
+      await wrapper.findAll("header button").find(button => button.text() === "Room sluiten")!.trigger("click");
+      await wrapper.get('[role="dialog"]').findAll("button")
+        .find(button => button.text() === "Room sluiten")!.trigger("click");
+      await flushPromises();
+      expect(wrapper.get('[role="alert"]').text()).toContain("De room kon niet worden gesloten.");
+      expect(wrapper.find('[role="status"]').exists()).toBe(false);
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(pushMock).not.toHaveBeenCalled();
+    } finally {
+      wrapper.unmount();
+      vi.useRealTimers();
+    }
   });
 
   it("beveiligt de /host/rooms/:code/dashboard route voor alleen de LECTOR-rol", async () => {

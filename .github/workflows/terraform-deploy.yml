@@ -15,12 +15,15 @@ on:
 
 permissions:
   contents: read
+  pages: write
   id-token: write
 
 jobs:
   deploy:
     name: "Deploy Azure Infrastructure, Web Gateway & API"
     runs-on: ubuntu-latest
+    outputs:
+      web_url: ${{ steps.outputs.outputs.web_url }}
     defaults:
       run:
         working-directory: ./terraform
@@ -76,36 +79,46 @@ jobs:
         run: |
           az acr login --name "${{ env.ACR_NAME }}"
 
-          API_IMAGE="${{ env.ACR_LOGIN_SERVER }}/healthcare-api:latest"
-          WEB_IMAGE="${{ env.ACR_LOGIN_SERVER }}/healthcare-web:latest"
+          IMAGE_TAG="${GITHUB_SHA::7}-${{ github.run_number }}"
+          API_IMAGE="${{ env.ACR_LOGIN_SERVER }}/healthcare-api:${IMAGE_TAG}"
+          WEB_IMAGE="${{ env.ACR_LOGIN_SERVER }}/healthcare-web:${IMAGE_TAG}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> $GITHUB_ENV
           echo "API_IMAGE=$API_IMAGE" >> $GITHUB_ENV
           echo "WEB_IMAGE=$WEB_IMAGE" >> $GITHUB_ENV
 
           echo "Building and pushing API image: $API_IMAGE"
-          docker build -t "$API_IMAGE" ./Api
+          docker build -t "$API_IMAGE" -t "${{ env.ACR_LOGIN_SERVER }}/healthcare-api:latest" ./Api
           docker push "$API_IMAGE"
+          docker push "${{ env.ACR_LOGIN_SERVER }}/healthcare-api:latest"
 
           echo "Building and pushing Frontend + Nginx Gateway image: $WEB_IMAGE"
-          docker build -t "$WEB_IMAGE" ./Frontend
+          docker build -t "$WEB_IMAGE" -t "${{ env.ACR_LOGIN_SERVER }}/healthcare-web:latest" ./Frontend
           docker push "$WEB_IMAGE"
+          docker push "${{ env.ACR_LOGIN_SERVER }}/healthcare-web:latest"
 
       - name: Terraform Apply Full Infrastructure
-        run: terraform apply -auto-approve -input=false
+        run: terraform apply -auto-approve -input=false -var="image_tag=${{ env.IMAGE_TAG }}"
 
       - name: Capture Terraform Outputs
+        id: outputs
         if: success()
         run: |
-          echo "WEB_URL=$(terraform output -raw web_url)" >> $GITHUB_ENV
+          WEB_URL="$(terraform output -raw web_url)"
+          DASHBOARD_URL="$(terraform output -raw dashboard_url)"
+          echo "WEB_URL=$WEB_URL" >> $GITHUB_ENV
+          echo "DASHBOARD_URL=$DASHBOARD_URL" >> $GITHUB_ENV
+          echo "web_url=$WEB_URL" >> $GITHUB_OUTPUT
+          echo "dashboard_url=$DASHBOARD_URL" >> $GITHUB_OUTPUT
           echo "API_URL=$(terraform output -raw api_url)" >> $GITHUB_ENV
+          echo "RG_NAME=$(terraform output -raw resource_group_name 2>/dev/null || echo 'pxl-healthcare-rg')" >> $GITHUB_ENV
           echo "DB_HOST=$(terraform output -raw host)" >> $GITHUB_ENV
           echo "DB_NAME=$(terraform output -raw database)" >> $GITHUB_ENV
           echo "DB_USER=$(terraform output -raw user)" >> $GITHUB_ENV
           echo "KV_NAME=$(terraform output -raw key_vault_name)" >> $GITHUB_ENV
           echo "AI_NAME=$(terraform output -raw application_insights_name)" >> $GITHUB_ENV
-          echo "DASHBOARD_URL=$(terraform output -raw dashboard_url)" >> $GITHUB_ENV
 
       - name: Wait for Web Gateway & API Health
-        if: github.event_name == 'workflow_dispatch' && inputs.run_load_tests == true
+        if: success()
         working-directory: .
         run: |
           echo "Waiting for ${WEB_URL}/api/channels to return HTTP 200..."
@@ -120,6 +133,51 @@ jobs:
           done
           echo "Timed out waiting for API readiness."
           exit 1
+
+      - name: Seed Default Users (Cursist, Lector, Admin)
+        if: success()
+        working-directory: .
+        env:
+          SEED_CURSIST_PASSWORD: ${{ secrets.SEED_CURSIST_PASSWORD }}
+          SEED_LECTOR_PASSWORD: ${{ secrets.SEED_LECTOR_PASSWORD }}
+          SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+        run: |
+          echo "Registering default Cursist, Lector, and Admin accounts via ${WEB_URL}/api/auth/register..."
+          curl -s -o /dev/null -w "CURSIST register HTTP %{http_code}\n" -X POST "${WEB_URL}/api/auth/register" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg pw "$SEED_CURSIST_PASSWORD" '{firstname:"Demo",lastname:"Cursist",email:"cursist@pxl.be",password:$pw,passwordRepeated:$pw}')"
+
+          curl -s -o /dev/null -w "LECTOR register HTTP %{http_code}\n" -X POST "${WEB_URL}/api/auth/register" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg pw "$SEED_LECTOR_PASSWORD" '{firstname:"Demo",lastname:"Lector",email:"lector@pxl.be",password:$pw,passwordRepeated:$pw}')"
+
+          curl -s -o /dev/null -w "ADMIN register HTTP %{http_code}\n" -X POST "${WEB_URL}/api/auth/register" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg pw "$SEED_ADMIN_PASSWORD" '{firstname:"Demo",lastname:"Admin",email:"admin@pxl.be",password:$pw,passwordRepeated:$pw}')"
+
+          DB_SERVER="${DB_HOST%%.*}"
+          RUNNER_IP="$(curl -s https://api.ipify.org)"
+          RULE_NAME="gh-runner-seed-temp"
+
+          cleanup_fw() {
+            az postgres flexible-server firewall-rule delete \
+              --resource-group "${RG_NAME}" \
+              --server-name "${DB_SERVER}" \
+              --name "${RULE_NAME}" \
+              --yes >/dev/null 2>&1 || true
+          }
+          trap cleanup_fw EXIT
+
+          az postgres flexible-server firewall-rule create \
+            --resource-group "${RG_NAME}" \
+            --server-name "${DB_SERVER}" \
+            --name "${RULE_NAME}" \
+            --start-ip-address "${RUNNER_IP}" \
+            --end-ip-address "${RUNNER_IP}" >/dev/null
+
+          PGPASSWORD="${TF_VAR_db_password}" psql \
+            "host=${DB_HOST} port=5432 dbname=${DB_NAME} user=${DB_USER} sslmode=require" \
+            -c "UPDATE person SET role = 1 WHERE email = 'lector@pxl.be'; UPDATE person SET role = 2 WHERE email = 'admin@pxl.be'; SELECT email, role FROM person WHERE email IN ('cursist@pxl.be', 'lector@pxl.be', 'admin@pxl.be') ORDER BY role;"
 
       - name: Run Docker Compose Scalability & DDoS Tests
         if: github.event_name == 'workflow_dispatch' && inputs.run_load_tests == true
@@ -142,7 +200,8 @@ jobs:
           echo "### 🚀 PXL Healthcare Cloud Ready!" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "#### 🌐 Public Web App & Nginx Gateway:" >> $GITHUB_STEP_SUMMARY
-          echo "- **Web App URL:** $WEB_URL" >> $GITHUB_STEP_SUMMARY
+          echo "- **Permanent Shortcut URL (GitHub Pages):** https://healthcarers.github.io/PXL-IT-Project-Healthcare/" >> $GITHUB_STEP_SUMMARY
+          echo "- **Direct Azure Web App URL:** $WEB_URL" >> $GITHUB_STEP_SUMMARY
           echo "- **Web Container Image:** \`${{ env.WEB_IMAGE }}\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Azure Monitoring Dashboard:** $DASHBOARD_URL" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
@@ -160,3 +219,78 @@ jobs:
           echo "- **Container Registry:** \`${{ env.ACR_NAME }}\` (Managed Identity AcrPull)" >> $GITHUB_STEP_SUMMARY
           echo "- **Key Vault:** \`$KV_NAME\`" >> $GITHUB_STEP_SUMMARY
           echo "- **Application Insights:** \`$AI_NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "#### 👤 Default Seeded Accounts:" >> $GITHUB_STEP_SUMMARY
+          echo "- **Cursist (\`CURSIST\`):** \`cursist@pxl.be\` (password in \`SEED_CURSIST_PASSWORD\` secret)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Lector (\`LECTOR\`):** \`lector@pxl.be\` (password in \`SEED_LECTOR_PASSWORD\` secret)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Admin (\`ADMIN\`):** \`admin@pxl.be\` (password in \`SEED_ADMIN_PASSWORD\` secret)" >> $GITHUB_STEP_SUMMARY
+
+  publish-pages:
+    name: "Update Fixed GitHub Pages Redirect URL"
+    needs: deploy
+    if: success()
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Generate Live Redirect Page
+        env:
+          LIVE_WEB_URL: ${{ needs.deploy.outputs.web_url }}
+          LIVE_DASHBOARD_URL: "https://portal.azure.com/#browse/Microsoft.Portal%2Fdashboards"
+        run: |
+          mkdir -p _site
+          cat <<EOF > _site/index.html
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="utf-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1" />
+            <title>PXL Healthcare — Redirecting to Live Azure Cloud...</title>
+            <meta http-equiv="refresh" content="0; url=${LIVE_WEB_URL}" />
+            <style>
+              body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #f8fafc; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; padding: 1.5rem; }
+              .card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; max-width: 520px; width: 100%; padding: 2rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.4); }
+              .badge { display: inline-block; background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.3); font-size: 0.8rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 1rem; }
+              h1 { font-size: 1.35rem; margin: 0 0 0.5rem; }
+              p { color: #94a3b8; font-size: 0.95rem; line-height: 1.5; margin-bottom: 1.5rem; }
+              .btn { display: inline-block; background: #2563eb; color: #ffffff; text-decoration: none; font-weight: 600; padding: 0.75rem 1.25rem; border-radius: 8px; margin: 0.25rem; }
+              .btn-secondary { background: #334155; color: #e2e8f0; }
+              code { display: block; background: #0f172a; color: #38bdf8; padding: 0.6rem; border-radius: 6px; font-size: 0.8rem; word-break: break-all; margin-bottom: 1.25rem; }
+            </style>
+            <script>
+              (function () {
+                var target = "${LIVE_WEB_URL}".replace(/\/$/, "");
+                var subPath = window.location.pathname.replace(/^\/PXL-IT-Project-Healthcare\/?/, "/");
+                var dest = target + (subPath === "/" ? "" : subPath) + window.location.search + window.location.hash;
+                window.location.replace(dest);
+              })();
+            </script>
+          </head>
+          <body>
+            <div class="card">
+              <span class="badge">● Azure Cloud Online</span>
+              <h1>Redirecting to PXL Healthcare...</h1>
+              <p>Forwarding you to today's active Azure Container App instance:</p>
+              <code>${LIVE_WEB_URL}</code>
+              <div>
+                <a class="btn" href="${LIVE_WEB_URL}">Open PXL Healthcare App</a>
+                <a class="btn btn-secondary" href="${LIVE_DASHBOARD_URL}">Open Azure Dashboard</a>
+              </div>
+            </div>
+          </body>
+          </html>
+          EOF
+          cp _site/index.html _site/404.html
+
+      - name: Upload Pages Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

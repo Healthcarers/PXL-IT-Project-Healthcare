@@ -78,7 +78,7 @@ export const useAuthStore = defineStore("auth", () => {
       } else if (loggedInPerson.role === "LECTOR") {
         await router.push("/rooms/new");
       } else if (loggedInPerson.role === "ADMIN") {
-          await router.push("/admin");
+        await router.push("/admin");
       }
 
       return res.data;
@@ -126,6 +126,31 @@ export const useAuthStore = defineStore("auth", () => {
       loading.value = false;
     }
   }
+  async function logout() {
+    loading.value = true;
+    error.value = null;
+
+    try {
+      await api.post("/auth/logout");
+      return;
+    } catch (err: unknown) {
+      let message = "Uitloggen is mislukt. Probeer opnieuw.";
+
+      if (axios.isAxiosError(err)) {
+        const responseMessage = err.response?.data?.message;
+        if (typeof responseMessage === "string" && responseMessage.trim()) {
+          message = responseMessage;
+        }
+      } else if (err instanceof Error && err.message.trim()) {
+        message = err.message;
+      }
+
+      error.value = message;
+      throw new Error(message);
+    } finally {
+      loading.value = false;
+    }
+  }
 
   return {
     personRegistration: personRegistration,
@@ -135,6 +160,7 @@ export const useAuthStore = defineStore("auth", () => {
     isAuthenticated,
     registerPerson,
     login,
+    logout,
     personLogin: personLogin,
   };
 });

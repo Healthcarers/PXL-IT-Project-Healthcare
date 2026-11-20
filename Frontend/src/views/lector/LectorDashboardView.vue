@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import CursistPreviewCard from "../../components/lector/CursistPreviewCard.vue";
-import LectorConfirmModal from "../../components/lector/LectorConfirmModal.vue";
+import ConfirmModal from "../../components/ConfirmModal.vue";
 import LectorTopbar from "../../components/lector/LectorTopbar.vue";
 import { useRoom } from "../../composables/useRoom";
 import { useAuthStore } from "../../stores/Authstore";
@@ -14,6 +14,7 @@ const PARTICIPANTS_POLL_MS = 5000;
 const props = defineProps<{
   code: string;
 }>();
+const emit = defineEmits<{ "request-logout": [] }>();
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -25,6 +26,7 @@ const {
   loadRoom,
   loadParticipants,
   closeRoom,
+  clearRoom,
 } = useRoom();
 
 const previewCollapsed = ref(false);
@@ -35,9 +37,20 @@ const statusNotice = ref<string | null>(null);
 const parameters = ref<Parameters>({
   ...DEFAULT_PARAMETERS,
 });
+const returningToCreate = ref(false);
 
 let participantsPollInterval: ReturnType<typeof setInterval> | null = null;
 let pollingParticipants = false;
+let returnTimer: ReturnType<typeof setTimeout> | undefined;
+let dashboardVersion = 0;
+
+function cancelPendingReturn() {
+  dashboardVersion++;
+  clearTimeout(returnTimer);
+  returningToCreate.value = false;
+  closeRoomModalOpen.value = false;
+  closingRoom.value = false;
+}
 
 const displayRoomCode = computed(
   () => currentRoom.value?.code ?? props.code.toUpperCase(),
@@ -115,23 +128,31 @@ async function initializeDashboard() {
   }
 }
 
-function handleConfirmLogout() {
-  logoutModalOpen.value = false;
-  statusNotice.value =
-    "Uitlogfunctionaliteit wordt gekoppeld zodra de logout-branch is gemerged.";
-}
-
 async function handleConfirmCloseRoom() {
+  if (closingRoom.value || returningToCreate.value) return;
+  const request = dashboardVersion;
   closingRoom.value = true;
   try {
-    await closeRoom();
+    const closed = await closeRoom();
+    if (request !== dashboardVersion || closed?.status !== "CLOSED") return;
     closeRoomModalOpen.value = false;
     stopParticipantsPolling();
-    await router.push({ name: "create-room" });
+    returningToCreate.value = true;
+    returnTimer = setTimeout(async () => {
+      clearRoom();
+      try {
+        const failure = await router.push({ name: "create-room" });
+        if (failure && request === dashboardVersion)
+          error.value = "Room aanmaken kon niet worden geopend.";
+      } catch {
+        if (request === dashboardVersion)
+          error.value = "Room aanmaken kon niet worden geopend.";
+      }
+    }, 5000);
   } catch {
-    closeRoomModalOpen.value = false;
+    if (request === dashboardVersion) closeRoomModalOpen.value = false;
   } finally {
-    closingRoom.value = false;
+    if (request === dashboardVersion) closingRoom.value = false;
   }
 }
 
@@ -142,11 +163,13 @@ onMounted(() => {
 watch(
   () => props.code,
   () => {
+    cancelPendingReturn();
     void initializeDashboard();
   },
 );
 
 onUnmounted(() => {
+  cancelPendingReturn();
   stopParticipantsPolling();
 });
 </script>
@@ -180,7 +203,26 @@ onUnmounted(() => {
           Sluiten
         </button>
       </div>
+    </main>
 
+    <LectorTopbar
+      :room-code="displayRoomCode"
+      :lector-name="lectorName"
+      :cursist-count="cursistCount"
+      :closing="closingRoom || returningToCreate"
+      @close-room="closeRoomModalOpen = true"
+      @request-logout="emit('request-logout')"
+    />
+    <main
+      class="mx-auto flex w-full max-w-[1360px] flex-1 flex-col gap-4 px-4 py-4 sm:px-6"
+    >
+      <p
+        v-if="returningToCreate"
+        role="status"
+        class="rounded-xl border border-[#ae9a64]/60 bg-[#141418] px-4 py-3 text-sm text-[#e4e4e7]"
+      >
+        Deze room is gesloten. Je gaat over 5 seconden terug naar Room aanmaken.
+      </p>
       <div
         v-if="error"
         role="alert"
@@ -228,17 +270,7 @@ onUnmounted(() => {
       </div>
     </main>
 
-    <LectorConfirmModal
-      :open="logoutModalOpen"
-      title="Uitloggen?"
-      message="Weet je zeker dat je wilt uitloggen?"
-      cancel-label="Annuleren"
-      confirm-label="Uitloggen"
-      @cancel="logoutModalOpen = false"
-      @confirm="handleConfirmLogout"
-    />
-
-    <LectorConfirmModal
+    <ConfirmModal
       :open="closeRoomModalOpen"
       title="Room sluiten?"
       message="Weet je zeker dat je deze room wilt sluiten? De simulatie wordt beëindigd voor alle verbonden cursisten."

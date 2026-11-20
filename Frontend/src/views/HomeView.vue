@@ -23,7 +23,7 @@ function openRoom() {
 </script>
 
 <template>
-  <main class="flex min-h-screen items-center justify-center bg-[#f7f5f0] px-4 py-10 text-black">
+  <main class="flex items-center justify-center bg-[#f7f5f0] px-4 py-10 text-black">
     <section class="w-full max-w-xl rounded-2xl border border-[#d6d5d2] bg-white p-8 sm:p-12">
       <div class="mb-6 h-1 w-14 bg-[#ae9a64]"></div>
 
