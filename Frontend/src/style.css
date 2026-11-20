@@ -87,3 +87,18 @@ input[type="reset"] {
   font-family: var(--pxl-font-heading);
   font-weight: 900;
 }
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+}
+
+body {
+  position: fixed;
+  inset: 0;
+  background: #050506;
+}

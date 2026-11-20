@@ -12,7 +12,7 @@ function toggleDefibrillator() {
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col box-border bg-[#050506] text-white">
+  <div class="flex h-dvh min-h-0 flex-col box-border bg-[#050506] text-white">
     <div class="flex h-11 shrink-0 items-center justify-between gap-4 border-b border-[#1a1a1d] px-5">
       <div class="flex items-center gap-2 text-xs text-[#8b8b94]">
         <span
