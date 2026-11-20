@@ -137,7 +137,7 @@ public class VitalsServiceTest {
     }
 
     @Test
-    void scenarioBloodPressureRangeDoesNotRelaxLiveUpdateLimits() {
+    void scenarioInvasiveBloodPressureRangeDoesNotRelaxLiveUpdateLimits() {
         var request = new VitalsUpdateRequest(75.0, 98.0, 15.0, 38.0, 1.0, 250.0, 80.0);
 
         assertThat(VitalsService.initialSnapshot(request))

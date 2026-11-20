@@ -14,8 +14,8 @@ const fields = [
   { key: 'heartRate', label: 'HF (bpm)', min: 0, max: 220 },
   { key: 'spo2', label: 'SpO₂ (%)', min: 50, max: 100 },
   { key: 'etco2', label: 'etCO₂ (mmHg)', min: 0, max: 100 },
-  { key: 'sysIbp', label: 'Systolische bloeddruk (mmHg)', min: 0, max: 300 },
-  { key: 'diasIbp', label: 'Diastolische bloeddruk (mmHg)', min: 0, max: 300 },
+  { key: 'sysIbp', label: 'Systolische invasieve bloeddruk (mmHg)', min: 0, max: 300 },
+  { key: 'diasIbp', label: 'Diastolische invasieve bloeddruk (mmHg)', min: 0, max: 300 },
   { key: 'respRate', label: 'AF (/min)', min: 0, max: 60 },
   { key: 'ampScale', label: 'Amplitude', min: 0.1, max: 3 },
 ] as const
