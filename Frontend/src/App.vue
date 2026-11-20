@@ -160,15 +160,22 @@ onUnmounted(() => {
             </button>
           </div>
         </div>
-        <span
-          v-else
-          class="justify-self-end rounded-full border border-pxl-gold px-3 py-1 text-xs"
-          >Cursist</span
-        >
+        <div v-else class="flex items-center gap-2.5 justify-self-end">
+          <span class="rounded-full border border-pxl-gold px-3 py-1 text-xs">
+            Cursist
+          </span>
+          <button
+            type="button"
+            class="rounded-full border border-white/75 px-3 py-1 text-xs hover:bg-white/10"
+            @click="requestLogout"
+          >
+            Uitloggen
+          </button>
+        </div>
       </div>
     </header>
     <div
-      v-if="showLectorNav && logoutNotice"
+      v-if="(showLectorNav || showCursistNav) && logoutNotice"
       role="status"
       class="flex items-center justify-between gap-3 bg-amber-50 px-4 py-3 text-sm text-amber-900 sm:px-8"
     >
@@ -191,7 +198,7 @@ onUnmounted(() => {
       <component :is="Component" v-else />
     </RouterView>
     <ConfirmModal
-      :open="showLectorNav && logoutModalOpen"
+      :open="(showLectorNav || showCursistNav) && logoutModalOpen"
       title="Uitloggen?"
       message="Weet je zeker dat je wilt uitloggen?"
       confirm-label="Uitloggen"

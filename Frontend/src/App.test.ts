@@ -161,6 +161,29 @@ describe('Scenario navigation', () => {
     wrapper.unmount()
   })
 
+  it('opent de uitlogbevestiging via de cursist-navbar', async () => {
+    auth.person = { role: 'CURSIST' }
+    auth.isAuthenticated.mockResolvedValue(auth.person)
+    await router.push('/')
+    const wrapper = mount(App, { global: { plugins: [router], stubs: { RouterView: true } } })
+
+    try {
+      const logoutButton = wrapper.get('header button')
+      expect(logoutButton.text()).toBe('Uitloggen')
+
+      await logoutButton.trigger('click')
+
+      expect(wrapper.get('[role="dialog"]').text()).toContain(
+        'Weet je zeker dat je wilt uitloggen?',
+      )
+      await wrapper.get('[role="dialog"]').findAll('button')
+        .find(button => button.text() === 'Annuleren')!.trigger('click')
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
+  })
+
   it('keert via Room aanmaken vanuit Scenario’s terug naar dezelfde actieve room', async () => {
     auth.person = { role: 'LECTOR' }
     auth.isAuthenticated.mockResolvedValue(auth.person)
