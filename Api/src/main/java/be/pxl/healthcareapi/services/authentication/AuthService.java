@@ -9,7 +9,7 @@ import be.pxl.healthcareapi.domein.RefreshToken;
 import be.pxl.healthcareapi.domein.TokenPair;
 import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.exception.BadRequestException;
-import be.pxl.healthcareapi.repos.PersonRepo;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -23,11 +23,11 @@ public class AuthService {
 
     private final RefreshTokenService refreshTokenService;
 
-    private final PersonRepo personRepo;
+    private final PersonRepository personRepo;
 
     private PasswordEncoder passwordEncoder;
 
-    public AuthService(PersonRepo userRepo, PasswordEncoder passwordEncoder, JwtService jwtService, RefreshTokenService refreshTokenService){
+    public AuthService(PersonRepository userRepo, PasswordEncoder passwordEncoder, JwtService jwtService, RefreshTokenService refreshTokenService){
         this.personRepo = userRepo;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;

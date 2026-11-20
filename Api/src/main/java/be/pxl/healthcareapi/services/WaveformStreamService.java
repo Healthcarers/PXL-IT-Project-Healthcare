@@ -3,7 +3,7 @@ package be.pxl.healthcareapi.services;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import be.pxl.healthcareapi.domein.waveforms.WaveformSource;
 import be.pxl.healthcareapi.dto.WaveformChunk;
-import be.pxl.healthcareapi.repos.VitalsRepository;
+import be.pxl.healthcareapi.repositories.VitalsRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.scheduling.annotation.Scheduled;

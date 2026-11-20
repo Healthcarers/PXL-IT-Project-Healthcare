@@ -9,7 +9,7 @@ import be.pxl.healthcareapi.dto.LoginRequest;
 import be.pxl.healthcareapi.dto.RegisterRequest;
 import be.pxl.healthcareapi.dto.RegisterResponse;
 import be.pxl.healthcareapi.exception.BadRequestException;
-import be.pxl.healthcareapi.repos.PersonRepo;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTests {
     @Mock
-    private PersonRepo personRepo;
+    private PersonRepository personRepo;
 
     @Mock
     private PasswordEncoder passwordEncoder;

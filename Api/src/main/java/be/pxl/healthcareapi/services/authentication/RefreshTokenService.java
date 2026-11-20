@@ -11,20 +11,20 @@ import java.util.HexFormat;
 
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.RefreshToken;
-import be.pxl.healthcareapi.repos.RefreshTokenRepo;
+import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.stereotype.Service;
 
 @Service
 public class RefreshTokenService {
 
-    private final RefreshTokenRepo refreshTokenRepository;
+    private final RefreshTokenRepository refreshTokenRepository;
     private final SecureRandom secureRandom = new SecureRandom();
 
     private static final long REFRESH_TOKEN_DAYS = 30;
 
     public RefreshTokenService(
-            RefreshTokenRepo refreshTokenRepository
+            RefreshTokenRepository refreshTokenRepository
     ) {
         this.refreshTokenRepository = refreshTokenRepository;
     }

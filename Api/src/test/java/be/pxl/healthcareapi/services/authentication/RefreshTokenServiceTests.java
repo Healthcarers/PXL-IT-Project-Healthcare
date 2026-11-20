@@ -2,7 +2,7 @@ package be.pxl.healthcareapi.services.authentication;
 
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.RefreshToken;
-import be.pxl.healthcareapi.repos.RefreshTokenRepo;
+import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +25,7 @@ public class RefreshTokenServiceTests {
     private record CreatedRefreshToken(String rawToken, RefreshToken storedToken) {}
 
     @Mock
-    private RefreshTokenRepo refreshTokenRepo;
+    private RefreshTokenRepository refreshTokenRepo;
 
     private RefreshTokenService refreshTokenService;
 
