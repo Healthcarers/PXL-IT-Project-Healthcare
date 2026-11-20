@@ -10,6 +10,7 @@ export interface VitalsResponse {
     ampScale: number;
     sysIbp: number;
     diasIbp: number;
+    temperature: number;
 }
 
 const VITALS_URL = "/vitals";
@@ -27,6 +28,7 @@ function normalize(v: VitalsResponse): VitalsResponse {
         ampScale: v.ampScale,
         sysIbp: Math.round(v.sysIbp),
         diasIbp: Math.round(v.diasIbp),
+        temperature: v.temperature,
     };
 }
 

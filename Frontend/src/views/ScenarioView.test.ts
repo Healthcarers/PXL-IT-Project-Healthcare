@@ -13,7 +13,7 @@ const draft: Scenario = {
   description: 'Oefenen met de trainingsmonitor.',
   initialVitals: {
     heartRate: 105, spo2: 98, etco2: 38, respRate: 15, ampScale: 1,
-    sysIbp: 120, diasIbp: 80,
+    sysIbp: 120, diasIbp: 80, temperature: 38.2,
   },
   feedbackItems: ['Monitor gecontroleerd'],
   status: 'DRAFT',
@@ -31,6 +31,7 @@ describe('ScenarioView', () => {
     await wrapper.get('#scenario-name').setValue(draft.name)
     await wrapper.get('#scenario-description').setValue(draft.description)
     await wrapper.get('#vital-heartRate').setValue('105')
+    await wrapper.get('#vital-temperature').setValue('38.2')
     await wrapper.get('#new-feedback').setValue(draft.feedbackItems[0])
     await wrapper.get('#new-feedback').trigger('keydown.enter')
     await wrapper.get('form').trigger('submit', { submitter: wrapper.get('#save-draft').element })
@@ -57,6 +58,7 @@ describe('ScenarioView', () => {
     expect(scenarioService.get).toHaveBeenCalledExactlyOnceWith(draft.id)
     expect(wrapper.get<HTMLInputElement>('#scenario-name').element.value).toBe(draft.name)
     expect(wrapper.get<HTMLInputElement>('#vital-heartRate').element.value).toBe('105')
+    expect(wrapper.get<HTMLInputElement>('#vital-temperature').element.value).toBe('38.2')
     await wrapper.get('[aria-label^="Verwijder feedbackitem"]').trigger('click')
     await wrapper.get('form').trigger('submit')
     expect(wrapper.get('[role="alert"]').text()).toContain('minstens één feedbackitem')

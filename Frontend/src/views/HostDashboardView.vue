@@ -268,6 +268,7 @@ onUnmounted(cancelPending)
                 <li class="rounded-full bg-red-100 px-2 py-0.5 text-red-800">BD {{ values.sysIbp }}/{{ values.diasIbp }}</li>
                 <li class="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">SpO₂ {{ values.spo2 }} %</li>
                 <li class="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">etCO₂ {{ values.etco2 }}</li>
+                <li class="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">Temp {{ values.temperature }} °C</li>
               </ul>
               <p v-if="saving" role="status" class="mt-2 text-xs">Scenariokeuze opslaan…</p>
               <p v-if="scenarioError" role="alert" class="mt-2 text-xs text-red-800">{{ scenarioError }}</p>
