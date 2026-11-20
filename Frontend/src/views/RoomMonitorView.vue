@@ -5,8 +5,10 @@ import CursistDashboard from './CursistDashboard.vue'
 import RoomClosedDialog from '../components/RoomClosedDialog.vue'
 import { roomService } from '../services/roomService'
 import { useRoomStore } from '../stores/roomStore'
+import { provideMonitorRoom } from '../composables/useMonitorRoom'
 
 const props = defineProps<{ code: string }>()
+provideMonitorRoom(() => props.code)
 const router = useRouter()
 const roomStore = useRoomStore()
 const state = ref<'checking' | 'started' | 'closed' | 'unavailable'>('checking')

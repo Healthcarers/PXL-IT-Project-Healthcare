@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WaveformChunk } from '../types/waveform.ts';
 import { useSweepWaveform } from './useSweepWaveform';
+import { effectScope, nextTick, ref } from 'vue';
 
 const stubs = vi.hoisted(() => ({
     handler: null as null | ((chunk: WaveformChunk) => void),
@@ -24,15 +25,23 @@ vi.mock('../services/stompClient.ts', () => ({
     subscribeTopic: stubs.subscribeTopic
 }));
 
+const room = ref<string>();
+vi.mock('./useMonitorRoom', async importOriginal => ({
+    ...await importOriginal<typeof import('./useMonitorRoom')>(),
+    useMonitorRoom: () => room,
+}));
+
 const WINDOW_MS = 160;
 const RATE = 250;
 const CAPACITY = 40;
 const GAP = 10;
 
 beforeEach(() => {
+    stubs.unmountHooks.forEach(hook => hook());
     vi.clearAllMocks();
     stubs.unmountHooks.length = 0;
     stubs.handler = null;
+    room.value = undefined;
     stubs.subscribeTopic.mockImplementation((topic: string, cb: (c: WaveformChunk) => void) => {
         stubs.topic = topic;
         stubs.handler = cb;
@@ -41,7 +50,9 @@ beforeEach(() => {
 });
 
 function mount(channel = 'ecg') {
-    return useSweepWaveform(channel, WINDOW_MS, RATE);
+    const scope = effectScope();
+    stubs.unmountHooks.push(() => scope.stop());
+    return scope.run(() => useSweepWaveform(channel, WINDOW_MS, RATE))!;
 }
 
 function deliver(startIndex: number, samples: number[]) {
@@ -60,6 +71,21 @@ describe('subscription', () => {
     it('starts with no points and a cursor at zero', () => {
         const { points, cursorX } = mount();
 
+        expect(points.value).toEqual([]);
+        expect(cursorX.value).toBe(0);
+    });
+
+    it('switches room topics and clears the previous room waveform', async () => {
+        room.value = 'ABC123';
+        const { points, cursorX } = mount();
+        deliver(12, [99]);
+        expect(stubs.topic).toBe('/topic/rooms/ABC123/waveform/ecg');
+
+        room.value = 'DEF456';
+        await nextTick();
+
+        expect(stubs.unsubscribe).toHaveBeenCalledOnce();
+        expect(stubs.topic).toBe('/topic/rooms/DEF456/waveform/ecg');
         expect(points.value).toEqual([]);
         expect(cursorX.value).toBe(0);
     });

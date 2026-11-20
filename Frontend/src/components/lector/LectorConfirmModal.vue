@@ -63,6 +63,8 @@ onUnmounted(() => {
         {{ message }}
       </p>
 
+      <slot />
+
       <div class="mt-7 flex items-center justify-end gap-3">
         <button
           type="button"

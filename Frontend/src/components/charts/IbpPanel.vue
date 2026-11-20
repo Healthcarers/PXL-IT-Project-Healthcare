@@ -4,6 +4,7 @@ import MonitorCard from "./MonitorCard.vue";
 import SweepChart from "./SweepChart.vue";
 import {useChannelActive} from "../../composables/useChannelActive.ts";
 import {useSweepWaveform} from "../../composables/useSweepWaveform.ts";
+import { useVitals } from "../../composables/useVitals";
 
 const props = withDefaults(defineProps<{
   preview?: boolean;
@@ -24,6 +25,9 @@ const active = computed<boolean>({
   },
 });
 const { points, cursorX } = useSweepWaveform('ibp', WINDOW_MS, SAMPLE_RATE);
+const { vitals } = useVitals();
+const yMax = computed(() => Math.max(210,
+  Math.ceil(Math.max(vitals.value?.sysIbp ?? 120, vitals.value?.diasIbp ?? 80) / 50) * 50 + 10));
 </script>
 
 <template>
@@ -34,7 +38,7 @@ const { points, cursorX } = useSweepWaveform('ibp', WINDOW_MS, SAMPLE_RATE);
       :cursor-x="cursorX"
       :window-ms="WINDOW_MS"
       :y-min="-10"
-      :y-max="210"
+      :y-max="yMax"
       :show-cursor="true"
       :interactive="!preview"
       color="#ff0707"

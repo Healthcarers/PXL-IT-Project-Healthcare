@@ -11,6 +11,7 @@ import {
 import type { WaveformChunk } from '../types/waveform';
 import { useChannelActive } from './useChannelActive';
 import {useVitals} from "./useVitals.ts";
+import { monitorTopic, useMonitorRoom } from './useMonitorRoom';
 
 const RATE = 250;                             // must match the ECG source sampleRate
 const R_THRESHOLD = 0.5;                      // mV, the R peak is about 1.0
@@ -46,34 +47,41 @@ export function useHeartbeatSound() {
     let prev = 0;
     let lastBeat = -Infinity;
 
-    const unsubscribe = subscribeTopic<WaveformChunk>('/topic/waveform/ecg', chunk => {
-        const n = chunk.samples.length;
-        if (n === 0 || !isAudioRunning()) return;
+    const room = useMonitorRoom();
+    watch(room, (code, _, onCleanup) => {
+        offsets.length = 0;
+        prev = 0;
+        lastBeat = -Infinity;
+        const unsubscribe = subscribeTopic<WaveformChunk>(monitorTopic(code, 'waveform/ecg'), chunk => {
+            const n = chunk.samples.length;
+            if (n === 0 || !isAudioRunning()) return;
 
-        // Map sample time to audio time. The smallest recent offset comes from the
-        // least-delayed chunk, so network jitter doesn't push beeps late.
-        const newestSec = (chunk.startIndex + n - 1) / RATE;
-        offsets.push(audioNow() - newestSec);
-        if (offsets.length > OFFSET_WINDOW) offsets.shift();
-        const base = Math.min(...offsets);
+            // Map sample time to audio time. The smallest recent offset comes from the
+            // least-delayed chunk, so network jitter doesn't push beeps late.
+            const newestSec = (chunk.startIndex + n - 1) / RATE;
+            offsets.push(audioNow() - newestSec);
+            if (offsets.length > OFFSET_WINDOW) offsets.shift();
+            const base = Math.min(...offsets);
 
-        for (let i = 0; i < n; i++) {
-            const idx = chunk.startIndex + i;
-            const v = chunk.samples[i];
-            const rising = prev < R_THRESHOLD && v >= R_THRESHOLD;
-            prev = v;
+            for (let i = 0; i < n; i++) {
+                const idx = chunk.startIndex + i;
+                const v = chunk.samples[i];
+                const rising = prev < R_THRESHOLD && v >= R_THRESHOLD;
+                prev = v;
 
-            if (!rising || idx - lastBeat < MIN_BEAT_GAP) continue;
-            lastBeat = idx;
+                if (!rising || idx - lastBeat < MIN_BEAT_GAP) continue;
+                lastBeat = idx;
 
-            if (!active.value) continue;
+                if (!active.value) continue;
 
-            const t = base + idx / RATE - SOUND_LEAD_S;
-            if (t >= audioNow() - MAX_LATE_S) {
-                scheduleBeep(Math.max(t, audioNow()), beepHz.value);
+                const t = base + idx / RATE - SOUND_LEAD_S;
+                if (t >= audioNow() - MAX_LATE_S) {
+                    scheduleBeep(Math.max(t, audioNow()), beepHz.value);
+                }
             }
-        }
-    });
+        });
+        onCleanup(unsubscribe);
+    }, { immediate: true });
 
     watch(
         [active, flatline],
@@ -86,7 +94,6 @@ export function useHeartbeatSound() {
     );
 
     onUnmounted(() => {
-        unsubscribe();
         stopFlatline();
     });
 }
