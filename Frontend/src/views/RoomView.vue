@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, watch } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRoom } from '../composables/useRoom'
 import { useAuthStore } from '../stores/Authstore'
+import RoomClosedDialog from '../components/RoomClosedDialog.vue'
 
 const props = defineProps<{
   code: string
@@ -21,8 +22,10 @@ const {
   joinRoom,
   startRoom,
   closeRoom,
+  clearRoom,
 } = useRoom()
 
+const showClosedDialog = ref(false)
 const currentUserId = computed(() => authStore.person?.id ?? null)
 
 const isHost = computed(() =>
@@ -68,6 +71,7 @@ const sortedParticipants = computed(() => {
 // Polling voor cursisten
 let roomStatusInterval: ReturnType<typeof setInterval> | null = null
 let checkingRoomStatus = false
+let roomRequest = 0
 
 function stopRoomStatusPolling() {
   if (roomStatusInterval !== null) {
@@ -80,21 +84,34 @@ async function checkRoomStatus() {
   if (checkingRoomStatus) return
 
   checkingRoomStatus = true
+  const request = roomRequest
 
   try {
     const room = await loadRoom(props.code)
-
-    if (room.status === 'STARTED') {
-      stopRoomStatusPolling()
-      await router.push('/monitor')
-    } else if (room.status === 'CLOSED') {
-      stopRoomStatusPolling()
-    }
+    if (request === roomRequest) await handleParticipantStatus(room.status)
   } catch (err) {
     console.error('Roomstatus controleren mislukt:', err)
   } finally {
     checkingRoomStatus = false
   }
+}
+
+async function handleParticipantStatus(status: 'OPEN' | 'STARTED' | 'CLOSED') {
+  if (status === 'OPEN') return
+
+  stopRoomStatusPolling()
+  if (!isParticipant.value) return
+
+  if (status === 'CLOSED') {
+    showClosedDialog.value = true
+  } else {
+    await router.push({ name: 'monitor', query: { code: props.code } })
+  }
+}
+
+function returnToJoinPage() {
+  clearRoom()
+  return router.replace({ name: 'home' })
 }
 
 function startRoomStatusPolling() {
@@ -106,6 +123,8 @@ function startRoomStatusPolling() {
 }
 
 async function refreshRoom() {
+  const request = ++roomRequest
+  showClosedDialog.value = false
   stopRoomStatusPolling()
 
   try {
@@ -113,14 +132,18 @@ async function refreshRoom() {
       await authStore.isAuthenticated()
     }
 
-    await loadRoom(props.code)
-    await loadParticipants(props.code)
+    if (request !== roomRequest) return
+    const code = props.code
+    const room = await loadRoom(code)
+    if (request !== roomRequest) return
+    await loadParticipants(code)
+    if (request !== roomRequest) return
 
     if (authStore.person?.role === 'CURSIST') {
-      if (currentRoom.value?.status === 'STARTED') {
-        await router.push('/monitor')
-      } else if (currentRoom.value?.status === 'OPEN') {
+      if (room.status === 'OPEN') {
         startRoomStatusPolling()
+      } else {
+        await handleParticipantStatus(room.status)
       }
     }
   } catch {
@@ -172,12 +195,14 @@ onMounted(refreshRoom)
 watch(() => props.code, refreshRoom)
 
 onUnmounted(() => {
+  roomRequest++
   stopRoomStatusPolling()
 })
 </script>
 
 <template>
-  <main class="min-h-screen bg-[#f7f5f0] px-4 py-10 text-black">
+  <RoomClosedDialog v-if="showClosedDialog" @acknowledge="returnToJoinPage" />
+  <main v-else class="bg-[#f7f5f0] px-4 py-10 text-black">
     <section class="mx-auto w-full max-w-4xl">
 
       <div class="rounded-2xl border border-[#d6d5d2] bg-white p-6 sm:p-10">

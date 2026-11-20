@@ -7,13 +7,15 @@ import { useRoom } from '../composables/useRoom'
 import { useAuthStore } from '../stores/Authstore'
 import type { Room, RoomParticipant } from '../types/room'
 
-const { pushMock } = vi.hoisted(() => ({
+const { pushMock, replaceMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
+  replaceMock: vi.fn(),
 }))
 
 vi.mock('vue-router', () => ({
   useRouter: () => ({
     push: pushMock,
+    replace: replaceMock,
   }),
 }))
 
@@ -64,6 +66,7 @@ describe('RoomView', () => {
   const joinRoomMock = vi.fn()
   const startRoomMock = vi.fn()
   const closeRoomMock = vi.fn()
+  const clearRoomMock = vi.fn()
   const isAuthenticatedMock = vi.fn()
 
   beforeEach(() => {
@@ -93,6 +96,7 @@ describe('RoomView', () => {
       joinRoom: joinRoomMock,
       startRoom: startRoomMock,
       closeRoom: closeRoomMock,
+      clearRoom: clearRoomMock,
     } as unknown as ReturnType<typeof useRoom>)
 
     vi.mocked(useAuthStore).mockReturnValue({
@@ -197,7 +201,7 @@ describe('RoomView', () => {
 
     currentRoom.value = startedRoom
     loadRoomMock.mockResolvedValue(startedRoom)
-    authPerson = { id: 'user-3', role: 'CURSIST' }
+    authPerson = { id: 'user-2', role: 'CURSIST' }
 
     vi.mocked(useAuthStore).mockReturnValue({
       person: authPerson,
@@ -207,10 +211,33 @@ describe('RoomView', () => {
     const wrapper = mountView()
     await flushPromises()
 
-    expect(pushMock).toHaveBeenCalledWith('/monitor')
+    expect(pushMock).toHaveBeenCalledWith({ name: 'monitor', query: { code: 'ABC123' } })
     expect(wrapper.text()).toContain('Simulatie gestart')
 
     wrapper.unmount()
+  })
+
+  it('stuurt een wachtende deelnemer via de sluitingsmelding terug naar room joinen', async () => {
+    vi.useFakeTimers()
+    vi.mocked(useAuthStore).mockReturnValue({
+      person: { id: participant.userId, role: 'CURSIST' },
+    } as ReturnType<typeof useAuthStore>)
+    loadRoomMock.mockResolvedValueOnce(mockRoom).mockResolvedValue({ ...mockRoom, status: 'CLOSED' })
+    const wrapper = mountView()
+    try {
+      await flushPromises()
+      await vi.advanceTimersByTimeAsync(2000)
+
+      expect(wrapper.get('dialog').text()).toContain('De room waar je in zat is gesloten')
+      expect(replaceMock).not.toHaveBeenCalled()
+      await wrapper.get('dialog button').trigger('click')
+      expect(clearRoomMock).toHaveBeenCalledOnce()
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(replaceMock).toHaveBeenCalledExactlyOnceWith({ name: 'home' })
+    } finally {
+      wrapper.unmount()
+      vi.useRealTimers()
+    }
   })
 
   it('sluit de room niet wanneer de host annuleren kiest', async () => {

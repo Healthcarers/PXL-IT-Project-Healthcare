@@ -1,17 +1,12 @@
 <script>
 import { connected } from "../services/stompClient.ts";
 import { defineComponent } from "vue";
-import EcgPanel from "../components/charts/EcgPanel.vue";
-import HeartRateCard from "../components/charts/HeartRateCard.vue";
-import SpO2Panel from "../components/charts/SpO2Panel.vue";
-import SpO2Card from "../components/charts/SpO2Card.vue";
-import Etco2Panel from "../components/charts/Etco2Panel.vue";
-import Etco2Card from "../components/charts/Etco2Card.vue";
-import IBPCard from "../components/charts/IBPCard.vue";
+import PatientMonitorGrid from "../components/charts/PatientMonitorGrid.vue";
 
 export default defineComponent({
   components: {
-    IBPCard, Etco2Card, Etco2Panel, SpO2Card, SpO2Panel, HeartRateCard, EcgPanel },
+    PatientMonitorGrid,
+  },
   computed: {
     connected() {
       return connected.value;
@@ -22,7 +17,7 @@ export default defineComponent({
 
 <template>
   <div
-      class="flex h-screen flex-col box-border bg-[#050506] text-white"
+      class="flex min-h-0 flex-col box-border bg-[#050506] text-white"
   >
     <header
         class="flex h-13 shrink-0 items-center gap-4 border-b border-[#1a1a1d] px-5"
@@ -40,21 +35,6 @@ export default defineComponent({
       />
     </header>
 
-    <main
-        class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-5 p-5 box-border"
-    >
-      <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1">
-        <EcgPanel />
-        <SpO2Panel />
-        <Etco2Panel />
-      </section>
-
-      <section class="flex min-h-0 flex-col gap-3.5 [&>*]:flex-1">
-        <HeartRateCard />
-        <SpO2Card />
-        <Etco2Card />
-        <IBPCard />
-      </section>
-    </main>
+    <PatientMonitorGrid />
   </div>
 </template>

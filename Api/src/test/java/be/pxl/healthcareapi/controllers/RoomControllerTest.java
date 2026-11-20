@@ -11,8 +11,10 @@ import be.pxl.healthcareapi.services.RoomService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -36,6 +38,9 @@ class RoomControllerTest {
 
     @MockitoBean
     private RoomService roomService;
+
+    @MockitoBean
+    private SimpMessagingTemplate messaging;
 
     @Test
     void createRoomReturnsCreatedRoom() throws Exception {
@@ -141,6 +146,7 @@ class RoomControllerTest {
     @Test
     void joinRoomReturnsCreatedParticipant() throws Exception {
         UUID userId = UUID.randomUUID();
+        UUID roomId = UUID.randomUUID();
 
         Room room = new Room(
                 "ABC123",
@@ -149,6 +155,7 @@ class RoomControllerTest {
                 UUID.randomUUID()
         );
 
+        ReflectionTestUtils.setField(room, "id", roomId);
         RoomParticipant participant = new RoomParticipant(room, userId);
 
         when(roomService.joinRoom("ABC123", userId))
@@ -162,6 +169,7 @@ class RoomControllerTest {
                 .andExpect(jsonPath("$.joinedAt").exists());
 
         verify(roomService).joinRoom("ABC123", userId);
+        verify(messaging).convertAndSend("/topic/rooms/" + roomId + "/members-changed", Boolean.TRUE);
     }
 
     @Test
@@ -242,6 +250,7 @@ class RoomControllerTest {
                 .andExpect(content().string(
                         "Deze room is niet meer beschikbaar."
                 ));
+        verifyNoInteractions(messaging);
     }
 
     @Test
