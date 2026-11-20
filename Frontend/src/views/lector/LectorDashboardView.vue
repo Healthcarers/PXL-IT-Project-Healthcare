@@ -6,6 +6,8 @@ import LectorConfirmModal from "../../components/lector/LectorConfirmModal.vue";
 import LectorTopbar from "../../components/lector/LectorTopbar.vue";
 import { useRoom } from "../../composables/useRoom";
 import { useAuthStore } from "../../stores/Authstore";
+import ParametersPanel from "../../components/lector/ParametersPanel.vue";
+import { DEFAULT_PARAMETERS, type Parameters } from "../../types/lector.ts";
 
 const PARTICIPANTS_POLL_MS = 5000;
 
@@ -30,6 +32,9 @@ const logoutModalOpen = ref(false);
 const closeRoomModalOpen = ref(false);
 const closingRoom = ref(false);
 const statusNotice = ref<string | null>(null);
+const parameters = ref<Parameters>({
+  ...DEFAULT_PARAMETERS,
+});
 
 let participantsPollInterval: ReturnType<typeof setInterval> | null = null;
 let pollingParticipants = false;
@@ -157,7 +162,9 @@ onUnmounted(() => {
       @request-logout="logoutModalOpen = true"
     />
 
-    <main class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 px-4 py-5 sm:px-6">
+    <main
+      class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 px-4 py-5 sm:px-6"
+    >
       <div
         v-if="statusNotice"
         role="status"
@@ -214,22 +221,10 @@ onUnmounted(() => {
           </section>
         </div>
 
-        <section
-          aria-label="Parameters (realtime)"
-          class="flex min-h-[420px] flex-col rounded-2xl border border-[#222228] bg-[#0e0e11] p-4 sm:p-5"
-        >
-          <h2 class="!m-0 text-base font-bold text-white">
-            Parameters (realtime)
-          </h2>
-
-          <div
-            class="mt-4 flex flex-1 items-center justify-center rounded-xl border border-dashed border-[#2c2c35] bg-[#141418]/60 p-8 text-center"
-          >
-            <p class="!m-0 max-w-sm text-sm text-[#8e8e99]">
-              De bedieningselementen voor parameters worden per parameter in een aparte feature toegevoegd.
-            </p>
-          </div>
-        </section>
+        <ParametersPanel
+          v-model:parameters="parameters"
+          :expanded="previewCollapsed"
+        />
       </div>
     </main>
 
