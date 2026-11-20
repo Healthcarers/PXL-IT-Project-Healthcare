@@ -4,8 +4,9 @@ import be.pxl.healthcareapi.config.SecurityConfig;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
-import be.pxl.healthcareapi.repos.PersonRepo;
-import be.pxl.healthcareapi.repos.RefreshTokenRepo;
+import be.pxl.healthcareapi.repositories.AccessTokenRepository;
+import be.pxl.healthcareapi.repositories.PersonRepository;
+import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import be.pxl.healthcareapi.services.admin.AdminService;
 import be.pxl.healthcareapi.services.person.PersonService;
 import jakarta.servlet.http.Cookie;
@@ -44,10 +45,13 @@ class AdminControllerTests {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private PersonRepo personRepo;
+    private PersonRepository personRepo;
 
     @MockitoBean
-    private RefreshTokenRepo refreshTokenRepo;
+    private RefreshTokenRepository refreshTokenRepo;
+
+    @MockitoBean
+    private AccessTokenRepository accessTokenRepo;
 
     @MockitoBean
     private PersonService personService;

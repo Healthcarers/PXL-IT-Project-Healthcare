@@ -1,5 +1,6 @@
-package be.pxl.healthcareapi.domein;
+package be.pxl.healthcareapi.domein.tokens;
 
+import be.pxl.healthcareapi.domein.Person;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
