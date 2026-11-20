@@ -4,7 +4,10 @@ import { mount } from "@vue/test-utils";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createPinia, setActivePinia } from "pinia";
 import { useAuthStore } from "../../stores/Authstore";
+import router from "../../router";
 import RegistrationView from "./RegistrationView.vue";
+
+vi.mock("../../router", () => ({ default: { push: vi.fn() } }));
 
 describe("RegistrationView.vue", () => {
   beforeEach(() => {
@@ -71,6 +74,7 @@ describe("RegistrationView.vue", () => {
     await wrapper.get("form").trigger("submit");
 
     expect(registerPerson).toHaveBeenCalledOnce();
+    expect(router.push).toHaveBeenCalledWith("/login");
   });
 
   it("toont een foutmelding uit de store", () => {
