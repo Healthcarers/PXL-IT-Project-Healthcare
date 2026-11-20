@@ -6,26 +6,24 @@ import be.pxl.healthcareapi.dto.AdminAccountResponse;
 import be.pxl.healthcareapi.dto.AdminStatsResponse;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
 import be.pxl.healthcareapi.exception.BadRequestException;
+import be.pxl.healthcareapi.repositories.AccessTokenRepository;
 import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import be.pxl.healthcareapi.services.person.PersonService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+@RequiredArgsConstructor
 @Service
 public class AdminService {
     private final PersonRepository personRepo;
     private final RefreshTokenRepository refreshTokenRepo;
     private final PersonService personService;
-
-    public AdminService(PersonRepository personRepo, RefreshTokenRepository refreshTokenRepo, PersonService personService) {
-        this.personRepo = personRepo;
-        this.refreshTokenRepo = refreshTokenRepo;
-        this.personService = personService;
-    }
+    private final AccessTokenRepository accessTokenRepository;
 
     @PreAuthorize("hasRole('ADMIN')")
     public AdminStatsResponse getStats() {
@@ -77,6 +75,7 @@ public class AdminService {
         }
 
         refreshTokenRepo.deleteAllByPerson(personToDelete);
+        accessTokenRepository.deleteAllByPerson(personToDelete);
         personRepo.delete(personToDelete);
     }
 }

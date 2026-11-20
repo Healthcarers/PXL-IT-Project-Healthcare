@@ -6,6 +6,7 @@ import be.pxl.healthcareapi.dto.AdminAccountResponse;
 import be.pxl.healthcareapi.dto.AdminStatsResponse;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
 import be.pxl.healthcareapi.exception.BadRequestException;
+import be.pxl.healthcareapi.repositories.AccessTokenRepository;
 import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import be.pxl.healthcareapi.services.person.PersonService;
@@ -38,6 +39,9 @@ class AdminServiceTests {
 
     @Mock
     private RefreshTokenRepository refreshTokenRepo;
+
+    @Mock
+    private AccessTokenRepository accessTokenRepo;
 
     @Mock
     private PersonService personService;
@@ -115,8 +119,9 @@ class AdminServiceTests {
 
         adminService.deletePerson(request);
 
-        var deletionOrder = inOrder(refreshTokenRepo, personRepo);
+        var deletionOrder = inOrder(refreshTokenRepo, accessTokenRepo, personRepo);
         deletionOrder.verify(refreshTokenRepo).deleteAllByPerson(person);
+        deletionOrder.verify(accessTokenRepo).deleteAllByPerson(person);
         deletionOrder.verify(personRepo).delete(person);
     }
 

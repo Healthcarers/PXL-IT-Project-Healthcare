@@ -4,6 +4,7 @@ import be.pxl.healthcareapi.config.SecurityConfig;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
+import be.pxl.healthcareapi.repositories.AccessTokenRepository;
 import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import be.pxl.healthcareapi.services.admin.AdminService;
@@ -48,6 +49,9 @@ class AdminControllerTests {
 
     @MockitoBean
     private RefreshTokenRepository refreshTokenRepo;
+
+    @MockitoBean
+    private AccessTokenRepository accessTokenRepo;
 
     @MockitoBean
     private PersonService personService;
