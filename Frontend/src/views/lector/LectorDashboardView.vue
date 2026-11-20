@@ -175,36 +175,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-[#050506] text-white">
-    <LectorTopbar
-      :room-code="displayRoomCode"
-      :lector-name="lectorName"
-      :cursist-count="cursistCount"
-      :closing="closingRoom"
-      @close-room="closeRoomModalOpen = true"
-      @request-logout="logoutModalOpen = true"
-    />
-
-    <main
-      class="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-4 px-4 py-5 sm:px-6"
-    >
-      <div
-        v-if="statusNotice"
-        role="status"
-        class="flex items-center justify-between gap-3 rounded-xl border border-[#ae9a64]/60 bg-[#141418] px-4 py-3 text-sm text-[#e4e4e7]"
-      >
-        <span>{{ statusNotice }}</span>
-        <button
-          type="button"
-          aria-label="Sluit melding"
-          class="rounded-lg px-2 py-1 text-xs font-semibold text-[#a1a1aa] transition hover:bg-white/10 hover:text-white"
-          @click="statusNotice = null"
-        >
-          Sluiten
-        </button>
-      </div>
-    </main>
-
+  <div class="flex min-h-screen flex-col bg-[#050506] text-white">gi
     <LectorTopbar
       :room-code="displayRoomCode"
       :lector-name="lectorName"
