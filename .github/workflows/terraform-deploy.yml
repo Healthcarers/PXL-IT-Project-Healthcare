@@ -22,6 +22,7 @@ jobs:
   deploy:
     name: "Deploy Azure Infrastructure, Web Gateway & API"
     runs-on: ubuntu-latest
+    environment: azure-deploy
     outputs:
       web_url: ${{ steps.outputs.outputs.web_url }}
     defaults:
