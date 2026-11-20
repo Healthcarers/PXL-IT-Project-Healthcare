@@ -1,8 +1,12 @@
-import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, ref } from 'vue'
 import EnergyDial from './EnergyDial.vue'
 
 describe('EnergyDial.vue', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
   it('displays the selected energy in J alongside the dial and helper text', () => {
     const wrapper = mount(EnergyDial, {
       props: { modelValue: 150 },
@@ -41,23 +45,66 @@ describe('EnergyDial.vue', () => {
     expect(atMax.get('button[aria-label="Verlaag energie met 10 J"]').attributes('disabled')).toBeUndefined()
   })
 
-  it('updates energy with keyboard arrow, Home, and End keys', async () => {
+  it('does not change energy via keyboard or wheel events on the dial', async () => {
     const wrapper = mount(EnergyDial, {
       props: { modelValue: 150, min: 10, max: 360, step: 10 },
     })
     const slider = wrapper.get('[role="slider"]')
+    expect(slider.attributes('tabindex')).toBeUndefined()
 
     await slider.trigger('keydown', { key: 'ArrowUp' })
-    await slider.trigger('keydown', { key: 'ArrowDown' })
-    await slider.trigger('keydown', { key: 'End' })
-    await slider.trigger('keydown', { key: 'Home' })
+    await slider.trigger('wheel', { deltaY: -100 })
 
-    expect(wrapper.emitted('update:modelValue')).toEqual([
-      [160],
-      [140],
-      [360],
-      [10],
-    ])
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  it('repeats + and - steps while pressed and stops on pointer release or limit', async () => {
+    vi.useFakeTimers()
+
+    const Host = defineComponent({
+      components: { EnergyDial },
+      setup() {
+        const value = ref(150)
+        return { value }
+      },
+      template: '<EnergyDial v-model="value" :min="10" :max="200" :step="10" />',
+    })
+
+    const wrapper = mount(Host)
+    const increaseBtn = wrapper.get('button[aria-label="Verhoog energie met 10 J"]')
+    const decreaseBtn = wrapper.get('button[aria-label="Verlaag energie met 10 J"]')
+
+    // Short press + followed by browser click should only step once (150 -> 160)
+    await increaseBtn.trigger('pointerdown', { pointerType: 'touch', button: 0 })
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('160 J')
+    window.dispatchEvent(new PointerEvent('pointerup'))
+    await increaseBtn.trigger('click')
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('160 J')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('160 J')
+
+    // Holding + past 350ms delay repeatedly increments by 10 J and stops at max (200 J)
+    await increaseBtn.trigger('pointerdown', { pointerType: 'touch', button: 0 })
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('170 J')
+    await vi.advanceTimersByTimeAsync(349)
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('170 J')
+    await vi.advanceTimersByTimeAsync(1)
+    await vi.advanceTimersByTimeAsync(90 * 4)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('200 J')
+    window.dispatchEvent(new PointerEvent('pointerup'))
+
+    // Holding - decreases repeatedly and stops on pointerleave
+    await decreaseBtn.trigger('pointerdown', { pointerType: 'mouse', button: 0 })
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('190 J')
+    await vi.advanceTimersByTimeAsync(350 + 90 * 2)
+    await flushPromises()
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('170 J')
+    await decreaseBtn.trigger('pointerleave')
+    await vi.advanceTimersByTimeAsync(500)
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('170 J')
+
+    wrapper.unmount()
   })
 
   it('rotates and updates value when dragging the dial with the pointer', async () => {

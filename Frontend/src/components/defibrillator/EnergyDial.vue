@@ -10,6 +10,8 @@ const MIN_ANGLE_DEG = -135
 const MAX_ANGLE_DEG = 135
 const TOTAL_SWEEP_DEG = MAX_ANGLE_DEG - MIN_ANGLE_DEG
 const TICK_COUNT = 8
+const HOLD_DELAY_MS = 350
+const HOLD_INTERVAL_MS = 90
 
 const props = withDefaults(defineProps<{
   modelValue: number
@@ -28,6 +30,11 @@ const emit = defineEmits<{
 
 const dialRef = ref<SVGSVGElement | null>(null)
 const isDragging = ref(false)
+let holdDelayTimer: ReturnType<typeof setTimeout> | null = null
+let holdRepeatTimer: ReturnType<typeof setInterval> | null = null
+let activeHoldDirection: -1 | 1 | null = null
+let suppressClickDirection: -1 | 1 | null = null
+let clickResetTimer: ReturnType<typeof setTimeout> | null = null
 
 const clampedValue = computed(() => snapAndClamp(props.modelValue))
 const canDecrease = computed(() => clampedValue.value > props.min)
@@ -95,43 +102,99 @@ function onPointerMove(event: PointerEvent) {
 
 function onPointerDown(event: PointerEvent) {
   isDragging.value = true
-  dialRef.value?.focus()
   updateFromPointer(event.clientX, event.clientY)
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerup', stopDragging)
   window.addEventListener('pointercancel', stopDragging)
 }
 
-function onWheel(event: WheelEvent) {
-  if (event.deltaY === 0) return
-  const direction = event.deltaY < 0 ? 1 : -1
-  emitValue(clampedValue.value + direction * props.step)
-}
-
-function onKeydown(event: KeyboardEvent) {
-  switch (event.key) {
-    case 'ArrowUp':
-    case 'ArrowRight':
-      event.preventDefault()
-      emitValue(clampedValue.value + props.step)
-      break
-    case 'ArrowDown':
-    case 'ArrowLeft':
-      event.preventDefault()
-      emitValue(clampedValue.value - props.step)
-      break
-    case 'Home':
-      event.preventDefault()
-      emitValue(props.min)
-      break
-    case 'End':
-      event.preventDefault()
-      emitValue(props.max)
-      break
+function clearHoldTimers() {
+  if (holdDelayTimer !== null) {
+    clearTimeout(holdDelayTimer)
+    holdDelayTimer = null
+  }
+  if (holdRepeatTimer !== null) {
+    clearInterval(holdRepeatTimer)
+    holdRepeatTimer = null
   }
 }
 
-onUnmounted(stopDragging)
+function scheduleClickSuppressionReset() {
+  if (clickResetTimer !== null) {
+    clearTimeout(clickResetTimer)
+  }
+  clickResetTimer = setTimeout(() => {
+    suppressClickDirection = null
+    clickResetTimer = null
+  }, 0)
+}
+
+function stopButtonHold() {
+  clearHoldTimers()
+  if (activeHoldDirection === null) return
+  activeHoldDirection = null
+  window.removeEventListener('pointerup', stopButtonHold)
+  window.removeEventListener('pointercancel', stopButtonHold)
+  scheduleClickSuppressionReset()
+}
+
+function stepInDirection(direction: -1 | 1) {
+  emitValue(clampedValue.value + direction * props.step)
+}
+
+function canStepInDirection(direction: -1 | 1): boolean {
+  return direction > 0 ? canIncrease.value : canDecrease.value
+}
+
+function startButtonHold(event: PointerEvent, direction: -1 | 1) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+  if (!canStepInDirection(direction)) return
+
+  stopButtonHold()
+  if (clickResetTimer !== null) {
+    clearTimeout(clickResetTimer)
+    clickResetTimer = null
+  }
+  suppressClickDirection = direction
+  activeHoldDirection = direction
+  stepInDirection(direction)
+
+  window.addEventListener('pointerup', stopButtonHold)
+  window.addEventListener('pointercancel', stopButtonHold)
+
+  holdDelayTimer = setTimeout(() => {
+    holdDelayTimer = null
+    if (activeHoldDirection !== direction || !canStepInDirection(direction)) {
+      stopButtonHold()
+      return
+    }
+    holdRepeatTimer = setInterval(() => {
+      if (activeHoldDirection !== direction || !canStepInDirection(direction)) {
+        stopButtonHold()
+        return
+      }
+      stepInDirection(direction)
+    }, HOLD_INTERVAL_MS)
+  }, HOLD_DELAY_MS)
+}
+
+function onStepButtonClick(direction: -1 | 1) {
+  if (suppressClickDirection === direction) {
+    suppressClickDirection = null
+    return
+  }
+  stepInDirection(direction)
+}
+
+onUnmounted(() => {
+  stopDragging()
+  stopButtonHold()
+  if (clickResetTimer !== null) {
+    clearTimeout(clickResetTimer)
+    clickResetTimer = null
+  }
+  suppressClickDirection = null
+})
 </script>
 
 <template>
@@ -139,17 +202,14 @@ onUnmounted(stopDragging)
     <svg
       ref="dialRef"
       viewBox="0 0 140 140"
-      class="size-32 shrink-0 cursor-pointer touch-none select-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[#facc15]/60 sm:size-36"
+      class="size-32 shrink-0 cursor-pointer touch-none select-none rounded-full sm:size-36"
       role="slider"
-      tabindex="0"
       aria-label="Defibrillator energie in joules"
       :aria-valuemin="min"
       :aria-valuemax="max"
       :aria-valuenow="clampedValue"
       :aria-valuetext="`${clampedValue} J`"
       @pointerdown="onPointerDown"
-      @wheel.prevent="onWheel"
-      @keydown="onKeydown"
     >
       <g>
         <line
@@ -207,8 +267,11 @@ onUnmounted(stopDragging)
           type="button"
           :disabled="!canDecrease"
           :aria-label="`Verlaag energie met ${step} J`"
-          class="flex h-9 min-w-10 cursor-pointer items-center justify-center rounded-lg border border-[#2f2f37] bg-[#18181c] px-3 text-lg font-bold text-white transition-colors hover:border-[#facc15] hover:text-[#facc15] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[#2f2f37] disabled:hover:text-white"
-          @click="emitValue(clampedValue - step)"
+          class="flex h-9 min-w-10 touch-none select-none cursor-pointer items-center justify-center rounded-lg border border-[#2f2f37] bg-[#18181c] px-3 text-lg font-bold text-white transition-colors hover:border-[#facc15] hover:text-[#facc15] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[#2f2f37] disabled:hover:text-white"
+          @pointerdown="startButtonHold($event, -1)"
+          @pointerleave="stopButtonHold"
+          @contextmenu.prevent
+          @click="onStepButtonClick(-1)"
         >
           -
         </button>
@@ -221,8 +284,11 @@ onUnmounted(stopDragging)
           type="button"
           :disabled="!canIncrease"
           :aria-label="`Verhoog energie met ${step} J`"
-          class="flex h-9 min-w-10 cursor-pointer items-center justify-center rounded-lg border border-[#2f2f37] bg-[#18181c] px-3 text-lg font-bold text-white transition-colors hover:border-[#facc15] hover:text-[#facc15] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[#2f2f37] disabled:hover:text-white"
-          @click="emitValue(clampedValue + step)"
+          class="flex h-9 min-w-10 touch-none select-none cursor-pointer items-center justify-center rounded-lg border border-[#2f2f37] bg-[#18181c] px-3 text-lg font-bold text-white transition-colors hover:border-[#facc15] hover:text-[#facc15] disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:border-[#2f2f37] disabled:hover:text-white"
+          @pointerdown="startButtonHold($event, 1)"
+          @pointerleave="stopButtonHold"
+          @contextmenu.prevent
+          @click="onStepButtonClick(1)"
         >
           +
         </button>
