@@ -30,10 +30,8 @@ const {
 } = useRoom();
 
 const previewCollapsed = ref(false);
-const logoutModalOpen = ref(false);
 const closeRoomModalOpen = ref(false);
 const closingRoom = ref(false);
-const statusNotice = ref<string | null>(null);
 const parameters = ref<Parameters>({
   ...DEFAULT_PARAMETERS,
 });
@@ -175,7 +173,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="flex min-h-screen flex-col bg-[#050506] text-white">gi
+  <div class="flex min-h-screen flex-col bg-[#050506] text-white">
     <LectorTopbar
       :room-code="displayRoomCode"
       :lector-name="lectorName"

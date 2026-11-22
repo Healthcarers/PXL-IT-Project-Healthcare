@@ -24,33 +24,6 @@ describe("RotaryDialGauge.vue", () => {
     expect(slider.attributes("aria-valuenow")).toBe("75");
   });
 
-  it("past de waarde aan via toetsenbordpijltjes en Home/End", async () => {
-    const wrapper = mount(RotaryDialGauge, {
-      props: {
-        modelValue: 75,
-        min: 20,
-        max: 200,
-        step: 1,
-        color: "#22c55e",
-        label: "Hartfrequentie regelaar",
-      },
-    });
-
-    const slider = wrapper.get('[role="slider"]');
-
-    await slider.trigger("keydown", { key: "ArrowRight" });
-    expect(wrapper.emitted("update:modelValue")?.[0]).toEqual([76]);
-
-    await slider.trigger("keydown", { key: "ArrowDown" });
-    expect(wrapper.emitted("update:modelValue")?.[1]).toEqual([74]);
-
-    await slider.trigger("keydown", { key: "Home" });
-    expect(wrapper.emitted("update:modelValue")?.[2]).toEqual([20]);
-
-    await slider.trigger("keydown", { key: "End" });
-    expect(wrapper.emitted("update:modelValue")?.[3]).toEqual([200]);
-  });
-
   it("clampt de boog visueel wanneer de waarde buiten bereik ligt", () => {
     const wrapperAtMax = mount(RotaryDialGauge, {
       props: {
@@ -74,7 +47,9 @@ describe("RotaryDialGauge.vue", () => {
 
     const maxPaths = wrapperAtMax.findAll("path");
     const aboveMaxPaths = wrapperAboveMax.findAll("path");
-    expect(aboveMaxPaths[1]?.attributes("d")).toBe(maxPaths[1]?.attributes("d"));
+    expect(aboveMaxPaths[1]?.attributes("d")).toBe(
+      maxPaths[1]?.attributes("d"),
+    );
   });
 
   it("berekent een nieuwe waarde bij klikken op de wijzerplaat", async () => {

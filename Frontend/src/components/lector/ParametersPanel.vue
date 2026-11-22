@@ -142,6 +142,14 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <p
+      v-if="store.error"
+      role="alert"
+      class="mb-4 rounded-xl border border-[#ef4444] bg-[#ef4444]/10 px-4 py-3 text-sm text-[#fca5a5]"
+    >
+      {{ store.error }}
+    </p>
+
     <div
       v-if="activeErrorMessage"
       role="alert"

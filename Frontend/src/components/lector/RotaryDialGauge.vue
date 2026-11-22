@@ -140,7 +140,6 @@ function handlePointerUp() {
     :class="sizeClass"
     class="shrink-0 select-none touch-none cursor-pointer outline-none focus-visible:ring-2 focus-visible:ring-white/40 rounded-full"
     role="slider"
-    tabindex="0"
     :aria-label="label"
     :aria-valuemin="min"
     :aria-valuemax="max"
