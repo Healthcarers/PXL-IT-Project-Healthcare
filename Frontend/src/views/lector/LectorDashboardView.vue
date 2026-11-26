@@ -8,6 +8,8 @@ import { useRoom } from "../../composables/useRoom";
 import { useAuthStore } from "../../stores/Authstore";
 import { provideMonitorRoom } from "../../composables/useMonitorRoom";
 import ScenarioPlaybackCard from "../../components/lector/ScenarioPlaybackCard.vue";
+import ParametersPanel from "../../components/lector/ParametersPanel.vue";
+import { DEFAULT_PARAMETERS, type Parameters } from "../../types/lector.ts";
 
 const PARTICIPANTS_POLL_MS = 5000;
 
@@ -33,6 +35,9 @@ const {
 const previewCollapsed = ref(false);
 const closeRoomModalOpen = ref(false);
 const closingRoom = ref(false);
+const parameters = ref<Parameters>({
+  ...DEFAULT_PARAMETERS,
+});
 const returningToCreate = ref(false);
 
 let participantsPollInterval: ReturnType<typeof setInterval> | null = null;
@@ -138,9 +143,11 @@ async function handleConfirmCloseRoom() {
       clearRoom();
       try {
         const failure = await router.push({ name: "create-room" });
-        if (failure && request === dashboardVersion) error.value = "Room aanmaken kon niet worden geopend.";
+        if (failure && request === dashboardVersion)
+          error.value = "Room aanmaken kon niet worden geopend.";
       } catch {
-        if (request === dashboardVersion) error.value = "Room aanmaken kon niet worden geopend.";
+        if (request === dashboardVersion)
+          error.value = "Room aanmaken kon niet worden geopend.";
       }
     }, 5000);
   } catch {
@@ -170,10 +177,22 @@ onUnmounted(() => {
 
 <template>
   <div class="flex min-h-screen flex-col bg-[#050506] text-white">
-    <LectorTopbar :room-code="displayRoomCode" :lector-name="lectorName" :cursist-count="cursistCount"
-      :closing="closingRoom || returningToCreate" @close-room="closeRoomModalOpen = true" @request-logout="emit('request-logout')" />
-    <main class="mx-auto flex w-full max-w-[1360px] flex-1 flex-col gap-4 px-4 py-4 sm:px-6">
-      <p v-if="returningToCreate" role="status" class="rounded-xl border border-[#ae9a64]/60 bg-[#141418] px-4 py-3 text-sm text-[#e4e4e7]">
+    <LectorTopbar
+      :room-code="displayRoomCode"
+      :lector-name="lectorName"
+      :cursist-count="cursistCount"
+      :closing="closingRoom || returningToCreate"
+      @close-room="closeRoomModalOpen = true"
+      @request-logout="emit('request-logout')"
+    />
+    <main
+      class="mx-auto flex w-full max-w-[1360px] flex-1 flex-col gap-4 px-4 py-4 sm:px-6"
+    >
+      <p
+        v-if="returningToCreate"
+        role="status"
+        class="rounded-xl border border-[#ae9a64]/60 bg-[#141418] px-4 py-3 text-sm text-[#e4e4e7]"
+      >
         Deze room is gesloten. Je gaat over 5 seconden terug naar Room aanmaken.
       </p>
       <div
@@ -208,22 +227,10 @@ onUnmounted(() => {
           <ScenarioPlaybackCard :code="code" :disabled="closingRoom || returningToCreate" />
         </div>
 
-        <section
-          aria-label="Parameters (realtime)"
-          class="flex min-h-[420px] flex-col rounded-2xl border border-[#222228] bg-[#0e0e11] p-4 sm:p-5"
-        >
-          <h2 class="!m-0 text-base font-bold text-white">
-            Parameters (realtime)
-          </h2>
-
-          <div
-            class="mt-4 flex flex-1 items-center justify-center rounded-xl border border-dashed border-[#2c2c35] bg-[#141418]/60 p-8 text-center"
-          >
-            <p class="!m-0 max-w-sm text-sm text-[#8e8e99]">
-              De bedieningselementen voor parameters worden per parameter in een aparte feature toegevoegd.
-            </p>
-          </div>
-        </section>
+        <ParametersPanel
+          v-model:parameters="parameters"
+          :expanded="previewCollapsed"
+        />
       </div>
     </main>
 

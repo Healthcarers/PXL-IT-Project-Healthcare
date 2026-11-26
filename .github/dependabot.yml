@@ -1,0 +1,73 @@
+version: 2
+updates:
+  # 1. Backend Spring Boot / Java dependencies (Api/pom.xml)
+  - package-ecosystem: "maven"
+    directory: "/Api"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "08:00"
+      timezone: "Europe/Brussels"
+    target-branch: "dev"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "backend"
+      - "security"
+
+  # 2. Frontend Vue 3 / Node.js dependencies (Frontend/package.json)
+  - package-ecosystem: "npm"
+    directory: "/Frontend"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "08:00"
+      timezone: "Europe/Brussels"
+    target-branch: "dev"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "security"
+
+  # 3. Backend Docker base images (Api/Dockerfile)
+  - package-ecosystem: "docker"
+    directory: "/Api"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "08:00"
+      timezone: "Europe/Brussels"
+    target-branch: "dev"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # 4. Frontend & Nginx Gateway Docker base images (Frontend/Dockerfile)
+  - package-ecosystem: "docker"
+    directory: "/Frontend"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "08:00"
+      timezone: "Europe/Brussels"
+    target-branch: "dev"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "docker"
+
+  # 5. GitHub Actions workflow actions (.github/workflows/)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "08:00"
+      timezone: "Europe/Brussels"
+    target-branch: "dev"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "ci"
