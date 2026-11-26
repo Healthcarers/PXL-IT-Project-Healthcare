@@ -19,7 +19,6 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   "update:modelValue": [value: number];
-  "out-of-range": [];
   release: [value: number];
 }>();
 

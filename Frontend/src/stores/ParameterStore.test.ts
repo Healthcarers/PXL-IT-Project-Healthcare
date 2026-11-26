@@ -38,14 +38,14 @@ describe("ParameterStore", () => {
     });
   });
 
-  describe("changeHeartRate", () => {
-    it("stuurt de nieuwe hartfrequentie door", async () => {
+  describe("changeParameters", () => {
+    it("stuurt de gewijzigde parameter door", async () => {
       const patchSpy = vi.spyOn(api, "patch").mockResolvedValue({
         data: undefined,
       });
       const store = useParameterStore();
 
-      const result = await store.changeHeartRate(120);
+      const result = await store.changeParameters("heartRate", 120);
 
       expect(patchSpy).toHaveBeenCalledWith("/vitals", { heartRate: 120 });
       expect(result).toBe(true);
@@ -56,7 +56,7 @@ describe("ParameterStore", () => {
       vi.spyOn(api, "patch").mockRejectedValue(new Error("Network error"));
       const store = useParameterStore();
 
-      const result = await store.changeHeartRate(120);
+      const result = await store.changeParameters("spo2", 95);
 
       expect(result).toBe(false);
       expect(store.error).toBe("Network error");

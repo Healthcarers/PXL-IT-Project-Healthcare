@@ -2,21 +2,25 @@ import { defineStore } from "pinia";
 import { ref } from "vue";
 import api from "../services/refreshService";
 import { DEFAULT_PARAMETERS, type Parameters } from "../types/lector";
+import type { ParameterKey } from "../types/lector";
 
 export const useParameterStore = defineStore("parameters", () => {
   const error = ref<string | null>(null);
 
-  async function changeHeartRate(heartRate: number): Promise<boolean> {
+  async function changeParameters(
+    parameter: ParameterKey,
+    value: number,
+  ): Promise<boolean> {
     error.value = null;
 
     try {
-      await api.patch("/vitals", { heartRate: heartRate });
+      await api.patch("/vitals", { [parameter]: value });
       return true;
     } catch (err: unknown) {
       error.value =
         err instanceof Error
           ? err.message
-          : "De hartfrequentie kon niet worden aangepast.";
+          : "De parameter kon niet worden aangepast.";
       return false;
     }
   }
@@ -40,7 +44,7 @@ export const useParameterStore = defineStore("parameters", () => {
   }
 
   return {
-    changeHeartRate,
+    changeParameters,
     getParameters,
     error,
   };

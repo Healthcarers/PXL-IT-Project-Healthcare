@@ -1,4 +1,4 @@
-import type { VitalsResponse } from "../composables/useVitals";
+import type { VitalsResponse } from "./vitals";
 
 export type EcgRhythm =
   | "Sinusritme"
@@ -119,6 +119,7 @@ export interface DefaultParameters extends Pick<
 export const DEFAULT_PARAMETERS: Parameters = {
   heartRate: 75,
   spo2: 98,
+  ampScale: 1,
   sysIbp: 120,
   diasIbp: 80,
   etco2: 38,
@@ -127,13 +128,8 @@ export const DEFAULT_PARAMETERS: Parameters = {
   rhythm: "Sinusritme",
 };
 
-export interface Parameters {
-  heartRate: number;
-  spo2: number;
-  sysIbp: number;
-  diasIbp: number;
-  etco2: number;
-  respRate: number;
+export interface Parameters extends VitalsResponse {
   temperature: number;
   rhythm: EcgRhythm;
 }
+

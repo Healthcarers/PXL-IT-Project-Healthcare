@@ -10,7 +10,6 @@ const props = withDefaults(
   defineProps<{
     modelValue: number;
     horizontal?: boolean;
-    outOfRange?: boolean;
   }>(),
   {
     horizontal: false,
@@ -27,14 +26,11 @@ const bounds = PARAMETER_BOUNDS.heartRate;
 const COLOR = "#22c55e";
 
 const isOutOfRange = computed(
-  () =>
-    props.outOfRange ||
-    props.modelValue < bounds.min ||
-    props.modelValue > bounds.max,
+  () => props.modelValue < bounds.min || props.modelValue > bounds.max,
 );
 
 async function handleChange(heartRate: number) {
-  await store.changeHeartRate(heartRate);
+  await store.changeParameters("heartRate", heartRate);
 }
 
 function stepBy(delta: number) {
@@ -44,7 +40,7 @@ function stepBy(delta: number) {
     return;
   }
   emit("update:modelValue", next);
-  store.changeHeartRate(next);  
+  store.changeParameters("heartRate", next);
 }
 </script>
 
