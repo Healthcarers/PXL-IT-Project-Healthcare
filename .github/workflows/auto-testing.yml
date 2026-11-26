@@ -58,7 +58,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: 'Frontend/package-lock.json'
 
@@ -70,7 +70,7 @@ jobs:
         working-directory: ./Frontend
         env:
           VITE_API_BASE_URL: http://localhost:8080
-        run: npx vitest run --reporter=default --reporter=junit --outputFile=junit.xml
+        run: npx vitest run --exclude "**/e2e/**" --reporter=default --reporter=junit --outputFile=junit.xml
 
       - name: Upload Frontend Test Reports
         if: always()
@@ -80,17 +80,138 @@ jobs:
           path: Frontend/junit.xml
           if-no-files-found: ignore
 
+  e2e-tests:
+    name: End-to-End Tests (Playwright)
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: PXL_Healthcare_DB
+          POSTGRES_USER: admin
+          POSTGRES_PASSWORD: e2e_test_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if Playwright E2E Tests Exist
+        id: check_e2e
+        run: |
+          if [ -f "Frontend/playwright.config.ts" ] && [ -d "Frontend/e2e" ]; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+            echo "No Frontend/playwright.config.ts found on this branch yet — skipping E2E execution."
+          fi
+
+      - name: Set up JDK 21
+        if: steps.check_e2e.outputs.exists == 'true'
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+          cache-dependency-path: 'Api/pom.xml'
+
+      - name: Set up Node.js
+        if: steps.check_e2e.outputs.exists == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: 'Frontend/package-lock.json'
+
+      - name: Start Spring Boot API & Seed E2E Test Data
+        if: steps.check_e2e.outputs.exists == 'true'
+        working-directory: ./Api
+        env:
+          DB_PASSWORD: e2e_test_password
+          SECURITY_JWT_SECRET: e2e-playwright-jwt-secret-key-minimum-32-characters-long
+        run: |
+          chmod +x ./mvnw
+          nohup ./mvnw spring-boot:run -B > /tmp/api-e2e.log 2>&1 &
+
+          echo "Waiting for Spring Boot API on http://localhost:8090/api/channels..."
+          for i in $(seq 1 40); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8090/api/channels || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Spring Boot API is UP (HTTP 200)!"
+              break
+            fi
+            if [ "$i" = "40" ]; then
+              echo "Spring Boot API failed to start within 120s. Logs:"
+              cat /tmp/api-e2e.log
+              exit 1
+            fi
+            sleep 3
+          done
+
+          echo "Seeding E2E accounts (cursist@test.com and lector@test.com)..."
+          curl -s -X POST http://localhost:8090/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"firstname":"Test","lastname":"Cursist","email":"cursist@test.com","password":"test1234","passwordRepeated":"test1234"}' >/dev/null
+
+          curl -s -X POST http://localhost:8090/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"firstname":"Test","lastname":"Lector","email":"lector@test.com","password":"test1234","passwordRepeated":"test1234"}' >/dev/null
+
+          PGPASSWORD=e2e_test_password psql -h localhost -p 5432 -U admin -d PXL_Healthcare_DB \
+            -c "UPDATE person SET role = 1 WHERE email = 'lector@test.com';"
+
+          echo "Logging in as lector@test.com and seeding a PUBLISHED scenario for E2E room tests..."
+          curl -s -c /tmp/lector_cookies.txt -X POST http://localhost:8090/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"lector@test.com","password":"test1234"}' >/dev/null
+
+          curl -s -b /tmp/lector_cookies.txt -X POST http://localhost:8090/api/scenarios \
+            -H "Content-Type: application/json" \
+            -d '{"name":"E2E Standaard Scenario","description":"Automatisch aangemaakt scenario voor Playwright E2E tests","initialVitals":{"heartRate":75,"spo2":98,"etco2":38,"respRate":16,"ampScale":1.0,"sysIbp":120,"diasIbp":80,"temperature":37.0},"feedbackItems":["Controleer vitale parameters"],"status":"PUBLISHED"}' >/dev/null
+
+      - name: Install Frontend Dependencies & Playwright Chromium
+        if: steps.check_e2e.outputs.exists == 'true'
+        working-directory: ./Frontend
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright E2E Tests
+        if: steps.check_e2e.outputs.exists == 'true'
+        working-directory: ./Frontend
+        env:
+          CI: 'true'
+          VITE_API_BASE_URL: http://localhost:8090/api
+          VITE_WS_BASE_URL: ws://localhost:8090/ws
+          PLAYWRIGHT_JUNIT_OUTPUT_NAME: playwright-junit.xml
+        run: npx playwright test --reporter=list,junit
+
+      - name: Upload Playwright E2E JUnit Report
+        if: always() && steps.check_e2e.outputs.exists == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-test-reports
+          path: Frontend/playwright-junit.xml
+          if-no-files-found: ignore
+
   report-to-xray:
     name: Report Results to Jira Xray
     runs-on: ubuntu-latest
-    needs: [ backend-tests, frontend-tests ]
+    needs: [ backend-tests, frontend-tests, e2e-tests ]
     if: always()
 
     steps:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Download Backend Test Reports
         uses: actions/download-artifact@v4
@@ -106,11 +227,19 @@ jobs:
           path: frontend-reports
         continue-on-error: true
 
+      - name: Download Playwright E2E Test Reports
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-test-reports
+          path: e2e-reports
+        continue-on-error: true
+
       - name: Merge Test Reports
         run: |
           mkdir -p all-reports
           [ -d backend-reports ] && cp backend-reports/*.xml all-reports/ 2>/dev/null || true
           [ -d frontend-reports ] && cp frontend-reports/*.xml all-reports/ 2>/dev/null || true
+          [ -d e2e-reports ] && cp e2e-reports/*.xml all-reports/ 2>/dev/null || true
           
           if ls all-reports/*.xml 1> /dev/null 2>&1; then
             npx junit-report-merger merged-test-results.xml "all-reports/*.xml"
