@@ -1,3 +1,4 @@
+
 import { ref, watch } from "vue";
 import api from "../services/refreshService.ts";
 import { connected, subscribeTopic } from "../services/stompClient.ts";
@@ -16,64 +17,57 @@ export interface VitalsResponse {
 export function useVitals() {
     const room = useMonitorRoom();
     const vitals = ref<VitalsResponse | null>(null);
-    const error = ref('');
-    watch([room, connected], async ([code], _, onCleanup) => {
-        let active = true;
-        let receivedMessage = false;
-        vitals.value = null;
-        const unsubscribe = subscribeTopic<VitalsResponse>(monitorTopic(code, 'vitals'), msg => {
-            if (!active) return;
-            receivedMessage = true;
-            vitals.value = msg;
-            error.value = '';
-        });
-        onCleanup(() => {
-            active = false;
-            unsubscribe();
-        });
-import type { VitalsResponse } from "../types/vitals";
+    const error = ref("");
 
-const VITALS_URL = "/vitals";
-const VITALS_TOPIC = "/topic/vitals";
-const vitals = ref<VitalsResponse | null>(null);
-let started = false;
+    watch(
+        [room, connected],
+        async ([code], _, onCleanup) => {
+            let active = true;
+            let receivedMessage = false;
 
-function normalize(v: VitalsResponse): VitalsResponse {
-    return {
-        heartRate: Math.round(v.heartRate),
-        spo2: Math.round(v.spo2),
-        etco2: Math.round(v.etco2),
-        respRate: Math.round(v.respRate),
-        ampScale: v.ampScale,
-        sysIbp: Math.round(v.sysIbp),
-        diasIbp: Math.round(v.diasIbp),
-    };
-}
+            vitals.value = null;
+            error.value = "";
 
-function start(): void {
-    if (started) return;
-    started = true;
+            const unsubscribe = subscribeTopic<VitalsResponse>(
+                monitorTopic(code, "vitals"),
+                (msg) => {
+                    if (!active) return;
 
-    subscribeTopic<VitalsResponse>(VITALS_TOPIC, msg => {
-       vitals.value = normalize(msg);
-    });
+                    receivedMessage = true;
+                    vitals.value = msg;
+                    error.value = "";
+                }
+            );
 
-    watch(connected, async isConnected => {
-        if (!isConnected) return;
-        let previous = vitals.value;
-        try {
-            const path = code ? `/rooms/${encodeURIComponent(code)}/vitals` : '/vitals';
-            const res = await api.get<VitalsResponse>(path);
-            if (active && !receivedMessage) {
-                vitals.value = res.data;
-                error.value = '';
+            onCleanup(() => {
+                active = false;
+                unsubscribe();
+            });
+
+            if (!connected.value) return;
+
+            try {
+                const path = code
+                    ? `/rooms/${encodeURIComponent(code)}/vitals`
+                    : "/vitals";
+
+                const response = await api.get<VitalsResponse>(path);
+
+                if (active && !receivedMessage) {
+                    vitals.value = response.data;
+                    error.value = "";
+                }
+            } catch (cause) {
+                if (active && !receivedMessage) {
+                    error.value =
+                        "De monitorwaarden konden niet worden opgehaald.";
+
+                    console.error(error.value, cause);
+                }
             }
-        } catch (cause) {
-            if (active && !receivedMessage) {
-                error.value = 'De monitorwaarden konden niet worden opgehaald.';
-                console.error(error.value, cause);
-            }
-        }
-    }, { immediate: true });
+        },
+        { immediate: true }
+    );
+
     return { vitals, error };
 }
