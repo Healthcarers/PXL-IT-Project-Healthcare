@@ -68,6 +68,10 @@ jobs:
               -target="azurerm_role_assignment.web_acr_pull" \
               -target="azurerm_container_registry.acr" \
               -target="azurerm_monitor_diagnostic_setting.db_diagnostics" \
+              -target="azurerm_subnet_nat_gateway_association.aca_nat" \
+              -target="azurerm_nat_gateway_public_ip_association.nat_ip_assoc" \
+              -target="azurerm_nat_gateway.nat" \
+              -target="azurerm_public_ip.nat_ip" \
               -target="azurerm_postgresql_flexible_server_firewall_rule.allow_container_app_env" \
               -target="azurerm_postgresql_flexible_server_firewall_rule.allowed_ips" \
               -target="azurerm_postgresql_flexible_server_database.appdb" \
