@@ -119,9 +119,9 @@ variable "api_max_replicas" {
 }
 
 variable "api_scale_concurrent_requests" {
-  description = "Concurrent HTTP requests per replica before KEDA scales the API out"
+  description = "Concurrent HTTP requests/sec per replica before KEDA scales the API out (50 RPS = 750 requests per 15s evaluation window, preventing false scale-outs during normal usage while scaling 1->2->3->4->5 under 300+ request load tests)"
   type        = number
-  default     = 2
+  default     = 50
 }
 
 variable "web_min_replicas" {
@@ -137,9 +137,9 @@ variable "web_max_replicas" {
 }
 
 variable "web_scale_concurrent_requests" {
-  description = "Concurrent HTTP requests per replica before KEDA scales the Web Gateway out"
+  description = "Concurrent HTTP requests/sec per replica before KEDA scales the Web Gateway out"
   type        = number
-  default     = 20
+  default     = 100
 }
 
 variable "nginx_auth_rate_limit" {

@@ -75,7 +75,10 @@ if ($env:TF_VAR_use_acr -ne "false" -and [string]::IsNullOrWhiteSpace($env:TF_VA
     terraform apply -auto-approve `
         -target="azurerm_container_registry.acr" `
         -target="azurerm_role_assignment.api_acr_pull" `
-        -target="azurerm_role_assignment.web_acr_pull"
+        -target="azurerm_role_assignment.web_acr_pull" `
+        -target="azurerm_key_vault.kv" `
+        -target="azurerm_role_assignment.deployer_secrets_officer" `
+        -target="azurerm_role_assignment.api_secrets_user"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "`n[ERROR] ACR provisioning failed." -ForegroundColor Red
         exit $LASTEXITCODE
