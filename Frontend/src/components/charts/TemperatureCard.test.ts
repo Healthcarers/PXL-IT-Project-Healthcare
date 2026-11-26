@@ -60,6 +60,10 @@ describe('TemperatureCard', () => {
 
     expect(wrapper.text()).toContain('36.5')
 
+    // Temperatuurkaart terug uitschakelen
+    await button.trigger('click')
+    expect(button.attributes('aria-pressed')).toBe('false')
+
     wrapper.unmount()
   })
 
@@ -80,14 +84,12 @@ describe('TemperatureCard', () => {
 
   it('formats whole temperatures with one decimal place', async () => {
     const wrapper = mount(TemperatureCard)
-    const receive = stubs.state.receive!
-
-    receive({ ...initial, temperature: 36 })
-    await nextTick()
-
     const button = wrapper.get('[role="button"]')
 
     await button.trigger('click')
+
+    stubs.state.receive!({ ...initial, temperature: 36 })
+    await nextTick()
 
     expect(wrapper.text()).toContain('36.0')
 
