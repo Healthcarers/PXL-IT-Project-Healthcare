@@ -65,14 +65,14 @@ export const PARAMETER_BOUNDS: Record<ParameterKey, ParameterBounds> = {
       "De hartslag moet tussen 0 en 220 bpm liggen. De waarde is niet doorgestuurd naar de cursisten.",
   },
   spo2: {
-    min: 50,
+    min: 10,
     max: 100,
     step: 1,
     unit: "%",
-    rangeLabel: "bereik 50–100 %",
-    outOfRangeLabel: "buiten bereik 50–100",
+    rangeLabel: "bereik 10–100 %",
+    outOfRangeLabel: "buiten bereik 10–100",
     errorMessage:
-      "De SpO₂ moet tussen 50 en 100 % liggen. De waarde is niet doorgestuurd naar de cursisten.",
+      "De SpO₂ moet tussen 10 en 100 % liggen. De waarde is niet doorgestuurd naar de cursisten.",
   },
   sysIbp: IBP_BOUNDS,
   diasIbp: IBP_BOUNDS,
@@ -132,4 +132,3 @@ export interface Parameters extends VitalsResponse {
   temperature: number;
   rhythm: EcgRhythm;
 }
-
