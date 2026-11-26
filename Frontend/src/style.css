@@ -88,17 +88,36 @@ input[type="reset"] {
   font-weight: 900;
 }
 
-html,
-body {
+html {
   height: 100%;
-  margin: 0;
-  overflow: hidden;
   overscroll-behavior: none;
   touch-action: manipulation;
 }
 
 body {
-  position: fixed;
-  inset: 0;
-  background: #050506;
+  margin: 0;
+  min-width: 320px;
+  min-height: 100%;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  min-height: 100%;
+}
+
+button,
+a,
+input,
+select,
+textarea,
+[role="button"] {
+  touch-action: manipulation;
+}
+
+.scroll-container {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
