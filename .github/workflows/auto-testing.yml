@@ -135,7 +135,7 @@ jobs:
         working-directory: ./Api
         env:
           DB_PASSWORD: e2e_test_password
-          SECURITY_JWT_SECRET: e2e-playwright-jwt-secret-key-minimum-32-characters-long
+          SECURITY_JWT_SECRET: ZTJlLXBsYXl3cmlnaHQtand0LXNlY3JldC1rZXktMzJieXRlcyE=
         run: |
           chmod +x ./mvnw
           nohup ./mvnw spring-boot:run -B > /tmp/api-e2e.log 2>&1 &
