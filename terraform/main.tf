@@ -423,13 +423,13 @@ resource "azurerm_postgresql_flexible_server_database" "appdb" {
   collation = "en_US.utf8"
 }
 
-# Allow ONLY our Container Apps Environment's static outbound IP to connect over SSL
+# Allow ONLY our VNet NAT Gateway's dedicated static outbound Public IP to connect over SSL
 # (blocks both the public internet and all other Azure tenants/subscriptions)
 resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_container_app_env" {
   name             = "allow-container-app-env"
   server_id        = azurerm_postgresql_flexible_server.db.id
-  start_ip_address = azurerm_container_app_environment.env.static_ip_address
-  end_ip_address   = azurerm_container_app_environment.env.static_ip_address
+  start_ip_address = azurerm_public_ip.nat_ip.ip_address
+  end_ip_address   = azurerm_public_ip.nat_ip.ip_address
 }
 
 # Optional developer IP whitelist rules
@@ -465,6 +465,35 @@ resource "azurerm_subnet" "aca_subnet" {
       actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
     }
   }
+}
+
+# Dedicated NAT Gateway forces all outbound Container App traffic through 1 fixed Public IP
+resource "azurerm_public_ip" "nat_ip" {
+  name                = "${var.project_name}-nat-ip"
+  location            = azurerm_resource_group.rg.location
+  resource_group_name = azurerm_resource_group.rg.name
+  allocation_method   = "Static"
+  sku                 = "Standard"
+  tags                = local.common_tags
+}
+
+resource "azurerm_nat_gateway" "nat" {
+  name                    = "${var.project_name}-nat-gw"
+  location                = azurerm_resource_group.rg.location
+  resource_group_name     = azurerm_resource_group.rg.name
+  sku_name                = "Standard"
+  idle_timeout_in_minutes = 10
+  tags                    = local.common_tags
+}
+
+resource "azurerm_nat_gateway_public_ip_association" "nat_ip_assoc" {
+  nat_gateway_id       = azurerm_nat_gateway.nat.id
+  public_ip_address_id = azurerm_public_ip.nat_ip.id
+}
+
+resource "azurerm_subnet_nat_gateway_association" "aca_nat" {
+  subnet_id      = azurerm_subnet.aca_subnet.id
+  nat_gateway_id = azurerm_nat_gateway.nat.id
 }
 
 resource "azurerm_container_app_environment" "env" {
@@ -656,6 +685,9 @@ resource "azurerm_container_app" "api" {
     azurerm_key_vault_secret.db_password,
     azurerm_key_vault_secret.jwt_secret,
     azurerm_key_vault_secret.appinsights_connection_string,
+    azurerm_nat_gateway_public_ip_association.nat_ip_assoc,
+    azurerm_subnet_nat_gateway_association.aca_nat,
+    azurerm_postgresql_flexible_server_firewall_rule.allow_container_app_env,
   ]
 }
 
