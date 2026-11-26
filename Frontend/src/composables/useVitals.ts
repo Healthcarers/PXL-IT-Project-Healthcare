@@ -1,20 +1,10 @@
 import { ref, watch } from "vue";
 import api from "../services/refreshService.ts";
 import { connected, subscribeTopic } from "../services/stompClient.ts";
-
-export interface VitalsResponse {
-    heartRate: number;
-    spo2: number;
-    etco2: number;
-    respRate: number;
-    ampScale: number;
-    sysIbp: number;
-    diasIbp: number;
-}
+import type { VitalsResponse } from "../types/vitals";
 
 const VITALS_URL = "/vitals";
 const VITALS_TOPIC = "/topic/vitals";
-
 const vitals = ref<VitalsResponse | null>(null);
 let started = false;
 
