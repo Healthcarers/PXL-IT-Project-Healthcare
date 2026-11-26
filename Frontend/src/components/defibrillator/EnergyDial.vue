@@ -10,11 +10,18 @@ const MIN_ANGLE_DEG = -135
 const MAX_ANGLE_DEG = 135
 const TOTAL_SWEEP_DEG = MAX_ANGLE_DEG - MIN_ANGLE_DEG
 const TICK_COUNT = 8
-const HOLD_DELAY_MS = 350
-const HOLD_INTERVAL_MS = 90
+const DIAL_CENTER = 95
+const KNOB_RADIUS = 47
+const POINTER_LENGTH = 39
+const TICK_RADIUS_INNER = 53
+const TICK_RADIUS_OUTER = 59
+const TICK_LABEL_RADIUS = 75
+const HOLD_DELAY_MS = 500
+const HOLD_INTERVAL_MS = 120
+const POINTER_CLICK_COOLDOWN_MS = 400
 
 const props = withDefaults(defineProps<{
-  modelValue: number
+  modelValue: number | null
   min?: number
   max?: number
   step?: number
@@ -30,26 +37,43 @@ const emit = defineEmits<{
 
 const dialRef = ref<SVGSVGElement | null>(null)
 const isDragging = ref(false)
+let dragPointerId: number | null = null
+let prevRawAngle: number | null = null
+let virtualDragAngle: number | null = null
 let holdDelayTimer: ReturnType<typeof setTimeout> | null = null
 let holdRepeatTimer: ReturnType<typeof setInterval> | null = null
 let activeHoldDirection: -1 | 1 | null = null
-let suppressClickDirection: -1 | 1 | null = null
-let clickResetTimer: ReturnType<typeof setTimeout> | null = null
+let activeHoldPointerId: number | null = null
+let lastPointerStepTime = 0
 
-const clampedValue = computed(() => snapAndClamp(props.modelValue))
-const canDecrease = computed(() => clampedValue.value > props.min)
-const canIncrease = computed(() => clampedValue.value < props.max)
+const clampedValue = computed(() =>
+  props.modelValue === null ? null : snapAndClamp(props.modelValue)
+)
+const canDecrease = computed(() => clampedValue.value !== null && clampedValue.value > props.min)
+const canIncrease = computed(() => clampedValue.value === null || clampedValue.value < props.max)
 
 const dialAngleDeg = computed(() => {
+  if (clampedValue.value === null) return MIN_ANGLE_DEG
   if (props.max <= props.min) return 0
   const ratio = (clampedValue.value - props.min) / (props.max - props.min)
   return MIN_ANGLE_DEG + ratio * TOTAL_SWEEP_DEG
 })
 
-const tickAngles = computed(() =>
+const dialTicks = computed(() =>
   Array.from({ length: TICK_COUNT }, (_, idx) => {
-    const ratio = idx / (TICK_COUNT - 1)
-    return MIN_ANGLE_DEG + ratio * TOTAL_SWEEP_DEG
+    const ratio = TICK_COUNT > 1 ? idx / (TICK_COUNT - 1) : 0
+    const value = snapAndClamp(props.min + ratio * (props.max - props.min))
+    const angle =
+      props.max > props.min
+        ? MIN_ANGLE_DEG + ((value - props.min) / (props.max - props.min)) * TOTAL_SWEEP_DEG
+        : 0
+    const rad = (angle * Math.PI) / 180
+    return {
+      value,
+      angle,
+      labelX: DIAL_CENTER + TICK_LABEL_RADIUS * Math.sin(rad),
+      labelY: DIAL_CENTER - TICK_LABEL_RADIUS * Math.cos(rad),
+    }
   })
 )
 
@@ -67,22 +91,25 @@ function emitValue(value: number) {
   }
 }
 
-function updateFromPointer(clientX: number, clientY: number) {
+function getPointerAngleDeg(clientX: number, clientY: number): number | null {
   const el = dialRef.value
-  if (!el) return
+  if (!el) return null
 
   const rect = el.getBoundingClientRect()
-  if (rect.width <= 0 || rect.height <= 0) return
+  if (rect.width <= 0 || rect.height <= 0) return null
 
   const centerX = rect.left + rect.width / 2
   const centerY = rect.top + rect.height / 2
   const dx = clientX - centerX
   const dy = clientY - centerY
-  if (dx === 0 && dy === 0) return
+  if (dx === 0 && dy === 0) return null
 
   // Clockwise angle relative to 12 o'clock (-180..180 deg)
-  const rawAngleDeg = (Math.atan2(dx, -dy) * 180) / Math.PI
-  const clampedAngle = Math.min(MAX_ANGLE_DEG, Math.max(MIN_ANGLE_DEG, rawAngleDeg))
+  return (Math.atan2(dx, -dy) * 180) / Math.PI
+}
+
+function emitAngle(angleDeg: number) {
+  const clampedAngle = Math.min(MAX_ANGLE_DEG, Math.max(MIN_ANGLE_DEG, angleDeg))
   const ratio = (clampedAngle - MIN_ANGLE_DEG) / TOTAL_SWEEP_DEG
   emitValue(props.min + ratio * (props.max - props.min))
 }
@@ -90,19 +117,42 @@ function updateFromPointer(clientX: number, clientY: number) {
 function stopDragging() {
   if (!isDragging.value) return
   isDragging.value = false
+  dragPointerId = null
+  prevRawAngle = null
+  virtualDragAngle = null
   window.removeEventListener('pointermove', onPointerMove)
   window.removeEventListener('pointerup', stopDragging)
   window.removeEventListener('pointercancel', stopDragging)
 }
 
 function onPointerMove(event: PointerEvent) {
-  if (!isDragging.value) return
-  updateFromPointer(event.clientX, event.clientY)
+  if (!isDragging.value || prevRawAngle === null || virtualDragAngle === null) return
+  if (dragPointerId !== null && event.pointerId !== dragPointerId) return
+  const rawAngle = getPointerAngleDeg(event.clientX, event.clientY)
+  if (rawAngle === null) return
+
+  // Unwrap step deltas across +/-180 deg so dragging past max/min cannot wrap to the opposite end.
+  let delta = rawAngle - prevRawAngle
+  if (delta > 180) delta -= 360
+  if (delta < -180) delta += 360
+
+  prevRawAngle = rawAngle
+  virtualDragAngle += delta
+  emitAngle(virtualDragAngle)
 }
 
 function onPointerDown(event: PointerEvent) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return
+
+  const rawAngle = getPointerAngleDeg(event.clientX, event.clientY)
+  if (rawAngle === null) return
+
   isDragging.value = true
-  updateFromPointer(event.clientX, event.clientY)
+  dragPointerId = event.pointerId
+  prevRawAngle = rawAngle
+  virtualDragAngle = rawAngle
+  emitAngle(rawAngle)
+
   window.addEventListener('pointermove', onPointerMove)
   window.addEventListener('pointerup', stopDragging)
   window.addEventListener('pointercancel', stopDragging)
@@ -119,26 +169,21 @@ function clearHoldTimers() {
   }
 }
 
-function scheduleClickSuppressionReset() {
-  if (clickResetTimer !== null) {
-    clearTimeout(clickResetTimer)
-  }
-  clickResetTimer = setTimeout(() => {
-    suppressClickDirection = null
-    clickResetTimer = null
-  }, 0)
-}
-
 function stopButtonHold() {
   clearHoldTimers()
   if (activeHoldDirection === null) return
   activeHoldDirection = null
+  activeHoldPointerId = null
+  lastPointerStepTime = Date.now()
   window.removeEventListener('pointerup', stopButtonHold)
   window.removeEventListener('pointercancel', stopButtonHold)
-  scheduleClickSuppressionReset()
 }
 
 function stepInDirection(direction: -1 | 1) {
+  if (clampedValue.value === null) {
+    if (direction > 0) emitValue(props.min)
+    return
+  }
   emitValue(clampedValue.value + direction * props.step)
 }
 
@@ -148,15 +193,13 @@ function canStepInDirection(direction: -1 | 1): boolean {
 
 function startButtonHold(event: PointerEvent, direction: -1 | 1) {
   if (event.pointerType === 'mouse' && event.button !== 0) return
+  if (activeHoldPointerId !== null && event.pointerId !== activeHoldPointerId) return
   if (!canStepInDirection(direction)) return
 
   stopButtonHold()
-  if (clickResetTimer !== null) {
-    clearTimeout(clickResetTimer)
-    clickResetTimer = null
-  }
-  suppressClickDirection = direction
+  lastPointerStepTime = Date.now()
   activeHoldDirection = direction
+  activeHoldPointerId = event.pointerId
   stepInDirection(direction)
 
   window.addEventListener('pointerup', stopButtonHold)
@@ -178,9 +221,9 @@ function startButtonHold(event: PointerEvent, direction: -1 | 1) {
   }, HOLD_DELAY_MS)
 }
 
-function onStepButtonClick(direction: -1 | 1) {
-  if (suppressClickDirection === direction) {
-    suppressClickDirection = null
+function onStepButtonClick(event: MouseEvent, direction: -1 | 1) {
+  // Real pointer presses already stepped on pointerdown; ignore trailing synthetic click events.
+  if (event.detail > 0 || Date.now() - lastPointerStepTime < POINTER_CLICK_COOLDOWN_MS) {
     return
   }
   stepInDirection(direction)
@@ -189,11 +232,6 @@ function onStepButtonClick(direction: -1 | 1) {
 onUnmounted(() => {
   stopDragging()
   stopButtonHold()
-  if (clickResetTimer !== null) {
-    clearTimeout(clickResetTimer)
-    clickResetTimer = null
-  }
-  suppressClickDirection = null
 })
 </script>
 
@@ -201,53 +239,69 @@ onUnmounted(() => {
   <div class="flex flex-wrap items-center gap-6 sm:gap-8">
     <svg
       ref="dialRef"
-      viewBox="0 0 140 140"
-      class="size-32 shrink-0 cursor-pointer touch-none select-none rounded-full sm:size-36"
+      viewBox="0 0 190 190"
+      class="size-44 shrink-0 cursor-pointer touch-none select-none rounded-full sm:size-52"
       role="slider"
       aria-label="Defibrillator energie in joules"
       :aria-valuemin="min"
       :aria-valuemax="max"
-      :aria-valuenow="clampedValue"
-      :aria-valuetext="`${clampedValue} J`"
+      :aria-valuenow="clampedValue ?? undefined"
+      :aria-valuetext="clampedValue !== null ? `${clampedValue} J` : 'Geen energie geselecteerd'"
       @pointerdown="onPointerDown"
     >
       <g>
-        <line
-          v-for="(angle, idx) in tickAngles"
+        <g
+          v-for="(tick, idx) in dialTicks"
           :key="idx"
-          x1="70"
-          y1="8"
-          x2="70"
-          y2="14"
-          stroke="#4b4b55"
-          stroke-width="2"
-          stroke-linecap="round"
-          :transform="`rotate(${angle} 70 70)`"
-        />
+        >
+          <line
+            :x1="DIAL_CENTER"
+            :y1="DIAL_CENTER - TICK_RADIUS_OUTER"
+            :x2="DIAL_CENTER"
+            :y2="DIAL_CENTER - TICK_RADIUS_INNER"
+            :stroke="tick.value === clampedValue ? '#facc15' : '#6b6b76'"
+            stroke-width="2"
+            stroke-linecap="round"
+            :transform="`rotate(${tick.angle} ${DIAL_CENTER} ${DIAL_CENTER})`"
+          />
+          <text
+            :x="tick.labelX"
+            :y="tick.labelY"
+            data-testid="dial-tick-label"
+            text-anchor="middle"
+            dominant-baseline="central"
+            font-size="11.5"
+            font-weight="600"
+            :fill="tick.value === clampedValue ? '#facc15' : '#a1a1aa'"
+            class="pointer-events-none select-none tabular-nums"
+          >
+            {{ tick.value }}
+          </text>
+        </g>
       </g>
 
       <circle
-        cx="70"
-        cy="70"
-        r="50"
+        :cx="DIAL_CENTER"
+        :cy="DIAL_CENTER"
+        :r="KNOB_RADIUS"
         fill="#0b0b0d"
         stroke="#facc15"
         stroke-width="3.5"
       />
 
-      <g :transform="`rotate(${dialAngleDeg} 70 70)`">
+      <g :transform="`rotate(${dialAngleDeg} ${DIAL_CENTER} ${DIAL_CENTER})`">
         <line
-          x1="70"
-          y1="70"
-          x2="70"
-          y2="29"
+          :x1="DIAL_CENTER"
+          :y1="DIAL_CENTER"
+          :x2="DIAL_CENTER"
+          :y2="DIAL_CENTER - POINTER_LENGTH"
           stroke="#facc15"
           stroke-width="4"
           stroke-linecap="round"
         />
       </g>
 
-      <circle cx="70" cy="70" r="6" fill="#facc15" />
+      <circle :cx="DIAL_CENTER" :cy="DIAL_CENTER" r="6" fill="#facc15" />
     </svg>
 
     <div class="flex flex-col gap-2.5">
@@ -255,12 +309,8 @@ onUnmounted(() => {
         data-testid="energy-value"
         class="font-extrabold leading-none tabular-nums text-[#facc15] text-[clamp(36px,4.5vw,56px)]"
       >
-        {{ clampedValue }} J
+        {{ clampedValue !== null ? `${clampedValue} J` : '-- J' }}
       </div>
-
-      <p class="text-xs text-[#8b8b94] sm:text-sm">
-        Draai aan de knop om de energie te kiezen
-      </p>
 
       <div class="mt-1 flex items-center gap-2">
         <button
@@ -271,7 +321,7 @@ onUnmounted(() => {
           @pointerdown="startButtonHold($event, -1)"
           @pointerleave="stopButtonHold"
           @contextmenu.prevent
-          @click="onStepButtonClick(-1)"
+          @click="onStepButtonClick($event, -1)"
         >
           -
         </button>
@@ -288,7 +338,7 @@ onUnmounted(() => {
           @pointerdown="startButtonHold($event, 1)"
           @pointerleave="stopButtonHold"
           @contextmenu.prevent
-          @click="onStepButtonClick(1)"
+          @click="onStepButtonClick($event, 1)"
         >
           +
         </button>
