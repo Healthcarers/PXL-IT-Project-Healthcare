@@ -49,7 +49,7 @@ terraform destroy -auto-approve `
     -target="azurerm_role_assignment.web_acr_pull" `
     -target="azurerm_container_registry.acr" `
     -target="azurerm_monitor_diagnostic_setting.db_diagnostics" `
-    -target="azurerm_postgresql_flexible_server_firewall_rule.allow_azure_services" `
+    -target="azurerm_postgresql_flexible_server_firewall_rule.allow_container_app_env" `
     -target="azurerm_postgresql_flexible_server_firewall_rule.allowed_ips" `
     -target="azurerm_postgresql_flexible_server_database.appdb" `
     -target="azurerm_postgresql_flexible_server.db"

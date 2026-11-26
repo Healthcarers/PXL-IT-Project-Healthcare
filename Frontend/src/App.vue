@@ -1,4 +1,3 @@
-
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { RouterLink, RouterView, useRoute } from "vue-router";
@@ -8,9 +7,15 @@ import router from "./router/index.ts";
 
 const route = useRoute();
 const auth = useAuthStore();
-const showLectorNav = computed(() => auth.person?.role === 'LECTOR' && route.meta.role === 'LECTOR');
-const isLectorDashboard = computed(() => showLectorNav.value && route.name === 'lector-dashboard');
-const showCursistNav = computed(() => auth.person?.role === 'CURSIST' && route.meta.role === 'CURSIST');
+const showLectorNav = computed(
+  () => auth.person?.role === "LECTOR" && route.meta.role === "LECTOR",
+);
+const isLectorDashboard = computed(
+  () => showLectorNav.value && route.name === "lector-dashboard",
+);
+const showCursistNav = computed(
+  () => auth.person?.role === "CURSIST" && route.meta.role === "CURSIST",
+);
 const profileOpen = ref(false);
 const profileMenuRef = ref<HTMLElement | null>(null);
 const profileButton = ref<HTMLButtonElement | null>(null);
