@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { scenarioService, type Scenario } from '../services/scenarioService'
+import { scenarioService } from '../services/scenarioService'
+import type { Scenario } from '../types/scenario'
 
 const scenarios = ref<Scenario[]>([])
 const loading = ref(true)
