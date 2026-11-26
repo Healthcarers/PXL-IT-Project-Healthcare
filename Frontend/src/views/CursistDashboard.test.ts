@@ -1,7 +1,9 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
+import * as defibAudio from '../services/defibAudio.ts'
+import { CHARGE_DURATION_MS, useDefibStore } from '../stores/defibStore.ts'
 import CursistDashboard from './CursistDashboard.vue'
 
 vi.mock('../services/stompClient.ts', () => ({
@@ -26,6 +28,12 @@ vi.mock('../components/charts/SweepChart.vue', () => ({
 describe('CursistDashboard.vue', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.restoreAllMocks()
+  })
+
+  afterEach(() => {
+    useDefibStore().cancelCharge()
+    vi.useRealTimers()
   })
 
   it('toggles between monitor and defibrillator view while preserving selected joules', async () => {
@@ -49,5 +57,30 @@ describe('CursistDashboard.vue', () => {
     expect(toggleBtn.text()).toBe('Defibrillator')
     await toggleBtn.trigger('click')
     expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('160 J')
+
+    wrapper.unmount()
+  })
+
+  it('keeps charging when returning to monitor and cancels charge on dashboard unmount', async () => {
+    vi.useFakeTimers()
+    const stopSoundSpy = vi.spyOn(defibAudio, 'stopChargeSound')
+    const wrapper = mount(CursistDashboard)
+    await vi.dynamicImportSettled()
+    await flushPromises()
+
+    const toggleBtn = wrapper.get('[data-testid="toggle-defibrillator"]')
+    await toggleBtn.trigger('click')
+    await wrapper.get('[data-testid="charge-button"]').trigger('click')
+
+    // Returning to monitor keeps charging in background
+    await toggleBtn.trigger('click')
+    await vi.advanceTimersByTimeAsync(CHARGE_DURATION_MS)
+    await toggleBtn.trigger('click')
+    expect(wrapper.get('[data-testid="charge-status"]').text()).toBe('Status: geladen (150 J)')
+
+    // Leaving the dashboard unmounts CursistDashboard and resets charge state + stops sound
+    wrapper.unmount()
+    expect(useDefibStore().chargeStatus).toBe('idle')
+    expect(stopSoundSpy).toHaveBeenCalled()
   })
 })
