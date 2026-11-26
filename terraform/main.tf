@@ -423,12 +423,13 @@ resource "azurerm_postgresql_flexible_server_database" "appdb" {
   collation = "en_US.utf8"
 }
 
-# Allow Azure internal services (Container Apps) to connect over SSL
-resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_azure_services" {
-  name             = "allow-azure-services"
+# Allow ONLY our Container Apps Environment's static outbound IP to connect over SSL
+# (blocks both the public internet and all other Azure tenants/subscriptions)
+resource "azurerm_postgresql_flexible_server_firewall_rule" "allow_container_app_env" {
+  name             = "allow-container-app-env"
   server_id        = azurerm_postgresql_flexible_server.db.id
-  start_ip_address = "0.0.0.0"
-  end_ip_address   = "0.0.0.0"
+  start_ip_address = azurerm_container_app_environment.env.static_ip_address
+  end_ip_address   = azurerm_container_app_environment.env.static_ip_address
 }
 
 # Optional developer IP whitelist rules
