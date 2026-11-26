@@ -8,7 +8,6 @@ const defibStore = useDefibStore()
 const {
   selectedEnergy,
   chargeStatus,
-  chargeProgress,
   chargedEnergy,
   hasSelectedEnergy,
   isCharging,
@@ -35,9 +34,6 @@ const statusLabel = computed(() => {
       <h2 class="text-base font-bold tracking-[0.02em] text-white">
         Defibrillatie
       </h2>
-      <p class="mt-0.5 text-xs text-[#8b8b94]">
-        Energie
-      </p>
     </div>
 
     <div class="flex min-h-0 flex-1 items-center py-2">
@@ -48,29 +44,13 @@ const statusLabel = computed(() => {
     </div>
 
     <div class="shrink-0 space-y-3">
-      <div class="space-y-1.5">
-        <p
-          data-testid="charge-status"
-          class="text-sm font-medium"
-          :class="chargeStatus === 'charged' ? 'text-[#facc15]' : 'text-[#d4d4d8]'"
-        >
-          {{ statusLabel }}
-        </p>
-
-        <div
-          role="progressbar"
-          aria-label="Laadvoortgang"
-          aria-valuemin="0"
-          aria-valuemax="100"
-          :aria-valuenow="chargeProgress"
-          class="h-2.5 w-full overflow-hidden rounded-full bg-[#232329]"
-        >
-          <div
-            class="h-full rounded-full bg-[#facc15] transition-[width] duration-75"
-            :style="{ width: `${chargeProgress}%` }"
-          />
-        </div>
-      </div>
+      <p
+        data-testid="charge-status"
+        class="text-sm font-medium"
+        :class="chargeStatus === 'charged' ? 'text-[#facc15]' : 'text-[#d4d4d8]'"
+      >
+        {{ statusLabel }}
+      </p>
 
       <div class="grid grid-cols-2 gap-3">
         <button
@@ -92,10 +72,6 @@ const statusLabel = computed(() => {
           SCHOK
         </button>
       </div>
-
-      <p class="text-xs text-[#8b8b94]">
-        SCHOK wordt pas actief als de defibrillator geladen is. Laden kan pas na het kiezen van de energie.
-      </p>
     </div>
   </div>
 </template>

@@ -16,14 +16,12 @@ describe('DefibrillatorPanel.vue', () => {
     vi.useRealTimers()
   })
 
-  it('renders LADEN button, disabled SCHOK button, progress bar and default status', () => {
+  it('renders LADEN button, disabled SCHOK button and default status without progress bar', () => {
     const wrapper = mount(DefibrillatorPanel)
 
     expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('150 J')
     expect(wrapper.get('[data-testid="charge-status"]').text()).toBe('Status: niet geladen')
-
-    const progress = wrapper.get('[role="progressbar"]')
-    expect(progress.attributes('aria-valuenow')).toBe('0')
+    expect(wrapper.find('[role="progressbar"]').exists()).toBe(false)
 
     const chargeBtn = wrapper.get('[data-testid="charge-button"]')
     expect(chargeBtn.text()).toBe('LADEN')
@@ -49,7 +47,7 @@ describe('DefibrillatorPanel.vue', () => {
     expect(store.chargeStatus).toBe('idle')
   })
 
-  it('charges on LADEN click, plays ascending sound, updates progress and disables SCHOK', async () => {
+  it('charges on LADEN click, plays ascending sound, updates status and disables SCHOK', async () => {
     vi.useFakeTimers()
     const startSoundSpy = vi.spyOn(defibAudio, 'startChargeSound')
 
@@ -66,7 +64,6 @@ describe('DefibrillatorPanel.vue', () => {
 
     await vi.advanceTimersByTimeAsync(CHARGE_DURATION_MS)
     expect(wrapper.get('[data-testid="charge-status"]').text()).toBe('Status: geladen (150 J)')
-    expect(wrapper.get('[role="progressbar"]').attributes('aria-valuenow')).toBe('100')
     expect(shockBtn.attributes('disabled')).toBeDefined()
 
     // Changing energy afterwards resets charge status so user can re-charge

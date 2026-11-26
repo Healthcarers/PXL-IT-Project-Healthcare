@@ -7,17 +7,21 @@ describe('EnergyDial.vue', () => {
   afterEach(() => {
     vi.useRealTimers()
   })
-  it('displays the selected energy in J alongside the dial and helper text', () => {
+  it('displays the selected energy in J alongside the dial and tick value labels', () => {
     const wrapper = mount(EnergyDial, {
-      props: { modelValue: 150 },
+      props: { modelValue: 160 },
     })
 
-    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('150 J')
-    expect(wrapper.text()).toContain('Draai aan de knop om de energie te kiezen')
+    expect(wrapper.get('[data-testid="energy-value"]').text()).toBe('160 J')
+
+    const tickLabels = wrapper.findAll('[data-testid="dial-tick-label"]')
+    expect(tickLabels.map(el => el.text())).toEqual(['10', '60', '110', '160', '210', '260', '310', '360'])
+    expect(tickLabels[3].attributes('fill')).toBe('#facc15')
+    expect(tickLabels[0].attributes('fill')).toBe('#a1a1aa')
 
     const slider = wrapper.get('[role="slider"]')
-    expect(slider.attributes('aria-valuenow')).toBe('150')
-    expect(slider.attributes('aria-valuetext')).toBe('150 J')
+    expect(slider.attributes('aria-valuenow')).toBe('160')
+    expect(slider.attributes('aria-valuetext')).toBe('160 J')
   })
 
   it('emits updated energy in 10 J increments when clicking + and - buttons', async () => {

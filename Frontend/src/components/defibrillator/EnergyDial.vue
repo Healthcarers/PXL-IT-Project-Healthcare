@@ -10,6 +10,12 @@ const MIN_ANGLE_DEG = -135
 const MAX_ANGLE_DEG = 135
 const TOTAL_SWEEP_DEG = MAX_ANGLE_DEG - MIN_ANGLE_DEG
 const TICK_COUNT = 8
+const DIAL_CENTER = 95
+const KNOB_RADIUS = 47
+const POINTER_LENGTH = 39
+const TICK_RADIUS_INNER = 53
+const TICK_RADIUS_OUTER = 59
+const TICK_LABEL_RADIUS = 75
 const HOLD_DELAY_MS = 500
 const HOLD_INTERVAL_MS = 120
 const POINTER_CLICK_COOLDOWN_MS = 400
@@ -53,10 +59,21 @@ const dialAngleDeg = computed(() => {
   return MIN_ANGLE_DEG + ratio * TOTAL_SWEEP_DEG
 })
 
-const tickAngles = computed(() =>
+const dialTicks = computed(() =>
   Array.from({ length: TICK_COUNT }, (_, idx) => {
-    const ratio = idx / (TICK_COUNT - 1)
-    return MIN_ANGLE_DEG + ratio * TOTAL_SWEEP_DEG
+    const ratio = TICK_COUNT > 1 ? idx / (TICK_COUNT - 1) : 0
+    const value = snapAndClamp(props.min + ratio * (props.max - props.min))
+    const angle =
+      props.max > props.min
+        ? MIN_ANGLE_DEG + ((value - props.min) / (props.max - props.min)) * TOTAL_SWEEP_DEG
+        : 0
+    const rad = (angle * Math.PI) / 180
+    return {
+      value,
+      angle,
+      labelX: DIAL_CENTER + TICK_LABEL_RADIUS * Math.sin(rad),
+      labelY: DIAL_CENTER - TICK_LABEL_RADIUS * Math.cos(rad),
+    }
   })
 )
 
@@ -222,8 +239,8 @@ onUnmounted(() => {
   <div class="flex flex-wrap items-center gap-6 sm:gap-8">
     <svg
       ref="dialRef"
-      viewBox="0 0 140 140"
-      class="size-32 shrink-0 cursor-pointer touch-none select-none rounded-full sm:size-36"
+      viewBox="0 0 190 190"
+      class="size-44 shrink-0 cursor-pointer touch-none select-none rounded-full sm:size-52"
       role="slider"
       aria-label="Defibrillator energie in joules"
       :aria-valuemin="min"
@@ -233,42 +250,58 @@ onUnmounted(() => {
       @pointerdown="onPointerDown"
     >
       <g>
-        <line
-          v-for="(angle, idx) in tickAngles"
+        <g
+          v-for="(tick, idx) in dialTicks"
           :key="idx"
-          x1="70"
-          y1="8"
-          x2="70"
-          y2="14"
-          stroke="#4b4b55"
-          stroke-width="2"
-          stroke-linecap="round"
-          :transform="`rotate(${angle} 70 70)`"
-        />
+        >
+          <line
+            :x1="DIAL_CENTER"
+            :y1="DIAL_CENTER - TICK_RADIUS_OUTER"
+            :x2="DIAL_CENTER"
+            :y2="DIAL_CENTER - TICK_RADIUS_INNER"
+            :stroke="tick.value === clampedValue ? '#facc15' : '#6b6b76'"
+            stroke-width="2"
+            stroke-linecap="round"
+            :transform="`rotate(${tick.angle} ${DIAL_CENTER} ${DIAL_CENTER})`"
+          />
+          <text
+            :x="tick.labelX"
+            :y="tick.labelY"
+            data-testid="dial-tick-label"
+            text-anchor="middle"
+            dominant-baseline="central"
+            font-size="11.5"
+            font-weight="600"
+            :fill="tick.value === clampedValue ? '#facc15' : '#a1a1aa'"
+            class="pointer-events-none select-none tabular-nums"
+          >
+            {{ tick.value }}
+          </text>
+        </g>
       </g>
 
       <circle
-        cx="70"
-        cy="70"
-        r="50"
+        :cx="DIAL_CENTER"
+        :cy="DIAL_CENTER"
+        :r="KNOB_RADIUS"
         fill="#0b0b0d"
         stroke="#facc15"
         stroke-width="3.5"
       />
 
-      <g :transform="`rotate(${dialAngleDeg} 70 70)`">
+      <g :transform="`rotate(${dialAngleDeg} ${DIAL_CENTER} ${DIAL_CENTER})`">
         <line
-          x1="70"
-          y1="70"
-          x2="70"
-          y2="29"
+          :x1="DIAL_CENTER"
+          :y1="DIAL_CENTER"
+          :x2="DIAL_CENTER"
+          :y2="DIAL_CENTER - POINTER_LENGTH"
           stroke="#facc15"
           stroke-width="4"
           stroke-linecap="round"
         />
       </g>
 
-      <circle cx="70" cy="70" r="6" fill="#facc15" />
+      <circle :cx="DIAL_CENTER" :cy="DIAL_CENTER" r="6" fill="#facc15" />
     </svg>
 
     <div class="flex flex-col gap-2.5">
@@ -278,10 +311,6 @@ onUnmounted(() => {
       >
         {{ clampedValue !== null ? `${clampedValue} J` : '-- J' }}
       </div>
-
-      <p class="text-xs text-[#8b8b94] sm:text-sm">
-        Draai aan de knop om de energie te kiezen
-      </p>
 
       <div class="mt-1 flex items-center gap-2">
         <button
