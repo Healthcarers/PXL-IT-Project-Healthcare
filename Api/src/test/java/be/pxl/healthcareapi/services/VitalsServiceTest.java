@@ -7,6 +7,7 @@ import be.pxl.healthcareapi.repositories.VitalsRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 
@@ -28,7 +29,7 @@ public class VitalsServiceTest {
     @Mock
     SimpMessagingTemplate messaging;
 
-    private final VitalsSnapshot current = new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80);
+    private final VitalsSnapshot current = new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80, 36.5);
 
     private VitalsService service() {
         return new VitalsService(repository, messaging);
@@ -51,25 +52,25 @@ public class VitalsServiceTest {
     void partialUpdateKeepsUnchangedFields() {
         applyUpdatesTo(current);
 
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(120.0, null, null, null, null, null, null));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(120.0, null, null, null, null, null, null, null));
 
-        assertThat(result).isEqualTo(new VitalsSnapshot(120, 98, 15, 38, 1.0, 120, 80));
+        assertThat(result).isEqualTo(new VitalsSnapshot(120, 98, 15, 38, 1.0, 120, 80, 36.5));
     }
 
     @Test
     void updateAllFieldsWhenProvided() {
         applyUpdatesTo(current);
 
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(95.0, 98.0, 14.0, 40.0, 1.5, 120.0, 80.0));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(95.0, 98.0, 14.0, 40.0, 1.5, 120.0, 80.0, null));
 
-        assertThat(result).isEqualTo(new VitalsSnapshot(95, 98, 14, 40, 1.5, 120, 80));
+        assertThat(result).isEqualTo(new VitalsSnapshot(95, 98, 14, 40, 1.5, 120, 80, 36.5));
     }
 
     @Test
     void rejectsHeartRateOutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(999.0, 98.0, 15.0, 38.0, 1.0, 120.0, 80.0)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(999.0, 98.0, 15.0, 38.0, 1.0, 120.0, 80.0, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -77,7 +78,7 @@ public class VitalsServiceTest {
     void rejectsSpo2OutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, 120.0, null, null, null, null, null)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, 120.0, null, null, null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -85,7 +86,7 @@ public class VitalsServiceTest {
     void rejectsEtco2OutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, 98.0, null, 120.0, null, null, null)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, 98.0, null, 120.0, null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -93,21 +94,21 @@ public class VitalsServiceTest {
     void rejectsRespRateOutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, null,  100.0, null, null, null, null)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(90.0, null,  100.0, null, null, null, null, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
     @Test
     void heartRateZeroIsAcceptedForFlatline() {
         applyUpdatesTo(current);
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, 98.0, null, null, null, null, null));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(0.0, 98.0, null, null, null, null, null, null));
         assertThat(result.heartRate()).isEqualTo(0);
     }
 
     @Test
     void respRateZeroIsAcceptedForFlatline() {
         applyUpdatesTo(current);
-        VitalsSnapshot result = service().update(new VitalsUpdateRequest(90.0, 98.0, 0.0, null, null, null, null));
+        VitalsSnapshot result = service().update(new VitalsUpdateRequest(90.0, 98.0, 0.0, null, null, null, null, null));
         assertThat(result.respRate()).isEqualTo(0);
     }
 
@@ -115,7 +116,7 @@ public class VitalsServiceTest {
     void rejectsSysBloodPressureOutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(null, null,  null, null, null, 500.0, null)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(null, null,  null, null, null, 500.0, null, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -123,7 +124,7 @@ public class VitalsServiceTest {
     void rejectsDiasBloodPressureOutOfRange() {
         applyUpdatesTo(current);
 
-        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(null, null,  null, null, null, null, 500.0)))
+        assertThatThrownBy(() -> service().update(new VitalsUpdateRequest(null, null,  null, null, null, null, 500.0, null)))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
@@ -131,17 +132,47 @@ public class VitalsServiceTest {
     void successfulUpdatePublishesVitals() {
         applyUpdatesTo(current);
 
-        service().update(new VitalsUpdateRequest(90.0, null, null, null, null, null, null));
+        service().update(new VitalsUpdateRequest(90.0, null, null, null, null, null, null, null));
 
         verify(messaging).convertAndSend(eq("/topic/vitals"), any(VitalsResponse.class));
     }
 
     @Test
+    void temperatureUpdatesAreValidatedAndBroadcastWithoutChangingOtherValues() {
+        applyUpdatesTo(current);
+        var result = service().update(new VitalsUpdateRequest(null, null, null, null, null, null, null, 38.2));
+        assertThat(result).isEqualTo(new VitalsSnapshot(75, 98, 15, 38, 1, 120, 80, 38.2));
+        var sent = ArgumentCaptor.forClass(VitalsResponse.class);
+        verify(messaging).convertAndSend(eq("/topic/vitals"), sent.capture());
+        assertThat(sent.getValue().temperature()).isEqualTo(38.2);
+    }
+
+    @Test
+    void invalidTemperatureIsRejectedWithoutBroadcasting() {
+        applyUpdatesTo(current);
+        for (double value : new double[]{19.9, 45.1, Double.NaN, Double.POSITIVE_INFINITY}) {
+            assertThatThrownBy(() -> service().update(
+                    new VitalsUpdateRequest(null, null, null, null, null, null, null, value)))
+                    .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("temperature");
+        }
+        verifyNoInteractions(messaging);
+    }
+
+    @Test
+    void temperatureRangeIncludesBothBoundaries() {
+        applyUpdatesTo(current);
+        for (double value : new double[]{20, 45}) {
+            assertThat(service().update(new VitalsUpdateRequest(null, null, null, null, null, null, null, value))
+                    .temperature()).isEqualTo(value);
+        }
+    }
+
+    @Test
     void scenarioInvasiveBloodPressureRangeDoesNotRelaxLiveUpdateLimits() {
-        var request = new VitalsUpdateRequest(75.0, 98.0, 15.0, 38.0, 1.0, 250.0, 80.0);
+        var request = new VitalsUpdateRequest(75.0, 98.0, 15.0, 38.0, 1.0, 250.0, 80.0, null);
 
         assertThat(VitalsService.initialSnapshot(request))
-                .isEqualTo(new VitalsSnapshot(75, 98, 15, 38, 1.0, 250, 80));
+                .isEqualTo(new VitalsSnapshot(75, 98, 15, 38, 1.0, 250, 80, 36.5));
         verifyNoInteractions(repository, messaging);
 
         applyUpdatesTo(current);

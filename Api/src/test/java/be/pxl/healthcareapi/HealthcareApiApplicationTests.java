@@ -151,7 +151,7 @@ class HealthcareApiApplicationTests {
                 .authorities(new SimpleGrantedAuthority("ROLE_CURSIST"));
         var room = roomService.createRoom("Eigen room", null, owner);
         var path = "/api/rooms/" + room.getCode() + "/scenario";
-        var vitals = new VitalsUpdateRequest(102.0, 98.0, 15.0, 38.0, 1.0, 120.0, 80.0);
+        var vitals = new VitalsUpdateRequest(102.0, 98.0, 15.0, 38.0, 1.0, 120.0, 80.0, null);
         var draft = scenarioService.create(new ScenarioDto.Create("Concept", "Oefening",
                 vitals, List.of("Evaluatiepunt"), ScenarioStatus.DRAFT));
         var published = scenarioService.create(new ScenarioDto.Create("Monitorsimulatie", "Oefening",

@@ -165,6 +165,7 @@ describe("LectorDashboardView.vue", () => {
             respRate: 15,
             ampScale: 1.0,
             sysIbp: 120,
+            temperature: 36.5,
             diasIbp: 80,
           },
         });

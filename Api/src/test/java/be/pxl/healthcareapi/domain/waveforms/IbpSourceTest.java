@@ -13,7 +13,7 @@ class IbpSourceTest {
     private final VitalsSnapshot v = VitalsSnapshot.defaults();
 
     private static VitalsSnapshot withBp(double heartRate, double sys, double dia) {
-        return new VitalsSnapshot(heartRate, 98, 15, 38, 1.0, sys, dia);
+        return new VitalsSnapshot(heartRate, 98, 15, 38, 1.0, sys, dia, 36.5);
     }
 
     @Test

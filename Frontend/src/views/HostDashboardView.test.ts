@@ -142,7 +142,7 @@ it('toont alleen gepubliceerde opties en bewaart de gekozen startwaarden bij de 
     id: 'published', name: 'Monitorsimulatie', description: 'Oefening', feedbackItems: ['Evaluatiepunt'],
     status: 'PUBLISHED' as const,
     initialVitals: { heartRate: 102, spo2: 98, etco2: 38, respRate: 15, ampScale: 1,
-      sysIbp: 120, diasIbp: 80 },
+      sysIbp: 120, diasIbp: 80, temperature: 36.5 },
   }
   vi.mocked(scenarioService.list).mockResolvedValue([published, { ...published, id: 'draft', status: 'DRAFT' }])
   vi.mocked(roomService.getScenario).mockResolvedValueOnce(undefined).mockResolvedValueOnce(published)

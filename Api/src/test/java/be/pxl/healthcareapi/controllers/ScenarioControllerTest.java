@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.JwtRequestPostProcessor;
 import org.springframework.test.context.ActiveProfiles;
@@ -34,7 +35,7 @@ class ScenarioControllerTest {
                 "description": "Oefenen met de trainingsmonitor.",
                 "initialVitals": {
                     "heartRate": 105, "spo2": 94, "respRate": 20, "etco2": 36,
-                    "ampScale": 1.2, "sysIbp": 118, "diasIbp": 76
+                    "ampScale": 1.2, "sysIbp": 118, "diasIbp": 76, "temperature": 38.2
                 },
                 "feedbackItems": ["Monitor gecontroleerd", "Observaties gerapporteerd"]
             }
@@ -45,6 +46,25 @@ class ScenarioControllerTest {
 
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Test
+    void legacyScenariosAndRequestsWithoutTemperatureUseDefault() throws Exception {
+        var lector = auth("LECTOR", UUID.randomUUID());
+        var id = createScenario(lector);
+        jdbcTemplate.update("update scenarios set temperature = null where id = ?", UUID.fromString(id));
+        mockMvc.perform(get(SCENARIOS + "/{id}", id).with(lector))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.initialVitals.temperature").value(36.5));
+
+        var legacyRequest = SCENARIO.replace(", \"temperature\": 38.2", "");
+        mockMvc.perform(post(SCENARIOS).with(lector)
+                        .contentType(MediaType.APPLICATION_JSON).content(legacyRequest))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.initialVitals.temperature").value(36.5));
+    }
 
     @Test
     void storesScenarioAndManualEvaluationWithoutChangingLiveVitals() throws Exception {
@@ -67,6 +87,7 @@ class ScenarioControllerTest {
                 .andExpect(jsonPath("$.initialVitals.ampScale").value(1.2))
                 .andExpect(jsonPath("$.initialVitals.sysIbp").value(118))
                 .andExpect(jsonPath("$.initialVitals.diasIbp").value(76))
+                .andExpect(jsonPath("$.initialVitals.temperature").value(38.2))
                 .andExpect(jsonPath("$.feedbackItems[0]").value("Monitor gecontroleerd"))
                 .andExpect(jsonPath("$.feedbackItems[1]").value("Observaties gerapporteerd"));
 
@@ -96,6 +117,7 @@ class ScenarioControllerTest {
         for (String invalid : new String[]{
                 SCENARIO.replace("\"heartRate\": 105, ", ""),
                 SCENARIO.replace("\"spo2\": 94", "\"spo2\": 101"),
+                SCENARIO.replace("\"temperature\": 38.2", "\"temperature\": 45.1"),
                 SCENARIO.replace("Monitor gecontroleerd", " ")
         }) {
             mockMvc.perform(post(SCENARIOS).with(lector).contentType(MediaType.APPLICATION_JSON).content(invalid))

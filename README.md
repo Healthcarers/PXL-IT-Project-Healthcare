@@ -85,14 +85,25 @@ Voorbeeld voor `POST /api/scenarios`:
     "etco2": 36,
     "ampScale": 1.2,
     "sysIbp": 118,
-    "diasIbp": 76
+    "diasIbp": 76,
+    "temperature": 38.2
   },
   "feedbackItems": ["Monitor gecontroleerd", "Observaties gerapporteerd"],
   "status": "DRAFT"
 }
 ```
 
-Alle zeven startwaarden zijn verplicht. Scenariostartwaarden laten bloeddrukken
+De oorspronkelijke zeven startwaarden zijn verplicht. Temperatuur is in graden
+Celsius, standaard 36,5 °C en moet tussen 20 en 45 °C liggen. Oudere
+scenariogegevens zonder temperatuur krijgen 36,5 °C; Hibernate voegt lokaal
+de nullable kolom `scenarios.temperature` toe. De cursistmonitor en
+lectorpreview tonen de temperatuur als numerieke waarde naast de grafieken.
+In de cursistmonitor wordt de temperatuur zichtbaar na een klik op de kaart;
+de lectorpreview toont de waarde steeds.
+Via `PATCH /api/vitals` kan `{"temperature":38.2}` worden ingesteld; updates
+worden samen met de andere waarden via `/topic/vitals` verstuurd.
+
+Scenariostartwaarden laten bloeddrukken
 van 0 tot 300 mmHg toe; live-updates gebruiken 0 tot 200 mmHg. De overige grenzen
 zijn gelijk aan die van de vitals-API. Een scenario moet minstens één feedbackitem hebben,
 ook als het als concept wordt opgeslagen.

@@ -1,6 +1,17 @@
 import { ref, watch } from "vue";
 import api from "../services/refreshService.ts";
 import { connected, subscribeTopic } from "../services/stompClient.ts";
+
+export interface VitalsResponse {
+    heartRate: number;
+    spo2: number;
+    etco2: number;
+    respRate: number;
+    ampScale: number;
+    sysIbp: number;
+    diasIbp: number;
+    temperature: number;
+}
 import type { VitalsResponse } from "../types/vitals";
 
 const VITALS_URL = "/vitals";
@@ -17,6 +28,7 @@ function normalize(v: VitalsResponse): VitalsResponse {
         ampScale: v.ampScale,
         sysIbp: Math.round(v.sysIbp),
         diasIbp: Math.round(v.diasIbp),
+        temperature: v.temperature,
     };
 }
 

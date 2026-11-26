@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.within;
 
 class Etco2SourceTest {
     private final Etco2Source src = new Etco2Source();
-    private final VitalsSnapshot v = new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80);
+    private final VitalsSnapshot v = new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80, 36.5);
 
     @Test
     void metadataMatchesContract() {
@@ -41,7 +41,7 @@ class Etco2SourceTest {
 
     @Test
     void plateauFollowsEtco2Value() {
-        VitalsSnapshot high = new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80);
+        VitalsSnapshot high = new VitalsSnapshot(75, 98, 15, 38, 1.0, 120, 80, 36.5);
         double p = src.periodMs(high);
         assertThat(src.valueAt(0.70 * p, high)).isBetween(36.0, 42.0);
     }
