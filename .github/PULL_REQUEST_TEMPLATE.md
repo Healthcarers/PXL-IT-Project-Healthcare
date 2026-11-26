@@ -1,4 +1,4 @@
-\## Description
+## Description
 
 
 
@@ -6,7 +6,7 @@
 
 
 
-\## Related issue
+## Related issue
 
 
 
@@ -18,7 +18,7 @@ Sluit issue #
 
 
 
-\## Aanpassingen gemaakt
+## Aanpassingen gemaakt
 
 
 
@@ -26,45 +26,45 @@ Sluit issue #
 
 
 
-\- 
+- 
 
-\- 
+- 
 
-\- 
-
-
-
-\## Testing
+- 
 
 
 
-\- \[ ] Applicatie build succesvol.
-
-\- \[ ] Bestaande testen slagen.
-
-\- \[ ] Nieuwe of geüpdate testen zijn toegevoegd waar nodig.
-
-\- \[ ] Aanpassingen zijn lokaal getest.
+## Testing
 
 
 
-\## Checklist
+- [ ] Applicatie build succesvol.
+
+- [ ] Bestaande testen slagen.
+
+- [ ] Nieuwe of geüpdate testen zijn toegevoegd waar nodig.
+
+- [ ] Aanpassingen zijn lokaal getest.
 
 
 
-\- \[ ] Code volgt het project's Java coding conventions.
-
-\- \[ ] Geen onnodige code of debug statements achtergebleven.
-
-\- \[ ] Geen gevoelige informatie of credentials worden gecommit.
-
-\- \[ ] Documentatie is geupdate waar nodig.
-
-\- \[ ] De aanpassingen zijn klaar voor review.
+## Checklist
 
 
 
-\## Screenshots (als toepasselijk)
+- [ ] Code volgt het project's Java coding conventions.
+
+- [ ] Geen onnodige code of debug statements achtergebleven.
+
+- [ ] Geen gevoelige informatie of credentials worden gecommit.
+
+- [ ] Documentatie is geupdate waar nodig.
+
+- [ ] De aanpassingen zijn klaar voor review.
+
+
+
+## Screenshots (als toepasselijk)
 
 
 
@@ -72,7 +72,7 @@ Sluit issue #
 
 
 
-\## Review notes
+## Review notes
 
 
 
@@ -80,11 +80,11 @@ Sluit issue #
 
 
 
-\-
+-
 
-\-
+-
 
-\-
+-
 
 
 
