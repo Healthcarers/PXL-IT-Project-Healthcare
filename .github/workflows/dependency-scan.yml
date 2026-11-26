@@ -1,0 +1,103 @@
+name: Dependency & Vulnerability Scanning
+
+on:
+  push:
+    branches: [ main, dev, 'feature/**' ]
+  pull_request:
+    branches: [ main, dev ]
+    types: [ opened, synchronize, reopened ]
+  schedule:
+    # Elke donderdag om 07:00 UTC (08:00 CET / 09:00 CEST)
+    - cron: '0 7 * * 4'
+  workflow_dispatch:
+
+concurrency:
+  group: dependency-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+  pull-requests: write
+
+jobs:
+  dependency-review:
+    name: PR Dependency Review (GitHub Advisory DB)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run GitHub Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+          comment-summary-in-pr: on-failure
+
+  frontend-npm-audit:
+    name: Frontend Dependency Scan (npm audit)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'Frontend/package-lock.json'
+
+      - name: Run npm audit (High & Critical CVEs)
+        working-directory: ./Frontend
+        run: |
+          echo "### 📦 Frontend Dependency Audit (\`npm audit\`)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if npm audit --audit-level=high; then
+            echo "✅ **0 High or Critical vulnerabilities** found in \`Frontend/package-lock.json\`." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ **High or Critical vulnerabilities detected** in \`Frontend/package-lock.json\`!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+  trivy-dependency-scan:
+    name: Full Stack CVE Scan (Trivy Maven, npm & Docker)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Trivy Vulnerability Scanner (SARIF)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+
+      - name: Upload Trivy Scan Results to GitHub Security Tab
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
+          category: 'trivy-dependency-scan'
+
+      - name: Generate Dependency Vulnerability Summary
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'table'
+          severity: 'HIGH,CRITICAL'
+          ignore-unfixed: true
+
+      - name: Publish Security Scan Summary
+        if: always()
+        run: |
+          echo "### 🔒 Trivy Dependency & Config Scan Completed" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scanned Ecosystems:** Backend Maven (\`Api/pom.xml\`), Frontend npm (\`Frontend/package-lock.json\`), Dockerfiles (\`Api/Dockerfile\`, \`Frontend/Dockerfile\`)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Severity Filter:** \`HIGH\`, \`CRITICAL\` (with available fixes)" >> $GITHUB_STEP_SUMMARY
+          echo "- **SARIF Report:** Uploaded to **GitHub Security → Code scanning alerts**" >> $GITHUB_STEP_SUMMARY

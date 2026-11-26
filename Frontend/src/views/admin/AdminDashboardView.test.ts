@@ -126,7 +126,7 @@ describe("AdminDashboardView.vue", () => {
     expect(statCards[0]?.text()).toContain("5");
   });
 
-  it("toont melding bij Uitloggen en laat meldingen sluiten", async () => {
+  it("opent de uitlogbevestiging en ondersteunt annuleren", async () => {
     mockAdminGet();
 
     const wrapper = mount(AdminDashboardView);
@@ -137,12 +137,16 @@ describe("AdminDashboardView.vue", () => {
       .find((btn) => btn.text().trim() === "Uitloggen");
     await logoutButton!.trigger("click");
 
-    expect(wrapper.get("[role='status']").text()).toContain(
-      "Uitlogactie wordt gekoppeld in het authenticatie-issue.",
+    expect(wrapper.get("[role='dialog']").text()).toContain(
+      "Weet je zeker dat je wilt uitloggen?",
     );
 
-    await wrapper.get("button[aria-label='Sluit melding']").trigger("click");
-    expect(wrapper.find("[role='status']").exists()).toBe(false);
+    await wrapper
+      .get("[role='dialog']")
+      .findAll("button")
+      .find((button) => button.text().trim() === "Annuleren")!
+      .trigger("click");
+    expect(wrapper.find("[role='dialog']").exists()).toBe(false);
   });
 
   it("ondersteunt annuleren bij rol wijzigen/verwijderen en een lege tabelweergave", async () => {

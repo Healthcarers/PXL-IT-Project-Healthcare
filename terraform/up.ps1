@@ -75,7 +75,10 @@ if ($env:TF_VAR_use_acr -ne "false" -and [string]::IsNullOrWhiteSpace($env:TF_VA
     terraform apply -auto-approve `
         -target="azurerm_container_registry.acr" `
         -target="azurerm_role_assignment.api_acr_pull" `
-        -target="azurerm_role_assignment.web_acr_pull"
+        -target="azurerm_role_assignment.web_acr_pull" `
+        -target="azurerm_key_vault.kv" `
+        -target="azurerm_role_assignment.deployer_secrets_officer" `
+        -target="azurerm_role_assignment.api_secrets_user"
     if ($LASTEXITCODE -ne 0) {
         Write-Host "`n[ERROR] ACR provisioning failed." -ForegroundColor Red
         exit $LASTEXITCODE
@@ -91,22 +94,28 @@ if ($env:TF_VAR_use_acr -ne "false" -and [string]::IsNullOrWhiteSpace($env:TF_VA
         exit $LASTEXITCODE
     }
 
-    $apiImage = "$acrServer/healthcare-api:latest"
-    $webImage = "$acrServer/healthcare-web:latest"
+    $imageTag = Get-Date -Format "yyyyMMddHHmmss"
+    $apiImage = "$acrServer/healthcare-api:$imageTag"
+    $webImage = "$acrServer/healthcare-web:$imageTag"
 
-    docker build -t $apiImage (Join-Path $repoRoot "Api")
+    docker build -t $apiImage -t "$acrServer/healthcare-api:latest" (Join-Path $repoRoot "Api")
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     docker push $apiImage
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    docker push "$acrServer/healthcare-api:latest"
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
-    docker build -t $webImage (Join-Path $repoRoot "Frontend")
+    docker build -t $webImage -t "$acrServer/healthcare-web:latest" (Join-Path $repoRoot "Frontend")
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
     docker push $webImage
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    docker push "$acrServer/healthcare-web:latest"
     if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 }
 
 Write-Host "`n[3/3] Deploying full Azure Infrastructure, Web Gateway, API, and Monitoring..." -ForegroundColor Cyan
-terraform apply -auto-approve
+if (-not $imageTag) { $imageTag = "latest" }
+terraform apply -auto-approve -var="image_tag=$imageTag"
 if ($LASTEXITCODE -ne 0) {
     Write-Host "`n[ERROR] Terraform apply failed. Check the error message above." -ForegroundColor Red
     exit $LASTEXITCODE

@@ -7,6 +7,7 @@ import router from './router'
 const auth = vi.hoisted(() => ({
   person: null as { role: 'LECTOR' | 'CURSIST' } | null,
   isAuthenticated: vi.fn(),
+  logout: vi.fn(),
 }))
 const rooms = vi.hoisted(() => ({ getActive: vi.fn(), getByCode: vi.fn(), create: vi.fn() }))
 const scenarios = vi.hoisted(() => ({ list: vi.fn(), remove: vi.fn() }))
@@ -44,9 +45,14 @@ describe('Scenario navigation', () => {
 
       await profile.trigger('click')
       await wrapper.get('#lector-profile-menu button').trigger('click')
+      auth.logout.mockImplementationOnce(async () => {
+        auth.isAuthenticated.mockRejectedValueOnce(new Error('Not authenticated'))
+      })
       await wrapper.get('[role="dialog"]').findAll('button')
         .find(button => button.text() === 'Uitloggen')!.trigger('click')
-      expect(wrapper.get('[role="status"]').text()).toContain('Uitlogfunctionaliteit')
+      await flushPromises()
+      expect(auth.logout).toHaveBeenCalledOnce()
+      expect(router.currentRoute.value.name).toBe('login')
     } finally {
       wrapper.unmount()
     }
@@ -153,6 +159,29 @@ describe('Scenario navigation', () => {
     await vi.waitFor(() => expect(router.currentRoute.value.name).toBe('home'))
     expect(nav.get('a').attributes('aria-current')).toBe('page')
     wrapper.unmount()
+  })
+
+  it('opent de uitlogbevestiging via de cursist-navbar', async () => {
+    auth.person = { role: 'CURSIST' }
+    auth.isAuthenticated.mockResolvedValue(auth.person)
+    await router.push('/')
+    const wrapper = mount(App, { global: { plugins: [router], stubs: { RouterView: true } } })
+
+    try {
+      const logoutButton = wrapper.get('header button')
+      expect(logoutButton.text()).toBe('Uitloggen')
+
+      await logoutButton.trigger('click')
+
+      expect(wrapper.get('[role="dialog"]').text()).toContain(
+        'Weet je zeker dat je wilt uitloggen?',
+      )
+      await wrapper.get('[role="dialog"]').findAll('button')
+        .find(button => button.text() === 'Annuleren')!.trigger('click')
+      expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+    } finally {
+      wrapper.unmount()
+    }
   })
 
   it('keert via Room aanmaken vanuit Scenario’s terug naar dezelfde actieve room', async () => {

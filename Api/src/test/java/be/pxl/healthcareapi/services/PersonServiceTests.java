@@ -3,7 +3,7 @@ package be.pxl.healthcareapi.services;
 import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
 import be.pxl.healthcareapi.exception.NotFoundException;
-import be.pxl.healthcareapi.repos.PersonRepo;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.services.person.PersonService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 public class PersonServiceTests {
 
     @Mock
-    private PersonRepo personRepo;
+    private PersonRepository personRepo;
 
     @InjectMocks
     private PersonService personService;
