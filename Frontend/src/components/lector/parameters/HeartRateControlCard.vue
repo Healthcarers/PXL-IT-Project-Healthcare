@@ -107,13 +107,6 @@ function stepBy(delta: number) {
             </button>
           </div>
         </div>
-
-        <p
-          class="!m-0 mt-2 text-xs font-medium"
-          :class="isOutOfRange ? 'text-[#ef4444]' : 'text-[#8e8e99]'"
-        >
-          {{ isOutOfRange ? bounds.outOfRangeLabel : bounds.rangeLabel }}
-        </p>
       </div>
     </div>
   </article>
