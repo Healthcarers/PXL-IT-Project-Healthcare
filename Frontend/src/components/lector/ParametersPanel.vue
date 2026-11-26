@@ -7,6 +7,7 @@ import {
 } from "../../types/lector";
 import HeartRateControlCard from "./parameters/HeartRateControlCard.vue";
 import { useParameterStore } from "../../stores/ParameterStore.ts";
+import Spo2ControlCard from "./parameters/Spo2ControlCard.vue";
 
 const store = useParameterStore();
 
@@ -50,7 +51,6 @@ function updateParam<K extends keyof Parameters>(
     [field]: value,
   });
 }
-
 </script>
 
 <template>
@@ -94,6 +94,14 @@ function updateParam<K extends keyof Parameters>(
         :out-of-range="outOfRangeKey === 'heartRate'"
         @update:model-value="updateParam('heartRate', $event)"
         @out-of-range="handleOutOfRange('heartRate')"
+      />
+
+      <Spo2ControlCard
+        :model-value="props.parameters.spo2"
+        :horizontal="expanded"
+        :out-of-range="outOfRangeKey === 'spo2'"
+        @update:model-value="updateParam('spo2', $event)"
+        @out-of-range="handleOutOfRange('spo2')"
       />
     </div>
   </section>
