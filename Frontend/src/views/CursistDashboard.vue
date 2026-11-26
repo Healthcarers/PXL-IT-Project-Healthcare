@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onUnmounted, ref } from 'vue'
 import { connected } from '../services/stompClient.ts'
 import PatientMonitorGrid from '../components/charts/PatientMonitorGrid.vue'
 import DefibrillatorPanel from '../components/defibrillator/DefibrillatorPanel.vue'
+import { useDefibStore } from '../stores/defibStore.ts'
 
+const defibStore = useDefibStore()
 const showDefibrillator = ref(false)
 
 function toggleDefibrillator() {
   showDefibrillator.value = !showDefibrillator.value
 }
+
+onUnmounted(() => {
+  defibStore.cancelCharge()
+})
 </script>
 
 <template>

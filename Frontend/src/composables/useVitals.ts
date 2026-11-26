@@ -12,10 +12,10 @@ export interface VitalsResponse {
     diasIbp: number;
     temperature: number;
 }
+import type { VitalsResponse } from "../types/vitals";
 
 const VITALS_URL = "/vitals";
 const VITALS_TOPIC = "/topic/vitals";
-
 const vitals = ref<VitalsResponse | null>(null);
 let started = false;
 

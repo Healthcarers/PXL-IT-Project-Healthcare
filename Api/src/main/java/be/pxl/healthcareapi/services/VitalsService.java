@@ -39,7 +39,7 @@ public class VitalsService {
     private static VitalsSnapshot applyValues(VitalsUpdateRequest req, VitalsSnapshot current, double maxBloodPressure) {
         return new VitalsSnapshot(
                 resolveValue("heartRate", req.heartRate(), current, VitalsSnapshot::heartRate, 0, 220),
-                resolveValue("spo2", req.spo2(), current, VitalsSnapshot::spo2, 50, 100),
+                resolveValue("spo2", req.spo2(), current, VitalsSnapshot::spo2, 10, 100),
                 resolveValue("respRate", req.respRate(), current, VitalsSnapshot::respRate, 0, 60),
                 resolveValue("etco2", req.etco2(), current, VitalsSnapshot::etco2, 0, 100),
                 resolveValue("ampScale", req.ampScale(), current, VitalsSnapshot::ampScale, 0.1, 3),

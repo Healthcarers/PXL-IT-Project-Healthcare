@@ -1,7 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ScenarioView from './ScenarioView.vue'
-import { scenarioService, type Scenario } from '../services/scenarioService'
+import { scenarioService } from '../services/scenarioService'
+import type { Scenario } from '../types/scenario'
 
 vi.mock('../services/scenarioService', () => ({
   scenarioService: { save: vi.fn(), get: vi.fn() },

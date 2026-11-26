@@ -1,6 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import * as defibAudio from '../services/defibAudio.ts'
 import {
+  CHARGE_DURATION_MS,
   DEFAULT_DEFIB_ENERGY,
   DEFIB_ENERGY_STEP,
   MAX_DEFIB_ENERGY,
@@ -12,15 +14,27 @@ import {
 describe('defibStore', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+    vi.restoreAllMocks()
   })
 
-  it('starts with the default energy value of 150 J', () => {
+  afterEach(() => {
+    const store = useDefibStore()
+    store.cancelCharge()
+    vi.useRealTimers()
+  })
+
+  it('starts with the default energy value of 150 J and idle charge state', () => {
     const store = useDefibStore()
 
     expect(store.selectedEnergy).toBe(DEFAULT_DEFIB_ENERGY)
     expect(store.selectedEnergy).toBe(150)
+    expect(store.hasSelectedEnergy).toBe(true)
     expect(store.canDecrease).toBe(true)
     expect(store.canIncrease).toBe(true)
+    expect(store.chargeStatus).toBe('idle')
+    expect(store.chargeProgress).toBe(0)
+    expect(store.chargedEnergy).toBeNull()
+    expect(store.canCharge).toBe(true)
   })
 
   it('increases and decreases energy in steps of 10 J', () => {
@@ -64,5 +78,60 @@ describe('defibStore', () => {
     store.resetEnergy()
 
     expect(store.selectedEnergy).toBe(DEFAULT_DEFIB_ENERGY)
+  })
+
+  it('refuses to charge when no energy is selected (null)', () => {
+    const startSoundSpy = vi.spyOn(defibAudio, 'startChargeSound')
+    const store = useDefibStore()
+
+    store.clearEnergy()
+    expect(store.selectedEnergy).toBeNull()
+    expect(store.hasSelectedEnergy).toBe(false)
+    expect(store.canDecrease).toBe(false)
+    expect(store.canIncrease).toBe(true)
+    expect(store.canCharge).toBe(false)
+
+    expect(store.startCharge()).toBe(false)
+    expect(store.chargeStatus).toBe('idle')
+    expect(startSoundSpy).not.toHaveBeenCalled()
+
+    store.increaseEnergy()
+    expect(store.selectedEnergy).toBe(MIN_DEFIB_ENERGY)
+    expect(store.canCharge).toBe(true)
+  })
+
+  it('charges over time with sound and resets charge when energy changes or cancelled', () => {
+    vi.useFakeTimers()
+    const startSoundSpy = vi.spyOn(defibAudio, 'startChargeSound')
+    const stopSoundSpy = vi.spyOn(defibAudio, 'stopChargeSound')
+    const store = useDefibStore()
+
+    expect(store.startCharge()).toBe(true)
+    expect(store.chargeStatus).toBe('charging')
+    expect(store.isCharging).toBe(true)
+    expect(store.canCharge).toBe(false)
+    expect(startSoundSpy).toHaveBeenCalledOnce()
+    expect(startSoundSpy).toHaveBeenCalledWith(CHARGE_DURATION_MS)
+
+    // Cannot start a second charge while already charging
+    expect(store.startCharge()).toBe(false)
+
+    vi.advanceTimersByTime(CHARGE_DURATION_MS / 2)
+    expect(store.chargeProgress).toBeGreaterThan(0)
+    expect(store.chargeProgress).toBeLessThan(100)
+    expect(store.chargeStatus).toBe('charging')
+
+    vi.advanceTimersByTime(CHARGE_DURATION_MS / 2)
+    expect(store.chargeProgress).toBe(100)
+    expect(store.chargeStatus).toBe('charged')
+    expect(store.isCharged).toBe(true)
+    expect(store.chargedEnergy).toBe(150)
+
+    // Changing energy discharges and stops any sound
+    store.setEnergy(200)
+    expect(store.chargeStatus).toBe('idle')
+    expect(store.chargeProgress).toBe(0)
+    expect(store.chargedEnergy).toBeNull()
+    expect(stopSoundSpy).toHaveBeenCalled()
   })
 })
