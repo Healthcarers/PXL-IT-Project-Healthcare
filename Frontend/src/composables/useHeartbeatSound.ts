@@ -12,6 +12,7 @@ import type { WaveformChunk } from '../types/waveform';
 import { useChannelActive } from './useChannelActive';
 import {useVitals} from "./useVitals.ts";
 import { monitorTopic, useMonitorRoom } from './useMonitorRoom';
+import { createBeatDetector } from './waveformBeatDetector';
 
 const RATE = 250;                             // must match the ECG source sampleRate
 const R_THRESHOLD = 0.5;                      // mV, the R peak is about 1.0
@@ -44,14 +45,12 @@ export function useHeartbeatSound() {
     const flatline = computed(() => bpm.value === 0);
 
     const offsets: number[] = [];
-    let prev = 0;
-    let lastBeat = -Infinity;
+    const detector = createBeatDetector(R_THRESHOLD, MIN_BEAT_GAP);
 
     const room = useMonitorRoom();
     watch(room, (code, _, onCleanup) => {
         offsets.length = 0;
-        prev = 0;
-        lastBeat = -Infinity;
+        detector.reset();
         const unsubscribe = subscribeTopic<WaveformChunk>(monitorTopic(code, 'waveform/ecg'), chunk => {
             const n = chunk.samples.length;
             if (n === 0 || !isAudioRunning()) return;
@@ -63,22 +62,14 @@ export function useHeartbeatSound() {
             if (offsets.length > OFFSET_WINDOW) offsets.shift();
             const base = Math.min(...offsets);
 
-            for (let i = 0; i < n; i++) {
-                const idx = chunk.startIndex + i;
-                const v = chunk.samples[i];
-                const rising = prev < R_THRESHOLD && v >= R_THRESHOLD;
-                prev = v;
-
-                if (!rising || idx - lastBeat < MIN_BEAT_GAP) continue;
-                lastBeat = idx;
-
-                if (!active.value) continue;
+            detector.forEachBeat(chunk.startIndex, chunk.samples, idx => {
+                if (!active.value) return;
 
                 const t = base + idx / RATE - SOUND_LEAD_S;
                 if (t >= audioNow() - MAX_LATE_S) {
                     scheduleBeep(Math.max(t, audioNow()), beepHz.value);
                 }
-            }
+            });
         });
         onCleanup(unsubscribe);
     }, { immediate: true });

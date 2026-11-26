@@ -1,10 +1,11 @@
 package be.pxl.healthcareapi.controllers;
 
 import be.pxl.healthcareapi.dto.VitalsResponse;
+import be.pxl.healthcareapi.dto.LoadScenarioRequest;
+import be.pxl.healthcareapi.dto.SimulationControlRequest;
 import be.pxl.healthcareapi.exception.BadRequestException;
 import be.pxl.healthcareapi.services.RoomSimulationService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
@@ -32,18 +33,15 @@ public class RoomSimulationController {
 
     @PutMapping("/simulation/scenario")
     public RoomSimulationService.State load(@PathVariable String code, @AuthenticationPrincipal Jwt jwt,
-                                            @Valid @RequestBody Load request) {
+                                            @Valid @RequestBody LoadScenarioRequest request) {
         return simulations.load(code, userId(jwt), request.scenarioId());
     }
 
     @PostMapping("/simulation")
     public RoomSimulationService.State control(@PathVariable String code, @AuthenticationPrincipal Jwt jwt,
-                                               @Valid @RequestBody Control request) {
+                                               @Valid @RequestBody SimulationControlRequest request) {
         return simulations.control(code, userId(jwt), request.action());
     }
-
-    public record Load(@NotNull UUID scenarioId) {}
-    public record Control(@NotNull RoomSimulationService.Action action) {}
 
     private static UUID userId(Jwt jwt) {
         try {

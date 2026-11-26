@@ -75,22 +75,44 @@ class RoomSimulationServiceTest {
     }
 
     @Test
-    void pauseFreezesOnlyElapsedTimeResumeContinuesAndRestartResetsIt() {
+    void pauseFreezesElapsedTime() {
         service.control("ABC123", owner, START);
         clock.addAndGet(5300);
-        assertThat(service.control("ABC123", owner, PAUSE).elapsedMillis()).isEqualTo(5300);
+
+        var paused = service.control("ABC123", owner, PAUSE);
         clock.addAndGet(9000);
+
+        assertThat(paused.elapsedMillis()).isEqualTo(5300);
         assertThat(service.get("ABC123", owner).elapsedMillis()).isEqualTo(5300);
         assertThat(service.snapshots()).containsEntry("ABC123", initial);
+    }
+
+    @Test
+    void resumeContinuesElapsedTime() {
+        service.control("ABC123", owner, START);
+        clock.addAndGet(5300);
+        service.control("ABC123", owner, PAUSE);
+        clock.addAndGet(9000);
+
         service.control("ABC123", owner, START);
         clock.addAndGet(1700);
+
         assertThat(service.get("ABC123", owner).elapsedMillis()).isEqualTo(7000);
+    }
+
+    @Test
+    void restartResetsElapsedTime() {
+        service.control("ABC123", owner, START);
+        clock.addAndGet(5300);
 
         var restarted = service.control("ABC123", owner, RESTART);
+
         assertThat(restarted.status()).isEqualTo(RUNNING);
         assertThat(restarted.elapsedMillis()).isZero();
         assertThat(restarted.vitals()).isEqualTo(VitalsResponse.from(initial));
+
         clock.addAndGet(4000);
+
         assertThat(service.get("ABC123", owner).elapsedMillis()).isEqualTo(4000);
     }
 

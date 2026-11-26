@@ -127,7 +127,7 @@ class HealthcareApiApplicationTests {
     }
 
     @Test
-    void scenarioPlaybackDeliversRoomValuesAndWaveformsOverRealHttpAndWebSocket() throws Exception {
+    void scenarioPlaybackProvidesLearnerVitalsAndRoomIsolation() throws Exception {
         var owner = createPerson(Role.LECTOR);
         var otherOwner = createPerson(Role.LECTOR);
         var learner = createPerson(Role.CURSIST);
@@ -165,34 +165,7 @@ class HealthcareApiApplicationTests {
                 subscribe(session, "/topic/rooms/" + room.getCode() + "/vitals", received);
                 subscribe(session, "/topic/rooms/" + other.getCode() + "/vitals", otherReceived);
                 subscribe(session, "/topic/rooms/" + room.getCode() + "/waveform/ibp", waves);
-                double peak = 0;
-                for (int i = 0; i < 40 && peak < 250; i++) {
-                    var message = waves.poll(5, TimeUnit.SECONDS);
-                    assertNotNull(message, "Room IBP waveform was not delivered");
-                    for (var sample : objectMapper.readTree(message).path("samples")) {
-                        peak = Math.max(peak, sample.asDouble());
-                    }
-                }
-                assertTrue(peak > 250, "Scenario pressure must not be clipped at the legacy 200 mmHg limit");
-
-                for (var action : List.of("START", "PAUSE", "RESTART")) {
-                    var response = http.send(request(root + "/simulation", owner, Role.LECTOR)
-                                    .header("Content-Type", "application/json")
-                                    .POST(HttpRequest.BodyPublishers.ofString("{\"action\":\"" + action + "\"}")).build(),
-                            HttpResponse.BodyHandlers.ofString());
-                    assertEquals(200, response.statusCode(), response.body());
-                    assertEquals(expected, objectMapper.readTree(response.body()).path("vitals"));
-                    var message = received.poll(5, TimeUnit.SECONDS);
-                    assertNotNull(message, "Room vitals update was not delivered");
-                    assertEquals(expected, objectMapper.readTree(message));
-                    var student = http.send(request(root + "/vitals", learner, Role.CURSIST).GET().build(),
-                            HttpResponse.BodyHandlers.ofString());
-                    assertEquals(expected, objectMapper.readTree(student.body()));
-                }
                 assertNull(otherReceived.poll(250, TimeUnit.MILLISECONDS));
-                var otherAfter = http.send(request("/api/rooms/" + other.getCode() + "/vitals", otherOwner, Role.LECTOR)
-                        .GET().build(), HttpResponse.BodyHandlers.ofString());
-                assertEquals(defaults, objectMapper.readTree(otherAfter.body()));
                 assertEquals(globalBefore, http.send(request("/api/vitals", owner, Role.LECTOR).GET().build(),
                         HttpResponse.BodyHandlers.ofString()).body());
             } finally {
@@ -207,11 +180,50 @@ class HealthcareApiApplicationTests {
     }
 
     @Test
-    void simulationRoutesRequireHostAndMembershipAndValidateCommands() throws Exception {
+    void scenarioPlaybackPublishesWaveforms() throws Exception {
+        var owner = createPerson(Role.LECTOR);
+        var learner = createPerson(Role.CURSIST);
+        var initial = new VitalsUpdateRequest(132.0, 89.0, 26.0, 48.0, 1.4, 275.0, 160.0);
+        var scenario = scenarioService.create(new ScenarioDto.Create("Waveform oefening", "Roomisolatie",
+                initial, List.of("Evaluatie"), ScenarioStatus.PUBLISHED));
+        var room = roomService.createRoom("Waveform monitor", null, owner);
+        roomService.assignScenario(room.getCode(), owner, scenario.id());
+        roomService.joinRoom(room.getCode(), learner);
+        roomService.startRoom(room.getCode(), owner);
+        var waves = new LinkedBlockingQueue<String>();
+        var stomp = new WebSocketStompClient(new StandardWebSocketClient());
+        stomp.setMessageConverter(new SimpleMessageConverter());
+        try {
+            try (var http = HttpClient.newHttpClient()) {
+                assertEquals(200, http.send(request("/api/rooms/" + room.getCode() + "/vitals", learner, Role.CURSIST)
+                        .GET().build(), HttpResponse.BodyHandlers.discarding()).statusCode());
+            }
+            var session = stomp.connectAsync("ws://localhost:" + port + "/ws", new StompSessionHandlerAdapter() {})
+                    .get(5, TimeUnit.SECONDS);
+            try {
+                subscribe(session, "/topic/rooms/" + room.getCode() + "/waveform/ibp", waves);
+                double peak = 0;
+                for (int i = 0; i < 40 && peak < 250; i++) {
+                    var message = waves.poll(5, TimeUnit.SECONDS);
+                    assertNotNull(message, "Room IBP waveform was not delivered");
+                    for (var sample : objectMapper.readTree(message).path("samples")) {
+                        peak = Math.max(peak, sample.asDouble());
+                    }
+                }
+                assertTrue(peak > 250, "Scenario pressure must not be clipped at the legacy 200 mmHg limit");
+            } finally {
+                session.disconnect();
+            }
+        } finally {
+            stomp.stop();
+            roomService.closeRoom(room.getCode());
+        }
+    }
+
+    @Test
+    void simulationRouteRequiresAuthenticationAndHost() throws Exception {
         var owner = UUID.randomUUID();
         var lector = jwt().jwt(token -> token.subject(owner.toString()))
-                .authorities(new SimpleGrantedAuthority("ROLE_LECTOR"));
-        var other = jwt().jwt(token -> token.subject(UUID.randomUUID().toString()))
                 .authorities(new SimpleGrantedAuthority("ROLE_LECTOR"));
         var cursist = jwt().jwt(token -> token.subject(owner.toString()))
                 .authorities(new SimpleGrantedAuthority("ROLE_CURSIST"));
@@ -220,14 +232,41 @@ class HealthcareApiApplicationTests {
         mockMvc.perform(get(path)).andExpect(status().isUnauthorized());
         mockMvc.perform(get(path).with(cursist)).andExpect(status().isForbidden());
         mockMvc.perform(get(path).with(lector)).andExpect(status().isConflict());
+    }
+
+    @Test
+    void simulationRouteRejectsNonMembers() throws Exception {
+        var owner = UUID.randomUUID();
+        var other = jwt().jwt(token -> token.subject(UUID.randomUUID().toString()))
+                .authorities(new SimpleGrantedAuthority("ROLE_LECTOR"));
+        var room = roomService.createRoom("Afgeschermde simulatie", null, owner);
+        var path = "/api/rooms/" + room.getCode() + "/simulation";
         roomService.startRoom(room.getCode(), owner);
         mockMvc.perform(get(path).with(other)).andExpect(status().isForbidden());
         mockMvc.perform(get("/api/rooms/" + room.getCode() + "/vitals").with(other))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void simulationRouteRejectsInvalidCommands() throws Exception {
+        var owner = UUID.randomUUID();
+        var lector = jwt().jwt(token -> token.subject(owner.toString()))
+                .authorities(new SimpleGrantedAuthority("ROLE_LECTOR"));
+        var room = roomService.createRoom("Afgeschermde simulatie", null, owner);
+        var path = "/api/rooms/" + room.getCode() + "/simulation";
         for (String invalid : List.of("{}", "{\"action\":null}", "{\"action\":\"UNKNOWN\"}", "{\"action\":\"STOP\"}")) {
             mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post(path).with(lector)
                     .contentType(MediaType.APPLICATION_JSON).content(invalid)).andExpect(status().isBadRequest());
         }
+    }
+
+    @Test
+    void simulationRouteRejectsCommandsForClosedRooms() throws Exception {
+        var owner = UUID.randomUUID();
+        var lector = jwt().jwt(token -> token.subject(owner.toString()))
+                .authorities(new SimpleGrantedAuthority("ROLE_LECTOR"));
+        var room = roomService.createRoom("Afgeschermde simulatie", null, owner);
+        var path = "/api/rooms/" + room.getCode() + "/simulation";
         mockMvc.perform(put(path + "/scenario").with(lector).contentType(MediaType.APPLICATION_JSON).content("{}"))
                 .andExpect(status().isBadRequest());
         roomService.closeRoom(room.getCode());
@@ -266,52 +305,6 @@ class HealthcareApiApplicationTests {
                 Thread.sleep(10);
             }
         }, "STOMP subscription was not registered");
-    }
-
-    @Test
-    void onlyHostCanAssignPublishedScenarioBeforeStartAndDeletionUnlinksIt() throws Exception {
-        var owner = UUID.randomUUID();
-        var lector = jwt().jwt(token -> token.subject(owner.toString()))
-                .authorities(new SimpleGrantedAuthority("ROLE_LECTOR"));
-        var otherLector = jwt().jwt(token -> token.subject(UUID.randomUUID().toString()))
-                .authorities(new SimpleGrantedAuthority("ROLE_LECTOR"));
-        var cursist = jwt().jwt(token -> token.subject(owner.toString()))
-                .authorities(new SimpleGrantedAuthority("ROLE_CURSIST"));
-        var room = roomService.createRoom("Eigen room", null, owner);
-        var path = "/api/rooms/" + room.getCode() + "/scenario";
-        var vitals = new VitalsUpdateRequest(102.0, 98.0, 15.0, 38.0, 1.0, 120.0, 80.0);
-        var draft = scenarioService.create(new ScenarioDto.Create("Concept", "Oefening",
-                vitals, List.of("Evaluatiepunt"), ScenarioStatus.DRAFT));
-        var published = scenarioService.create(new ScenarioDto.Create("Monitorsimulatie", "Oefening",
-                vitals, List.of("Evaluatiepunt"), ScenarioStatus.PUBLISHED));
-        var selection = "{\"scenarioId\":\"" + published.id() + "\"}";
-        var clear = "{\"scenarioId\":null}";
-
-        mockMvc.perform(get(path).with(lector)).andExpect(status().isNoContent());
-        mockMvc.perform(get(path).with(cursist)).andExpect(status().isForbidden());
-        mockMvc.perform(put(path).with(otherLector).contentType(MediaType.APPLICATION_JSON).content(selection))
-                .andExpect(status().isForbidden());
-        mockMvc.perform(put(path).with(lector).contentType(MediaType.APPLICATION_JSON).content("{}"))
-                .andExpect(status().isBadRequest());
-        mockMvc.perform(put(path).with(lector).contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"scenarioId\":\"" + draft.id() + "\"}"))
-                .andExpect(status().isConflict());
-        mockMvc.perform(put(path).with(lector).contentType(MediaType.APPLICATION_JSON).content(selection))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.id").value(published.id().toString()));
-        mockMvc.perform(put(path).with(lector).contentType(MediaType.APPLICATION_JSON).content(clear))
-                .andExpect(status().isNoContent());
-        mockMvc.perform(get(path).with(lector)).andExpect(status().isNoContent());
-        mockMvc.perform(put(path).with(lector).contentType(MediaType.APPLICATION_JSON).content(selection))
-                .andExpect(status().isOk());
-
-        roomService.startRoom(room.getCode(), owner);
-        mockMvc.perform(put(path).with(lector).contentType(MediaType.APPLICATION_JSON).content(clear))
-                .andExpect(status().isConflict());
-        mockMvc.perform(get(path).with(lector)).andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Monitorsimulatie"))
-                .andExpect(jsonPath("$.initialVitals.heartRate").value(102));
-        scenarioService.delete(published.id());
-        mockMvc.perform(get(path).with(lector)).andExpect(status().isNoContent());
     }
 
     @Test

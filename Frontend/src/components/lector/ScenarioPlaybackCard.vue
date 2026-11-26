@@ -5,6 +5,7 @@ import { connected, subscribeTopic } from '../../services/stompClient'
 import { scenarioService, type Scenario } from '../../services/scenarioService'
 import { roomSimulationService, type RoomSimulation, type SimulationAction } from '../../services/roomSimulationService'
 import ConfirmModal from '../ConfirmModal.vue'
+import { createRequestGuard } from './requestGuard'
 
 const props = defineProps<{ code: string; disabled?: boolean }>()
 const state = ref<RoomSimulation>()
@@ -18,8 +19,7 @@ const selectedId = ref('')
 const loadingCatalogue = ref(false)
 const now = ref(Date.now())
 let receivedAt = Date.now()
-let generation = 0
-let latestRequest = 0
+const requests = createRequestGuard()
 let clockTimer: ReturnType<typeof setInterval> | undefined
 const unavailable = computed(() => props.disabled || busy.value || !state.value)
 const elapsed = computed(() => {
@@ -44,29 +44,28 @@ function apply(result: RoomSimulation) {
 
 async function refresh() {
   if (busy.value || props.disabled) return
-  const request = ++latestRequest
-  const version = generation
+  const request = requests.begin()
   try {
     const result = await roomSimulationService.get(props.code)
-    if (version === generation && request === latestRequest) apply(result)
+    if (request.isCurrent()) apply(result)
   } catch (cause) {
-    if (version === generation && request === latestRequest) error.value = failure(cause)
+    if (request.isCurrent()) error.value = failure(cause)
   }
 }
 
 async function control(action: SimulationAction) {
   if (unavailable.value) return
-  const version = generation
-  latestRequest++
+  requests.invalidate()
+  const request = requests.begin()
   busy.value = true
   error.value = ''
   try {
     const result = await roomSimulationService.control(props.code, action)
-    if (version === generation) apply(result)
+    if (request.isCurrent()) apply(result)
   } catch (cause) {
-    if (version === generation) error.value = failure(cause)
+    if (request.isCurrent()) error.value = failure(cause)
   } finally {
-    if (version === generation) busy.value = false
+    if (request.isCurrent()) busy.value = false
   }
 }
 
@@ -78,18 +77,18 @@ function confirmRestart() {
 
 async function openPicker() {
   if (props.disabled || busy.value) return
-  const version = generation
+  const request = requests.begin()
   pickerOpen.value = true
   pickerError.value = ''
   selectedId.value = state.value?.scenario?.id ?? ''
   loadingCatalogue.value = true
   try {
     const scenarios = await scenarioService.list()
-    if (version === generation) catalogue.value = scenarios.filter(scenario => scenario.status === 'PUBLISHED')
+    if (request.isCurrent()) catalogue.value = scenarios.filter(scenario => scenario.status === 'PUBLISHED')
   } catch (cause) {
-    if (version === generation) pickerError.value = failure(cause)
+    if (request.isCurrent()) pickerError.value = failure(cause)
   } finally {
-    if (version === generation) loadingCatalogue.value = false
+    if (request.isCurrent()) loadingCatalogue.value = false
   }
 }
 
@@ -99,24 +98,24 @@ async function loadScenario() {
     pickerError.value = 'Kies een gepubliceerd scenario.'
     return
   }
-  const version = generation
-  latestRequest++
+  requests.invalidate()
+  const request = requests.begin()
   busy.value = true
   pickerError.value = ''
   try {
     const result = await roomSimulationService.load(props.code, selectedId.value)
-    if (version !== generation) return
+    if (!request.isCurrent()) return
     apply(result)
     pickerOpen.value = false
   } catch (cause) {
-    if (version === generation) pickerError.value = failure(cause)
+    if (request.isCurrent()) pickerError.value = failure(cause)
   } finally {
-    if (version === generation) busy.value = false
+    if (request.isCurrent()) busy.value = false
   }
 }
 
 watch(() => props.code, (code, _, onCleanup) => {
-  generation++
+  requests.reset()
   state.value = undefined
   busy.value = false
   pickerOpen.value = false
@@ -127,7 +126,7 @@ watch(() => props.code, (code, _, onCleanup) => {
   const stopConnectionWatch = watch(connected, online => { if (online) void refresh() })
   const fallback = setInterval(() => void refresh(), 5000)
   onCleanup(() => {
-    generation++
+    requests.reset()
     unsubscribe()
     stopConnectionWatch()
     clearInterval(fallback)
@@ -158,27 +157,31 @@ onUnmounted(() => clearInterval(clockTimer))
     </div>
     <div class="mt-4 flex flex-wrap gap-2">
       <button type="button" class="scenario-action" :class="state?.status === 'RUNNING' ? 'pause' : 'start'"
-        :disabled="unavailable || !state?.scenario"
-        @click="control(state?.status === 'RUNNING' ? 'PAUSE' : 'START')">
+        :disabled="unavailable || !state?.scenario" @click="control(state?.status === 'RUNNING' ? 'PAUSE' : 'START')">
         {{ state?.status === 'RUNNING' ? 'Pauze' : 'Start' }}
       </button>
       <button type="button" class="scenario-action" :disabled="unavailable || !state?.scenario"
         @click="restartModalOpen = true">Herstarten</button>
     </div>
-    <button type="button" class="scenario-action mt-3" :disabled="disabled || busy" @click="openPicker">Nieuw scenario laden</button>
+    <button type="button" class="scenario-action mt-3" :disabled="disabled || busy" @click="openPicker">Nieuw scenario
+      laden</button>
     <div v-if="error" class="mt-4 rounded-full border border-[#ae9a64] px-4 py-3 text-center text-sm">
       <p role="alert">{{ error }}</p>
-      <button type="button" class="mt-1 underline" :disabled="busy || disabled" @click="refresh">Opnieuw proberen</button>
+      <button type="button" class="mt-1 underline" :disabled="busy || disabled" @click="refresh">Opnieuw
+        proberen</button>
     </div>
-    <ConfirmModal :open="pickerOpen" title="Nieuw scenario laden" message="Kies een gepubliceerd scenario. Klik daarna op Start om de waarden toe te passen."
-      confirm-label="Laden" :loading="busy || loadingCatalogue" @cancel="pickerOpen = false" @confirm="loadScenario">
+    <ConfirmModal :open="pickerOpen" title="Nieuw scenario laden"
+      message="Kies een gepubliceerd scenario. Klik daarna op Start om de waarden toe te passen." confirm-label="Laden"
+      :loading="busy || loadingCatalogue" @cancel="pickerOpen = false" @confirm="loadScenario">
       <div class="mt-4">
         <label for="live-scenario" class="mb-2 block text-sm font-semibold">Scenario</label>
-        <select id="live-scenario" v-model="selectedId" :disabled="busy || loadingCatalogue" class="w-full rounded-lg border border-gray-300 p-3 text-sm">
+        <select id="live-scenario" v-model="selectedId" :disabled="busy || loadingCatalogue"
+          class="w-full rounded-lg border border-gray-300 p-3 text-sm">
           <option value="">Kies een scenario</option>
           <option v-for="scenario in catalogue" :key="scenario.id" :value="scenario.id">{{ scenario.name }}</option>
         </select>
-        <p v-if="!loadingCatalogue && !catalogue.length && !pickerError" class="mt-2 text-sm">Er zijn geen gepubliceerde scenario’s.</p>
+        <p v-if="!loadingCatalogue && !catalogue.length && !pickerError" class="mt-2 text-sm">Er zijn geen gepubliceerde
+          scenario’s.</p>
         <p v-if="pickerError" role="alert" class="mt-2 text-sm text-red-700">{{ pickerError }}</p>
       </div>
     </ConfirmModal>
@@ -197,10 +200,33 @@ onUnmounted(() => clearInterval(clockTimer))
   color: white;
   background: transparent;
 }
-.scenario-action:hover:not(:disabled) { background: #232327; }
-.scenario-action.start { border-color: #31ee64; background: #31ee64; color: black; }
-.scenario-action.start:hover:not(:disabled) { background: #65f58a; }
-.scenario-action.pause { border-color: #facc15; background: #facc15; color: black; }
-.scenario-action.pause:hover:not(:disabled) { background: #fde047; }
-.scenario-action:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.scenario-action:hover:not(:disabled) {
+  background: #232327;
+}
+
+.scenario-action.start {
+  border-color: #31ee64;
+  background: #31ee64;
+  color: black;
+}
+
+.scenario-action.start:hover:not(:disabled) {
+  background: #65f58a;
+}
+
+.scenario-action.pause {
+  border-color: #facc15;
+  background: #facc15;
+  color: black;
+}
+
+.scenario-action.pause:hover:not(:disabled) {
+  background: #fde047;
+}
+
+.scenario-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 </style>

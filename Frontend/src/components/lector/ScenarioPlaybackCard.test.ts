@@ -27,6 +27,15 @@ function button(text: string) {
   return found
 }
 
+async function mountCard(code = 'ABC123') {
+  wrapper = mount(ScenarioPlaybackCard, { props: { code } })
+  await flushPromises()
+}
+
+function elapsed() {
+  return wrapper.get('[aria-label="Verstreken scenariotijd"]')
+}
+
 beforeEach(() => {
   vi.useFakeTimers()
   vi.resetAllMocks()
@@ -38,84 +47,120 @@ afterEach(() => {
 })
 
 describe('room scenario controls', () => {
-  it('starts, pauses, resumes and only restarts the elapsed timer after confirmation', async () => {
-    wrapper = mount(ScenarioPlaybackCard, { props: { code: 'ABC123' } })
-    await flushPromises()
+  it('starts the scenario and updates the control to pause', async () => {
+    await mountCard()
+
     expect(wrapper.text()).toContain('Acute oefening')
     expect(wrapper.findAll('button').map(candidate => candidate.text()))
       .toEqual(['Start', 'Herstarten', 'Nieuw scenario laden'])
+
     const toggle = button('Start')
+
     expect(toggle.classes()).toContain('start')
     vi.mocked(roomSimulationService.control).mockResolvedValueOnce(state('RUNNING'))
+
     await toggle.trigger('click')
     await flushPromises()
+
+
     expect(toggle.text()).toBe('Pauze')
     expect(toggle.classes()).toContain('pause')
     expect(toggle.classes()).not.toContain('start')
     expect(button('Pauze').element).toBe(toggle.element)
+
     await vi.advanceTimersByTimeAsync(2250)
-    expect(wrapper.get('[aria-label="Verstreken scenariotijd"]').text()).toBe('00:02')
+
+    expect(elapsed().text()).toBe('00:02')
+  })
+
+  it('pauses the timer, resumes it and keeps elapsed time while paused', async () => {
+    await mountCard()
+
+    vi.mocked(roomSimulationService.control).mockResolvedValueOnce(state('RUNNING'))
+
+    await button('Start').trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(2250)
 
     vi.mocked(roomSimulationService.control).mockResolvedValueOnce(state('PAUSED', 2250))
+
     await button('Pauze').trigger('click')
     await flushPromises()
     await vi.advanceTimersByTimeAsync(1000)
-    expect(wrapper.get('[aria-label="Verstreken scenariotijd"]').text()).toBe('00:02')
-    expect(toggle.text()).toBe('Start')
-    expect(toggle.classes()).toContain('start')
-    expect(toggle.classes()).not.toContain('pause')
-    expect(button('Start').element).toBe(toggle.element)
-    expect(toggle.attributes('disabled')).toBeUndefined()
+    
+    expect(elapsed().text()).toBe('00:02')
+    expect(button('Start').classes()).toContain('start')
 
     vi.mocked(roomSimulationService.control).mockResolvedValueOnce(state('RUNNING', 2250))
+
     await button('Start').trigger('click')
     await flushPromises()
     await vi.advanceTimersByTimeAsync(1000)
-    expect(wrapper.get('[aria-label="Verstreken scenariotijd"]').text()).toBe('00:03')
+
+    expect(elapsed().text()).toBe('00:03')
+  })
+
+  it('restarts the scenario only after confirmation and resets elapsed time', async () => {
+    await mountCard()
+
     vi.mocked(roomSimulationService.control).mockResolvedValueOnce(state('RUNNING'))
+
+    await button('Start').trigger('click')
+    await flushPromises()
+    await vi.advanceTimersByTimeAsync(3000)
     await button('Herstarten').trigger('click')
+
     expect(wrapper.get('[role="dialog"]').text()).toContain('Wil je het scenario herstarten?')
-    expect(roomSimulationService.control).toHaveBeenCalledTimes(3)
+    expect(roomSimulationService.control).toHaveBeenCalledTimes(1)
+
+    vi.mocked(roomSimulationService.control).mockResolvedValueOnce(state('RUNNING'))
+
     await button('Ja, herstarten').trigger('click')
     await flushPromises()
+
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
-    expect(wrapper.get('[aria-label="Verstreken scenariotijd"]').text()).toBe('00:00')
-    expect(vi.mocked(roomSimulationService.control).mock.calls.map(call => call[1]))
-      .toEqual(['START', 'PAUSE', 'START', 'RESTART'])
+    expect(elapsed().text()).toBe('00:00')
     expect(roomSimulationService.control).toHaveBeenLastCalledWith('ABC123', 'RESTART')
   })
 
   it('does not restart on cancellation and dismisses confirmation on room close or switch', async () => {
-    wrapper = mount(ScenarioPlaybackCard, { props: { code: 'ABC123' } })
-    await flushPromises()
+    await mountCard()
     await button('Herstarten').trigger('click')
     await button('Annuleren').trigger('click')
+
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     expect(roomSimulationService.control).not.toHaveBeenCalled()
 
     await button('Herstarten').trigger('click')
     await wrapper.setProps({ disabled: true })
+
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
+
     await wrapper.setProps({ disabled: false })
     await button('Herstarten').trigger('click')
     await wrapper.setProps({ code: 'DEF456' })
     await flushPromises()
+
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
     expect(roomSimulationService.control).not.toHaveBeenCalled()
   })
 
   it('loads only a published selection and waits for Start to apply its values', async () => {
     const next = { ...scenario, id: 'scenario-2', name: 'Nieuwe oefening' }
+
     vi.mocked(scenarioService.list).mockResolvedValue([scenario, next, { ...scenario, id: 'draft', status: 'DRAFT' }])
     vi.mocked(roomSimulationService.load).mockResolvedValue({ ...state(), scenario: next })
-    wrapper = mount(ScenarioPlaybackCard, { props: { code: 'ABC123' } })
-    await flushPromises()
+
+    await mountCard()
     await button('Nieuw scenario laden').trigger('click')
     await flushPromises()
+
     expect(wrapper.findAll('option').map(option => option.attributes('value'))).not.toContain('draft')
+
     await wrapper.get('select').setValue('scenario-2')
     await button('Laden').trigger('click')
     await flushPromises()
+
     expect(roomSimulationService.load).toHaveBeenCalledWith('ABC123', 'scenario-2')
     expect(roomSimulationService.control).not.toHaveBeenCalled()
     expect(wrapper.find('[role="dialog"]').exists()).toBe(false)
@@ -124,13 +169,16 @@ describe('room scenario controls', () => {
 
   it('reports failed commands without showing success and disables controls on room close', async () => {
     vi.mocked(roomSimulationService.control).mockRejectedValue(new Error('Offline'))
-    wrapper = mount(ScenarioPlaybackCard, { props: { code: 'ABC123' } })
-    await flushPromises()
+
+    await mountCard()
     await button('Start').trigger('click')
     await flushPromises()
+
     expect(wrapper.get('[role="alert"]').text()).toContain('mislukt')
     expect(wrapper.text()).toContain('Klaar om te starten')
+
     await wrapper.setProps({ disabled: true })
+    
     expect(button('Start').attributes('disabled')).toBeDefined()
     expect(button('Nieuw scenario laden').attributes('disabled')).toBeDefined()
   })

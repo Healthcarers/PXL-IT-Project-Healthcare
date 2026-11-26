@@ -39,7 +39,7 @@ public class RoomSimulationService {
     private final ScenarioRepository scenarios;
     private final SimpMessagingTemplate messaging;
     private final LongSupplier clock;
-    private final Map<String, Session> sessions = new ConcurrentHashMap<>();
+    private final Map<String, RoomSimulationSession> sessions = new ConcurrentHashMap<>();
 
     @Autowired
     public RoomSimulationService(RoomRepository rooms, RoomParticipantRepository participants,
@@ -58,7 +58,7 @@ public class RoomSimulationService {
 
     @Transactional
     public State get(String code, UUID userId) {
-        return session(hostRoom(code, userId)).state();
+        return session(hostRoom(code, userId)).state(clock);
     }
 
     @Transactional
@@ -68,7 +68,7 @@ public class RoomSimulationService {
                 !participants.existsByRoomIdAndUserId(room.getId(), userId)) {
             throw new AccessDeniedException("Je neemt niet deel aan deze room.");
         }
-        return session(room).state().vitals();
+        return session(room).state(clock).vitals();
     }
 
     @Transactional
@@ -79,52 +79,25 @@ public class RoomSimulationService {
         if (scenario.getStatus() != ScenarioStatus.PUBLISHED) {
             throw new IllegalStateException("Je kunt alleen een gepubliceerd scenario laden.");
         }
-        Session session = session(room);
+        RoomSimulationSession session = session(room);
         synchronized (session) {
             session.scenario = RoomScenarioResponse.from(scenario);
             session.initial = scenario.getInitialVitals();
             session.status = Status.READY;
             session.elapsed = 0;
             publish(room.getCode(), session);
-            return session.state();
+            return session.state(clock);
         }
     }
 
     @Transactional
     public State control(String code, UUID userId, Action action) {
         Room room = hostRoom(code, userId);
-        Session session = session(room);
+        RoomSimulationSession session = session(room);
         synchronized (session) {
-            switch (action) {
-                case START -> {
-                    if (session.status == Status.RUNNING) {
-                        throw new IllegalStateException("Het scenario is al gestart.");
-                    }
-                    requireScenario(session);
-                    if (session.status != Status.PAUSED) {
-                        session.vitals = session.initial;
-                        session.elapsed = 0;
-                    }
-                    session.startedAt = clock.getAsLong();
-                    session.status = Status.RUNNING;
-                }
-                case PAUSE -> {
-                    if (session.status != Status.RUNNING) {
-                        throw new IllegalStateException("Start het scenario voordat je pauzeert.");
-                    }
-                    session.elapsed = session.elapsedMillis();
-                    session.status = Status.PAUSED;
-                }
-                case RESTART -> {
-                    requireScenario(session);
-                    session.vitals = session.initial;
-                    session.elapsed = 0;
-                    session.startedAt = clock.getAsLong();
-                    session.status = Status.RUNNING;
-                }
-            }
+            applyAction(session, action);
             publish(room.getCode(), session);
-            return session.state();
+            return session.state(clock);
         }
     }
 
@@ -166,15 +139,60 @@ public class RoomSimulationService {
         return room;
     }
 
-    private Session session(Room room) {
-        return sessions.computeIfAbsent(room.getCode(), ignored -> new Session(room));
+    private RoomSimulationSession session(Room room) {
+        return sessions.computeIfAbsent(room.getCode(), ignored -> createSession(room));
     }
 
-    private static void requireScenario(Session session) {
+    private RoomSimulationSession createSession(Room room) {
+        var selected = room.getScenario();
+        return new RoomSimulationSession(
+                selected == null ? null : RoomScenarioResponse.from(selected),
+                selected == null ? VitalsSnapshot.defaults() : selected.getInitialVitals());
+    }
+
+    private void applyAction(RoomSimulationSession session, Action action) {
+        switch (action) {
+            case START -> start(session);
+            case PAUSE -> pause(session);
+            case RESTART -> restart(session);
+        }
+    }
+
+    private void start(RoomSimulationSession session) {
+        if (session.status == Status.RUNNING) {
+            throw new IllegalStateException("Het scenario is al gestart.");
+        }
+        requireScenario(session);
+        if (session.status != Status.PAUSED) resetVitals(session);
+        session.startedAt = clock.getAsLong();
+        session.status = Status.RUNNING;
+    }
+
+    private void pause(RoomSimulationSession session) {
+        if (session.status != Status.RUNNING) {
+            throw new IllegalStateException("Start het scenario voordat je pauzeert.");
+        }
+        session.elapsed = session.elapsedMillis(clock);
+        session.status = Status.PAUSED;
+    }
+
+    private void restart(RoomSimulationSession session) {
+        requireScenario(session);
+        resetVitals(session);
+        session.startedAt = clock.getAsLong();
+        session.status = Status.RUNNING;
+    }
+
+    private static void resetVitals(RoomSimulationSession session) {
+        session.vitals = session.initial;
+        session.elapsed = 0;
+    }
+
+    private static void requireScenario(RoomSimulationSession session) {
         if (session.scenario == null) throw new IllegalStateException("Laad eerst een scenario.");
     }
 
-    private void publish(String code, Session session) {
+    private void publish(String code, RoomSimulationSession session) {
         try {
             messaging.convertAndSend("/topic/rooms/" + code + "/vitals", VitalsResponse.from(session.vitals));
             messaging.convertAndSend("/topic/rooms/" + code + "/simulation-changed", Boolean.TRUE);
@@ -183,27 +201,4 @@ public class RoomSimulationService {
         }
     }
 
-    private final class Session {
-        private RoomScenarioResponse scenario;
-        private VitalsSnapshot initial;
-        private VitalsSnapshot vitals;
-        private Status status = Status.READY;
-        private long elapsed;
-        private long startedAt;
-
-        private Session(Room room) {
-            var selected = room.getScenario();
-            scenario = selected == null ? null : RoomScenarioResponse.from(selected);
-            initial = selected == null ? VitalsSnapshot.defaults() : selected.getInitialVitals();
-            vitals = initial;
-        }
-
-        private long elapsedMillis() {
-            return elapsed + (status == Status.RUNNING ? Math.max(0, clock.getAsLong() - startedAt) : 0);
-        }
-
-        private synchronized State state() {
-            return new State(scenario, status, elapsedMillis(), VitalsResponse.from(vitals));
-        }
-    }
 }
