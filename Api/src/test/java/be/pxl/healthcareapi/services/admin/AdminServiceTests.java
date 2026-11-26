@@ -6,16 +6,15 @@ import be.pxl.healthcareapi.dto.AdminAccountResponse;
 import be.pxl.healthcareapi.dto.AdminStatsResponse;
 import be.pxl.healthcareapi.dto.PersonIdRequest;
 import be.pxl.healthcareapi.exception.BadRequestException;
-import be.pxl.healthcareapi.repos.PersonRepo;
-import be.pxl.healthcareapi.repos.RefreshTokenRepo;
+import be.pxl.healthcareapi.repositories.AccessTokenRepository;
+import be.pxl.healthcareapi.repositories.PersonRepository;
+import be.pxl.healthcareapi.repositories.RefreshTokenRepository;
 import be.pxl.healthcareapi.services.person.PersonService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
-import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,10 +35,13 @@ import static org.mockito.Mockito.when;
 class AdminServiceTests {
 
     @Mock
-    private PersonRepo personRepo;
+    private PersonRepository personRepo;
 
     @Mock
-    private RefreshTokenRepo refreshTokenRepo;
+    private RefreshTokenRepository refreshTokenRepo;
+
+    @Mock
+    private AccessTokenRepository accessTokenRepo;
 
     @Mock
     private PersonService personService;
@@ -117,8 +119,9 @@ class AdminServiceTests {
 
         adminService.deletePerson(request);
 
-        var deletionOrder = inOrder(refreshTokenRepo, personRepo);
+        var deletionOrder = inOrder(refreshTokenRepo, accessTokenRepo, personRepo);
         deletionOrder.verify(refreshTokenRepo).deleteAllByPerson(person);
+        deletionOrder.verify(accessTokenRepo).deleteAllByPerson(person);
         deletionOrder.verify(personRepo).delete(person);
     }
 

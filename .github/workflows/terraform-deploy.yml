@@ -22,6 +22,7 @@ jobs:
   deploy:
     name: "Deploy Azure Infrastructure, Web Gateway & API"
     runs-on: ubuntu-latest
+    environment: azure-deploy
     outputs:
       web_url: ${{ steps.outputs.outputs.web_url }}
     defaults:
@@ -70,7 +71,10 @@ jobs:
           terraform apply -auto-approve -input=false \
             -target="azurerm_container_registry.acr" \
             -target="azurerm_role_assignment.api_acr_pull" \
-            -target="azurerm_role_assignment.web_acr_pull"
+            -target="azurerm_role_assignment.web_acr_pull" \
+            -target="azurerm_key_vault.kv" \
+            -target="azurerm_role_assignment.deployer_secrets_officer" \
+            -target="azurerm_role_assignment.api_secrets_user"
           echo "ACR_NAME=$(terraform output -raw acr_name)" >> $GITHUB_ENV
           echo "ACR_LOGIN_SERVER=$(terraform output -raw acr_login_server)" >> $GITHUB_ENV
 
@@ -287,7 +291,7 @@ jobs:
           cp _site/index.html _site/404.html
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 

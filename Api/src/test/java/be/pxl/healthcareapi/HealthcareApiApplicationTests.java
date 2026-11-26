@@ -1,13 +1,17 @@
 package be.pxl.healthcareapi;
 
+import be.pxl.healthcareapi.domein.Person;
 import be.pxl.healthcareapi.domein.ScenarioStatus;
 import be.pxl.healthcareapi.domein.enums.Role;
 import be.pxl.healthcareapi.dto.ScenarioDto;
 import be.pxl.healthcareapi.dto.VitalsUpdateRequest;
+import be.pxl.healthcareapi.repositories.PersonRepository;
 import be.pxl.healthcareapi.services.RoomService;
 import be.pxl.healthcareapi.services.ScenarioService;
 import be.pxl.healthcareapi.services.authentication.JwtService;
+import be.pxl.healthcareapi.services.person.PersonService;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -22,6 +26,7 @@ import org.springframework.messaging.simp.stomp.StompSessionHandlerAdapter;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
 import org.springframework.web.socket.messaging.WebSocketStompClient;
@@ -42,6 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -70,6 +77,11 @@ class HealthcareApiApplicationTests {
 
     @Autowired
     private JwtService jwtService;
+    @Autowired
+    private PersonRepository personRepository;
+
+    @Autowired
+    private PersonService personService;
 
     @Test
     void contextLoads() {
@@ -78,13 +90,14 @@ class HealthcareApiApplicationTests {
     @Test
     void successfulJoinSendsRoomSignalOverWebSocket() throws Exception {
         var room = roomService.createRoom("Realtime room", null, UUID.randomUUID());
-        var learner = UUID.randomUUID();
+        Person learner = personRepository.save(new Person("Test", "Learner", "learner@example.com","password"));
         var destination = "/topic/rooms/" + room.getId() + "/members-changed";
         var received = new LinkedBlockingQueue<String>();
         var stomp = new WebSocketStompClient(new StandardWebSocketClient());
+
         stomp.setMessageConverter(new SimpleMessageConverter());
         var join = HttpRequest.newBuilder(URI.create("http://localhost:" + port + "/api/rooms/" + room.getCode() + "/join"))
-                .header("Cookie", "access_token=" + jwtService.generateToken(learner, Role.CURSIST))
+                .header("Cookie", "access_token=" + jwtService.generateToken(learner.getId(), Role.CURSIST))
                 .timeout(Duration.ofSeconds(5))
                 .POST(HttpRequest.BodyPublishers.noBody())
                 .build();
@@ -115,7 +128,7 @@ class HealthcareApiApplicationTests {
 
                 assertEquals(200, http.send(join, HttpResponse.BodyHandlers.discarding()).statusCode());
                 assertEquals("true", received.poll(5, TimeUnit.SECONDS));
-                assertTrue(roomService.getRoomParticipants(room.getCode()).stream().anyMatch(member -> member.userId().equals(learner)));
+                assertTrue(roomService.getRoomParticipants(room.getCode()).stream().anyMatch(member -> member.userId().equals(learner.getId())));
 
                 assertEquals(409, http.send(join, HttpResponse.BodyHandlers.discarding()).statusCode());
                 assertNull(received.poll(250, TimeUnit.MILLISECONDS));

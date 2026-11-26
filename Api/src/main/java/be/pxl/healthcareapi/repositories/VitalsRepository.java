@@ -1,4 +1,4 @@
-package be.pxl.healthcareapi.repos;
+package be.pxl.healthcareapi.repositories;
 
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import org.springframework.stereotype.Repository;

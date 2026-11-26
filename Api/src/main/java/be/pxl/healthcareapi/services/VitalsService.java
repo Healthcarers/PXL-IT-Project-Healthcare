@@ -3,7 +3,7 @@ package be.pxl.healthcareapi.services;
 import be.pxl.healthcareapi.domein.VitalsSnapshot;
 import be.pxl.healthcareapi.dto.VitalsResponse;
 import be.pxl.healthcareapi.dto.VitalsUpdateRequest;
-import be.pxl.healthcareapi.repos.VitalsRepository;
+import be.pxl.healthcareapi.repositories.VitalsRepository;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
