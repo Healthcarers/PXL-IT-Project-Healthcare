@@ -6,6 +6,8 @@ import ConfirmModal from "../../components/ConfirmModal.vue";
 import LectorTopbar from "../../components/lector/LectorTopbar.vue";
 import { useRoom } from "../../composables/useRoom";
 import { useAuthStore } from "../../stores/Authstore";
+import { provideMonitorRoom } from "../../composables/useMonitorRoom";
+import ScenarioPlaybackCard from "../../components/lector/ScenarioPlaybackCard.vue";
 import ParametersPanel from "../../components/lector/ParametersPanel.vue";
 import { DEFAULT_PARAMETERS, type Parameters } from "../../types/lector.ts";
 
@@ -15,6 +17,7 @@ const props = defineProps<{
   code: string;
 }>();
 const emit = defineEmits<{ "request-logout": [] }>();
+provideMonitorRoom(() => props.code);
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -221,15 +224,7 @@ onUnmounted(() => {
             @toggle-collapse="previewCollapsed = !previewCollapsed"
           />
 
-          <section
-            aria-label="Scenario"
-            class="rounded-2xl border border-[#222228] bg-[#0e0e11] p-4 sm:p-5"
-          >
-            <p class="!m-0 text-xs font-medium text-[#8e8e99]">Scenario</p>
-            <p class="!m-0 mt-2 text-sm text-[#71717a]">
-              Scenario-bediening wordt in een aparte feature toegevoegd.
-            </p>
-          </section>
+          <ScenarioPlaybackCard :code="code" :disabled="closingRoom || returningToCreate" />
         </div>
 
         <ParametersPanel

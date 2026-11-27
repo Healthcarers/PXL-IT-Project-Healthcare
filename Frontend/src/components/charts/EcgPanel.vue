@@ -5,6 +5,7 @@ import SweepChart from "./SweepChart.vue";
 import MonitorCard from "./MonitorCard.vue";
 import {useChannelActive} from "../../composables/useChannelActive.ts";
 import {useHeartbeatSound} from "../../composables/useHeartbeatSound.ts";
+import { useVitals } from "../../composables/useVitals";
 
 const props = withDefaults(defineProps<{
   preview?: boolean;
@@ -16,6 +17,8 @@ const WINDOW_MS = 4000;
 const SAMPLE_RATE = 250;
 
 const { points, cursorX } = useSweepWaveform('ecg', WINDOW_MS, SAMPLE_RATE);
+const { vitals } = useVitals();
+const yMax = computed(() => Math.max(2, (vitals.value?.ampScale ?? 1) * 1.1));
 const channel = useChannelActive('ecg');
 
 const active = computed<boolean>({
@@ -40,7 +43,7 @@ if (!props.preview) {
           :cursor-x="cursorX"
           :window-ms="WINDOW_MS"
           :y-min="-1"
-          :y-max="2"
+          :y-max="yMax"
           color="#22c55e"
           :show-cursor="true"
           :interactive="!preview"

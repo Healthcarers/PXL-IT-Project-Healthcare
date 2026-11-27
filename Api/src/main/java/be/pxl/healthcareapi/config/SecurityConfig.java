@@ -67,6 +67,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/rooms/*/scenario")
                         .hasRole("LECTOR")
 
+                        .requestMatchers("/api/rooms/*/simulation", "/api/rooms/*/simulation/**")
+                        .hasRole("LECTOR")
+                        .requestMatchers("/api/rooms/*/vitals")
+                        .hasAnyRole("LECTOR", "CURSIST")
+
                         // Roomgegevens bekijken
                         .requestMatchers(HttpMethod.GET, "/api/rooms/**")
                         .permitAll()

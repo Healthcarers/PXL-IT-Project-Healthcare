@@ -52,8 +52,9 @@ cursist meteen verder.
 De scenario-API is alleen toegankelijk voor ingelogde lectoren. Scenario's worden
 opgeslagen in de database en zijn beschikbaar voor alle lectoren. De host kan in
 het hostdashboard een gepubliceerd scenario aan een open room koppelen en de
-basiswaarden bekijken. Die keuze is na de start alleen-lezen en wijzigt de
-livewaarden of grafieken van de cursist niet.
+basiswaarden bekijken. Bij het starten van de room krijgen de lectorpreview en
+de cursisten van die room alle zeven scenariostartwaarden. Andere rooms en de
+globale vitals-API worden niet gewijzigd.
 
 De host kan de keuze ophalen via `GET /api/rooms/{code}/scenario` en opslaan via
 `PUT /api/rooms/{code}/scenario` met `{"scenarioId":"<uuid>"}`. Gebruik
@@ -61,6 +62,42 @@ De host kan de keuze ophalen via `GET /api/rooms/{code}/scenario` en opslaan via
 verwijderen van een scenario wist de verwijzing, maar laat de room bestaan.
 Lokaal voegt Hibernate bij het starten de optionele kolom `rooms.scenario_id`
 en de bijbehorende foreign key toe.
+
+#### Live scenariobediening
+
+Onder de cursistpreview in het lectordashboard staat de scenariobediening.
+**Nieuw scenario laden** bereidt een gepubliceerd scenario voor; **Start** past
+zijn startwaarden toe op de waarden en grafieken van deze room en start de
+verstreken tijd. Dezelfde knop wisselt tussen de groene **Start** en gele **Pauze**, zonder
+iconen. **Pauze** bevriest alleen de timer: de grafieken blijven lopen.
+**Start** hervat de gepauzeerde timer. **Herstarten** vraagt eerst om bevestiging
+in een popup. Na bevestiging worden de scenariowaarden opnieuw toegepast en
+begint de timer weer op nul. Er is geen stopknop, vaste totale duur of tijdlijn.
+
+Alleen de eigenaar van een gestarte room kan deze bediening gebruiken:
+
+| Methode | Endpoint | Doel |
+| --- | --- | --- |
+| `GET` | `/api/rooms/{code}/simulation` | Geselecteerd scenario, status, elapsedMillis en vitals |
+| `PUT` | `/api/rooms/{code}/simulation/scenario` | Voorbereiden met `{"scenarioId":"<uuid>"}` |
+| `POST` | `/api/rooms/{code}/simulation` | Bedienen met `{"action":"START"}`, `PAUSE` of `RESTART` |
+| `GET` | `/api/rooms/{code}/vitals` | Roomwaarden, alleen voor eigenaar en deelnemers |
+
+WebSocket-updates voor de monitor gebruiken `/topic/rooms/{CODE}/vitals` en
+`/topic/rooms/{CODE}/waveform/{channel}` (roomcode in hoofdletters).
+`/topic/rooms/{CODE}/simulation-changed` bevat alleen `true`; de lector haalt
+daarna de actuele bedieningstoestand op. De bestaande globale topics blijven
+beschikbaar voor monitoren zonder roomcontext.
+
+De live toestand en timer staan alleen in het geheugen van deze backendinstantie
+en worden bij het sluiten van de room verwijderd. Na een backendherstart begint
+de room weer met het vooraf gekoppelde scenario (of de standaardwaarden).
+Tijdens de simulatie laden verandert die databasekoppeling niet. Een geladen
+snapshot blijft voor de lopende room bruikbaar als het scenario wordt verwijderd.
+Bij meerdere backendinstanties is gedeelde simulatieopslag en berichtverdeling
+nodig.
+
+#### Scenariobeheer
 
 | Methode | Endpoint | Doel |
 | --- | --- | --- |

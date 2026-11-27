@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { computed, nextTick, ref } from 'vue';
+import { computed, effectScope, nextTick, ref } from 'vue';
 import type { WaveformChunk } from '../types/waveform';
 import { useHeartbeatSound, spo2ToFrequency } from './useHeartbeatSound';
 
@@ -44,6 +44,12 @@ vi.mock('./useVitals.ts', () => ({
     useVitals: stubs.useVitals
 }));
 
+const room = ref<string>();
+vi.mock('./useMonitorRoom', async importOriginal => ({
+    ...await importOriginal<typeof import('./useMonitorRoom')>(),
+    useMonitorRoom: () => room,
+}));
+
 const RATE = 250;
 const CHUNK = 10;
 const LATENCY = 0.05;
@@ -77,13 +83,17 @@ function streamSpikes(totalSamples: number, spikeIndices: number[], latencyS = L
 const beepCount = () => stubs.audio.scheduleBeep.mock.calls.length;
 
 function mountComposable() {
-    useHeartbeatSound();
+    const scope = effectScope();
+    stubs.unmountHooks.push(() => scope.stop());
+    scope.run(() => useHeartbeatSound());
 }
 
 beforeEach(() => {
+    stubs.unmountHooks.forEach(hook => hook());
     vi.clearAllMocks();
     stubs.unmountHooks.length = 0;
     stubs.handler = null;
+    room.value = undefined;
 
     stubs.subscribeTopic.mockImplementation((_topic: string, cb: (c: WaveformChunk) => void) => {
         stubs.handler = cb;
@@ -288,6 +298,20 @@ describe('flatline switching', () => {
 });
 
 describe('cleanup', () => {
+    it('switches room ECG topics and resets beat detection for the new stream', async () => {
+        room.value = 'ABC123';
+        mountComposable();
+        deliver(500, spikeAt(0));
+        expect(beepCount()).toBe(1);
+
+        room.value = 'DEF456';
+        await nextTick();
+        expect(stubs.unsubscribe).toHaveBeenCalledOnce();
+        expect(stubs.subscribeTopic).toHaveBeenLastCalledWith('/topic/rooms/DEF456/waveform/ecg', expect.any(Function));
+        deliver(0, spikeAt(0));
+        expect(beepCount()).toBe(2);
+    });
+
     it('unsubscribes and stops the flatline on unmount', () => {
         mountComposable();
         stubs.audio.stopFlatline.mockClear();
