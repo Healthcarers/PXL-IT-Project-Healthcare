@@ -83,11 +83,11 @@ onUnmounted(() => {
 
 <template>
   <div
-    :class="showCursistNav ? 'grid min-h-dvh grid-rows-[auto_1fr]' : 'contents'"
+    :class="showCursistNav ? (route.name === 'monitor' ? 'flex h-dvh flex-col overflow-hidden' : 'grid min-h-dvh grid-rows-[auto_1fr]') : 'contents'"
   >
     <header
       v-if="(showLectorNav && !isLectorDashboard) || showCursistNav"
-      class="bg-pxl-black text-pxl-white"
+      class="shrink-0 bg-pxl-black text-pxl-white"
     >
       <div
         class="mx-auto grid max-w-7xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-4 sm:px-8 md:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]"

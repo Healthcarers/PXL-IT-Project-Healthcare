@@ -15,22 +15,22 @@ const defaults: VitalsResponse = {
   etco2: 38,
   respRate: 15,
   ampScale: 1,
-  sysIbp: 120,
-  diasIbp: 80,
+  sysBp: 120,
+  diasBp: 80,
 };
 const fields = [
   { key: "heartRate", label: "HF (bpm)", min: 0, max: 220 },
   { key: "spo2", label: "SpO₂ (%)", min: 50, max: 100 },
   { key: "etco2", label: "etCO₂ (mmHg)", min: 0, max: 100 },
   {
-    key: "sysIbp",
-    label: "Systolische invasieve bloeddruk (mmHg)",
+    key: "sysBp",
+    label: "Systolische bloeddruk (mmHg)",
     min: 0,
     max: 300,
   },
   {
-    key: "diasIbp",
-    label: "Diastolische invasieve bloeddruk (mmHg)",
+    key: "diasBp",
+    label: "Diastolische bloeddruk (mmHg)",
     min: 0,
     max: 300,
   },
@@ -99,7 +99,7 @@ async function save(event: SubmitEvent) {
     error.value = "Voeg minstens één feedbackitem toe.";
     return;
   }
-  const { heartRate, spo2, etco2, respRate, ampScale, sysIbp, diasIbp } =
+  const { heartRate, spo2, etco2, respRate, ampScale, sysBp, diasBp } =
     vitals;
   if (
     typeof heartRate !== "number" ||
@@ -107,8 +107,8 @@ async function save(event: SubmitEvent) {
     typeof etco2 !== "number" ||
     typeof respRate !== "number" ||
     typeof ampScale !== "number" ||
-    typeof sysIbp !== "number" ||
-    typeof diasIbp !== "number"
+    typeof sysBp !== "number" ||
+    typeof diasBp !== "number"
   ) {
     error.value = "Vul alle basiswaarden in.";
     return;
@@ -127,8 +127,8 @@ async function save(event: SubmitEvent) {
           etco2,
           respRate,
           ampScale,
-          sysIbp,
-          diasIbp,
+          sysBp: sysBp,
+          diasBp: diasBp,
         },
         feedbackItems: [...feedbackItems.value],
         status,

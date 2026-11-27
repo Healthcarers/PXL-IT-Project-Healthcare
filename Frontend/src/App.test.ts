@@ -13,7 +13,7 @@ const rooms = vi.hoisted(() => ({ getActive: vi.fn(), getByCode: vi.fn(), create
 const scenarios = vi.hoisted(() => ({ list: vi.fn(), remove: vi.fn() }))
 const published = {
   id: 'scenario-1', name: 'Monitorsimulatie', status: 'PUBLISHED',
-  initialVitals: { heartRate: 105, spo2: 98, respRate: 15, sysIbp: 120, diasIbp: 80 },
+  initialVitals: { heartRate: 105, spo2: 98, respRate: 15, sysBp: 120, diasBp: 80 },
 }
 
 vi.mock('./stores/Authstore', () => ({ useAuthStore: () => auth }))

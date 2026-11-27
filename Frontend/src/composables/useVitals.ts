@@ -15,8 +15,8 @@ function normalize(v: VitalsResponse): VitalsResponse {
         etco2: Math.round(v.etco2),
         respRate: Math.round(v.respRate),
         ampScale: v.ampScale,
-        sysIbp: Math.round(v.sysIbp),
-        diasIbp: Math.round(v.diasIbp),
+        sysBp: Math.round(v.sysBp),
+        diasBp: Math.round(v.diasBp),
     };
 }
 

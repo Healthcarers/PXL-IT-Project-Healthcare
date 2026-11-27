@@ -265,7 +265,7 @@ onUnmounted(cancelPending)
               </select>
               <ul v-if="values" class="mt-3 flex flex-wrap gap-2 text-sm font-semibold" aria-label="Basiswaarden">
                 <li class="rounded-full bg-green-100 px-2 py-0.5 text-green-800">HF {{ values.heartRate }}</li>
-                <li class="rounded-full bg-red-100 px-2 py-0.5 text-red-800">BD {{ values.sysIbp }}/{{ values.diasIbp }}</li>
+                <li class="rounded-full bg-red-100 px-2 py-0.5 text-red-800">BD {{ values.sysBp }}/{{ values.diasBp }}</li>
                 <li class="rounded-full bg-sky-100 px-2 py-0.5 text-sky-800">SpO₂ {{ values.spo2 }} %</li>
                 <li class="rounded-full bg-amber-100 px-2 py-0.5 text-amber-800">etCO₂ {{ values.etco2 }}</li>
               </ul>

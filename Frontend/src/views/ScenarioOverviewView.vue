@@ -73,7 +73,7 @@ onMounted(loadScenarios)
               <h2 class="font-bold">{{ scenario.name }}</h2>
               <p class="mt-0.5 text-xs text-black/65">
                 HF {{ scenario.initialVitals.heartRate }} bpm ·
-                BD {{ scenario.initialVitals.sysIbp }}/{{ scenario.initialVitals.diasIbp }} mmHg ·
+                BD {{ scenario.initialVitals.sysBp }}/{{ scenario.initialVitals.diasBp }} mmHg ·
                 SpO₂ {{ scenario.initialVitals.spo2 }}% · AF {{ scenario.initialVitals.respRate }}/min
               </p>
             </div>

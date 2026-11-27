@@ -174,7 +174,7 @@ jobs:
 
           curl -s -b /tmp/lector_cookies.txt -X POST http://localhost:8090/api/scenarios \
             -H "Content-Type: application/json" \
-            -d '{"name":"E2E Standaard Scenario","description":"Automatisch aangemaakt scenario voor Playwright E2E tests","initialVitals":{"heartRate":75,"spo2":98,"etco2":38,"respRate":16,"ampScale":1.0,"sysIbp":120,"diasIbp":80,"temperature":37.0},"feedbackItems":["Controleer vitale parameters"],"status":"PUBLISHED"}' >/dev/null
+            -d '{"name":"E2E Standaard Scenario","description":"Automatisch aangemaakt scenario voor Playwright E2E tests","initialVitals":{"heartRate":75,"spo2":98,"etco2":38,"respRate":16,"ampScale":1.0,"sysBp":120,"diasBp":80,"temperature":37.0},"feedbackItems":["Controleer vitale parameters"],"status":"PUBLISHED"}' >/dev/null
 
       - name: Install Frontend Dependencies & Playwright Chromium
         if: steps.check_e2e.outputs.exists == 'true'

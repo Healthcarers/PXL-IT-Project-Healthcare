@@ -84,8 +84,8 @@ Voorbeeld voor `POST /api/scenarios`:
     "respRate": 20,
     "etco2": 36,
     "ampScale": 1.2,
-    "sysIbp": 118,
-    "diasIbp": 76
+    "sysBp": 118,
+    "diasBp": 76
   },
   "feedbackItems": ["Monitor gecontroleerd", "Observaties gerapporteerd"],
   "status": "DRAFT"

@@ -32,7 +32,7 @@ function handleToggle() {
     >
       <span class="font-extrabold text-[#facc15] leading-none tabular-nums transition-opacity"
             :class="[
-              preview ? 'text-[56px]' : 'text-[clamp(40px,5vw,72px)]',
+              preview ? 'text-[56px]' : 'text-[clamp(24px,4.5vh,64px)]',
               { 'opacity-[0.35]': !isActive },
             ]"
       >
