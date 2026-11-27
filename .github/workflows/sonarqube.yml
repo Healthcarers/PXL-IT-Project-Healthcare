@@ -2,12 +2,12 @@ name: SonarQube Azure Scan
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ dev ]
   workflow_dispatch:
 
 concurrency:
   group: sonar-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   sonar:
@@ -18,30 +18,30 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
           cache-dependency-path: 'Api/pom.xml'
 
-      - name: Run Backend Tests & Generate JaCoCo Report
+      - name: Run Backend Tests, Copy Libraries & Generate JaCoCo Report
         working-directory: ./Api
         run: |
           if [ -f "./mvnw" ]; then
             chmod +x ./mvnw
-            ./mvnw clean test -B
+            ./mvnw clean test dependency:copy-dependencies -DoutputDirectory=target/dependency -B
           else
-            mvn clean test -B
+            mvn clean test dependency:copy-dependencies -DoutputDirectory=target/dependency -B
           fi
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: '22'
           cache: 'npm'
@@ -86,7 +86,7 @@ jobs:
           exit 1
 
       - name: Run SonarQube Scan to Azure
-        uses: SonarSource/sonarqube-scan-action@v4
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -97,6 +97,8 @@ jobs:
             -Dsonar.tests=Api/src/test/java,Frontend/src
             -Dsonar.java.binaries=Api/target/classes
             -Dsonar.java.test.binaries=Api/target/test-classes
+            -Dsonar.java.libraries=Api/target/dependency/*.jar
+            -Dsonar.java.test.libraries=Api/target/dependency/*.jar
             -Dsonar.coverage.jacoco.xmlReportPaths=Api/target/site/jacoco/jacoco.xml
             -Dsonar.javascript.lcov.reportPaths=Frontend/coverage/lcov.info
             -Dsonar.exclusions=**/node_modules/**,**/dist/**,**/target/**,**/coverage/**,**/*.min.js,Frontend/src/**/*.test.ts,Frontend/src/**/*.spec.ts
