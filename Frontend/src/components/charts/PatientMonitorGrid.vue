@@ -17,10 +17,10 @@ withDefaults(defineProps<{
 
 <template>
   <main
-      class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_300px] gap-5 overflow-y-auto overscroll-contain p-5 box-border bg-[#050506] text-white"
+      class="grid min-h-0 flex-1 grid-cols-[minmax(0,1fr)_clamp(180px,22vw,300px)] gap-3 lg:gap-5 overflow-hidden overscroll-contain p-3 sm:p-4 lg:p-5 box-border bg-[#050506] text-white"
   >
     <MonitorChartsWrapper
-        class="min-h-[480px]"
+        class="min-h-0"
         :preview="preview"
         :show-defibrillator="!preview && showDefibrillator"
     >
@@ -29,7 +29,7 @@ withDefaults(defineProps<{
       </template>
     </MonitorChartsWrapper>
 
-    <section class="flex min-h-0 flex-col gap-3.5 [&>*]:min-h-[160px] [&>*]:flex-1">
+    <section class="flex min-h-0 flex-col gap-2.5 lg:gap-3.5 [&>*]:min-h-0 [&>*]:flex-1">
       <HeartRateCard :preview="preview" />
       <SpO2Card :preview="preview" />
       <Etco2Card :preview="preview" />

@@ -59,12 +59,12 @@ async function measure(): Promise<void> {
 
 <template>
   <MonitorCard label="NIBP" tone="red" unit="mmHg">
-    <div class="flex h-full flex-col justify-between">
-      <div class="flex flex-1 items-center">
+    <div class="flex h-full items-center justify-between gap-2 overflow-hidden">
+      <div class="flex min-w-0 flex-1 items-center">
         <span
             class="font-extrabold leading-none tabular-nums text-[#ff0707]"
             :class="[
-            preview ? 'text-[46px]' : 'text-[clamp(40px,5vw,72px)]',
+            preview ? 'text-[46px]' : 'text-[clamp(20px,4vh,56px)]',
             { 'animate-pulse': measuring },
           ]"
         >
@@ -75,11 +75,19 @@ async function measure(): Promise<void> {
       <button
           v-if="!preview"
           type="button"
-          class="self-start rounded-md border border-[#ff0707] px-3 py-1 text-xs text-[#ff0707] transition-colors hover:bg-[#ff0707]/10 disabled:cursor-not-allowed disabled:opacity-40"
+          class="size-8 sm:size-10 lg:size-12 shrink-0 cursor-pointer overflow-hidden rounded-full border-2 border-[#ff0707] p-0 transition-opacity hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-40"
+          :class="{ 'animate-pulse': measuring }"
           :disabled="measuring"
+          :aria-label="measuring ? 'Aan het meten' : 'Neem meting'"
+          :title="measuring ? 'Aan het meten...' : 'Neem meting'"
           @click="measure"
       >
-        {{ measuring ? 'Aan het meten...' : 'Neem meting' }}
+        <img
+            src="../../assets/iconMeasureBP.jpg"
+            alt=""
+            class="size-full object-cover"
+            draggable="false"
+        />
       </button>
     </div>
   </MonitorCard>
