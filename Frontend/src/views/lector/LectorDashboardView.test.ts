@@ -164,8 +164,8 @@ describe("LectorDashboardView.vue", () => {
             etco2: 38,
             respRate: 15,
             ampScale: 1.0,
-            sysIbp: 120,
-            diasIbp: 80,
+            sysBp: 120,
+            diasBp: 80,
           },
         });
       }

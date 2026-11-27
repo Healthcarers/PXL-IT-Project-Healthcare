@@ -4,6 +4,7 @@ import HeartRateCard from "./HeartRateCard.vue";
 import SpO2Card from "./SpO2Card.vue";
 import Etco2Card from "./Etco2Card.vue";
 import IbpCard from "./IbpCard.vue";
+import NibpCard from "./NibpCard.vue";
 
 withDefaults(defineProps<{
   preview?: boolean;
@@ -32,6 +33,7 @@ withDefaults(defineProps<{
       <SpO2Card :preview="preview" />
       <Etco2Card :preview="preview" />
       <IbpCard :preview="preview" />
+      <NibpCard :preview="preview" />
     </section>
   </main>
 </template>

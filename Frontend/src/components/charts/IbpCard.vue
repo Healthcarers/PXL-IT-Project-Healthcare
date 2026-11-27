@@ -35,7 +35,7 @@ function handleToggle(): void {
         preview ? 'text-[46px]' : 'text-[clamp(40px,5vw,72px)]',
         { 'opacity-[0.35]': !isActive },
       ]">
-        {{ !isActive || vitals?.sysIbp == null || vitals?.diasIbp == null ? '--' : `${vitals.sysIbp}/${vitals.diasIbp}` }}
+        {{ !isActive || vitals?.sysBp == null || vitals?.diasBp == null ? '--' : `${vitals.sysBp}/${vitals.diasBp}` }}
       </span>
     </div>
   </MonitorCard>

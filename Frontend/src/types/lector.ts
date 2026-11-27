@@ -19,15 +19,15 @@ export const ECG_RHYTHMS: readonly EcgRhythm[] = [
   "Asystolie",
 ] as const;
 
-export type BloodPressureTarget = "sysIbp" | "diasIbp";
+export type BloodPressureTarget = "sysBp" | "diasBp";
 export type CapnoRespMode = "etco2" | "respRate";
 export type ScenarioPlaybackState = "running" | "paused" | "stopped";
 
 export type ParameterKey =
   | "heartRate"
   | "spo2"
-  | "sysIbp"
-  | "diasIbp"
+  | "sysBp"
+  | "diasBp"
   | "etco2"
   | "respRate"
   | "temperature";
@@ -42,12 +42,12 @@ export interface ParameterBounds {
   errorMessage: string;
 }
 
-const IBP_BOUNDS: ParameterBounds = {
+const BP_BOUNDS: ParameterBounds = {
   min: 0,
   max: 200,
   step: 1,
   unit: "mmHg",
-  rangeLabel: "NIBP • IBP · 0–200",
+  rangeLabel: "BP · 0–200",
   outOfRangeLabel: "buiten bereik 0–200",
   errorMessage:
     "De bloeddruk moet tussen 0 en 200 mmHg liggen. De waarde is niet doorgestuurd naar de cursisten.",
@@ -74,8 +74,8 @@ export const PARAMETER_BOUNDS: Record<ParameterKey, ParameterBounds> = {
     errorMessage:
       "De SpO₂ moet tussen 10 en 100 % liggen. De waarde is niet doorgestuurd naar de cursisten.",
   },
-  sysIbp: IBP_BOUNDS,
-  diasIbp: IBP_BOUNDS,
+  sysBp: BP_BOUNDS,
+  diasBp: BP_BOUNDS,
   etco2: {
     min: 0,
     max: 100,
@@ -110,7 +110,7 @@ export const PARAMETER_BOUNDS: Record<ParameterKey, ParameterBounds> = {
 
 export interface DefaultParameters extends Pick<
   VitalsResponse,
-  "heartRate" | "spo2" | "etco2" | "respRate" | "sysIbp" | "diasIbp"
+  "heartRate" | "spo2" | "etco2" | "respRate" | "sysBp" | "diasBp"
 > {
   temperature: number;
   rhythm: EcgRhythm;
@@ -120,8 +120,8 @@ export const DEFAULT_PARAMETERS: Parameters = {
   heartRate: 75,
   spo2: 98,
   ampScale: 1,
-  sysIbp: 120,
-  diasIbp: 80,
+  sysBp: 120,
+  diasBp: 80,
   etco2: 38,
   respRate: 16,
   temperature: 36.8,

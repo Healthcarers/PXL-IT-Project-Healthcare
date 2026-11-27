@@ -4,6 +4,6 @@ export interface VitalsResponse {
   etco2: number;
   respRate: number;
   ampScale: number;
-  sysIbp: number;
-  diasIbp: number;
+  sysBp: number;
+  diasBp: number;
 }

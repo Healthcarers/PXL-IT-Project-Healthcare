@@ -147,7 +147,7 @@ public class VitalsServiceTest {
         applyUpdatesTo(current);
         assertThatThrownBy(() -> service().update(request))
                 .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("sysIbp");
+                .hasMessageContaining("sysBp");
         verifyNoInteractions(messaging);
     }
 }

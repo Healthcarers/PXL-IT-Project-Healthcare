@@ -51,7 +51,7 @@ public class IbpSource implements WaveformSource {
         // Clamp so tiny Gaussian tails never dip below diastolic
         double wave = Math.clamp(systolic + dicrotic, 0.0, 1.0);
 
-        double pressure = v.diasIbp() + (v.sysIbp() - v.diasIbp()) * wave;
+        double pressure = v.diasBp() + (v.sysBp() - v.diasBp()) * wave;
         return Math.min(yMax(), Math.max(yMin(), pressure));
     }
 
